@@ -43,14 +43,17 @@ html[data-cpp-theme] body {
    records what the element's color *is*, whatever rule or inline style set it. */
 /* Canvas is white on white, so containers are invisible; flat ones take the
    page color, cards and menus (drop shadow) one step lighter, controls two. */
+/* --cpp-surface is the surface an element sits on, so a flat one inside a
+   card or control takes that color rather than the page's. */
 html[data-cpp-theme] [data-cpp-bg='page'] {
-  background-color: var(--cpp-bg) !important;
+  background-color: var(--cpp-surface, var(--cpp-bg)) !important;
 }
-html[data-cpp-theme] [data-cpp-bg='elevated'],
-html[data-cpp-theme] [data-cpp-bg='elevated'] [data-cpp-bg='page'] {
+html[data-cpp-theme] [data-cpp-bg='elevated'] {
+  --cpp-surface: var(--cpp-elevated);
   background-color: var(--cpp-elevated) !important;
 }
 html[data-cpp-theme] [data-cpp-bg='control'] {
+  --cpp-surface: var(--cpp-control);
   background-color: var(--cpp-control) !important;
 }
 /* elements Canvas lightens on hover/focus (rows, list items, buttons), found by
@@ -105,6 +108,12 @@ html[data-cpp-theme] [data-cpp-emboss~='text'] {
 }
 html[data-cpp-theme] [data-cpp-stroke] {
   stroke: var(--cpp-border) !important;
+}
+html[data-cpp-theme] [data-cpp-fill='text'] {
+  fill: var(--cpp-text) !important;
+}
+html[data-cpp-theme] [data-cpp-fill='muted'] {
+  fill: var(--cpp-muted) !important;
 }
 /* fades made to melt into white, rewritten by recolor.ts to melt into the page */
 html[data-cpp-theme] [data-cpp-gradient~='self'] {

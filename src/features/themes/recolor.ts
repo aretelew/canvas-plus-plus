@@ -5,6 +5,7 @@ import {
   roleOf,
   shadowKind,
   toRgb,
+  type Role,
 } from './palette';
 
 // Tags each element with the roles of its colors as data-cpp-* attributes
@@ -21,6 +22,11 @@ import {
 // Colors that only exist in a state (a row that turns light blue on hover) are
 // invisible at that point, so each element is probed again the first time it's
 // hovered or focused, before that frame paints.
+//
+// Canvas also recolors by moving a class (the global nav's white "active"
+// highlight follows the clicked item), so an element whose class changes is
+// forgotten, with its insides if it's a small component, and tagged again like
+// a new one.
 
 // Light backgrounds inside these keep a lighter shade so controls stay visible;
 // everything else light goes flat (page color), or card color if Canvas lifts
@@ -47,8 +53,8 @@ let observer: MutationObserver | undefined;
 let queue: Element[] = [];
 let brand = '';
 // Canvas's own background for every element tagged so far, to tell a state
-// color from the resting one. Each is tagged once: afterwards its computed
-// colors are ours, not Canvas's.
+// color from the resting one. Each is tagged once (until forgotten):
+// afterwards its computed colors are ours, not Canvas's.
 const resting = new WeakMap<Element, string>();
 const probed = {
   mouseover: new WeakSet<Element>(),
@@ -58,15 +64,21 @@ const probed = {
 export function startRecolor(): void {
   if (observer) return;
   observer = new MutationObserver((records) => {
-    for (const { addedNodes } of records) {
+    for (const { type, target, addedNodes } of records) {
+      if (type === 'attributes' && target instanceof Element) {
+        forget(target);
+        enqueue(target);
+      }
       for (const node of addedNodes) {
         if (node instanceof Element) enqueue(node);
       }
     }
   });
-  observer.observe(document.documentElement, {
+  // the document, not <html>: document.open() replaces <html>
+  observer.observe(document, {
     childList: true,
     subtree: true,
+    attributeFilter: ['class'],
   });
   enqueue(document.documentElement);
   for (const type of ['mouseover', 'focusin']) {
@@ -88,6 +100,19 @@ export function stopRecolor(): void {
 
 function enqueue(el: Element): void {
   if (queue.push(el) === 1) requestAnimationFrame(flush);
+}
+
+// el is tagged from scratch on the next flush, and so is everything inside it
+// if it's a small component. Big containers change classes all the time that
+// don't recolor their insides (body's "webkit chrome", each module's
+// "completed" while Modules loads), and tagging those again costs a lot.
+function forget(el: Element): void {
+  const inside = isSmallComponent(el) ? [...el.querySelectorAll('*')] : [];
+  for (const inner of [el, ...inside]) {
+    resting.delete(inner);
+    probed.mouseover.delete(inner);
+    probed.focusin.delete(inner);
+  }
 }
 
 interface Tags {
@@ -112,15 +137,15 @@ function flush(): void {
       if (!resting.has(el)) elements.add(el);
     }
   }
-  // all reads, then all writes: interleaving them would force a style
-  // recalculation per element, and every read sees Canvas's original colors
-  const tagged = [...elements].map((el) => [el, classify(el)] as const);
-  withoutTransitions(
-    tagged.map(([el]) => el),
-    () => {
-      for (const [el, tags] of tagged) apply(el, tags);
-    },
-  );
+  // Old tags off (on forgotten elements), then all reads, then all writes:
+  // interleaving them would force a style recalculation per element, and every
+  // read sees Canvas's original colors. Transitions stay off throughout, or
+  // taking a tag off would start a fade to Canvas's light color.
+  withoutTransitions([...elements], () => {
+    for (const el of elements) untag(el);
+    const tagged = [...elements].map((el) => [el, classify(el)] as const);
+    for (const [el, tags] of tagged) apply(el, tags);
+  });
 }
 
 function classify(el: Element): Tags {
@@ -129,8 +154,12 @@ function classify(el: Element): Tags {
   const attrs: Record<string, string> = {};
   const vars: Record<string, string> = {};
 
+  const borderColor = visibleBorderColor(style);
+  const border = borderColor ? roleOf('border', borderColor) : null;
+  if (border) attrs['data-cpp-border'] = border;
+
   if (roleOf('bg', style.backgroundColor)) {
-    attrs['data-cpp-bg'] = background(el, style);
+    attrs['data-cpp-bg'] = background(el, style, border);
   }
   const fg = roleOf('fg', style.color, brand);
   if (fg === 'lift') {
@@ -141,17 +170,13 @@ function classify(el: Element): Tags {
   } else if (fg) {
     attrs['data-cpp-fg'] = fg;
   }
-  const borderColor = visibleBorderColor(style);
-  const border = borderColor && roleOf('border', borderColor);
-  if (border) attrs['data-cpp-border'] = border;
-
-  // SVG lines drawn for a white page (spinner tracks, progress rings)
-  if (
-    el instanceof SVGElement &&
-    roleOf('bg', style.stroke) &&
-    hasNeutralBackdrop(el)
-  ) {
-    attrs['data-cpp-stroke'] = '';
+  if (el instanceof SVGElement && hasNeutralBackdrop(el)) {
+    // lines drawn for a white page (spinner tracks, progress rings)
+    if (roleOf('bg', style.stroke)) attrs['data-cpp-stroke'] = '';
+    // icons filled with Canvas's text greys; currentColor ones (same as
+    // color) already follow the fg tag, and must keep following it on hover
+    const fill = style.fill === style.color ? null : roleOf('fg', style.fill);
+    if (fill === 'text' || fill === 'muted') attrs['data-cpp-fill'] = fill;
   }
 
   // fades made to melt into white, on the element or its ::before/::after
@@ -164,7 +189,7 @@ function classify(el: Element): Tags {
   ).flatMap(([layer, layerStyle]) => {
     const gradient = darkenGradient(
       layerStyle.backgroundImage,
-      'var(--cpp-bg)',
+      'var(--cpp-surface, var(--cpp-bg))',
     );
     if (gradient) vars[`--cpp-${layer}-gradient`] = gradient;
     return gradient ? [layer] : [];
@@ -187,11 +212,44 @@ function classify(el: Element): Tags {
   return { attrs, vars };
 }
 
-function background(el: Element, style: CSSStyleDeclaration): Background {
-  if (inControl(el)) return 'control';
+function background(
+  el: Element,
+  style: CSSStyleDeclaration,
+  border: Role | null,
+): Background {
+  // a control only stands out where Canvas made it: with a visible border, or
+  // a shade other than what's behind it (not a white arrow on a white toolbar)
+  if (inControl(el)) {
+    return (border && border !== 'hidden') ||
+      style.backgroundColor !== backdrop(el)
+      ? 'control'
+      : 'page';
+  }
   return shadowKind(style.boxShadow) === 'drop' && !el.matches(IN_FLOW)
     ? 'elevated'
     : 'page';
+}
+
+// Every data-cpp-* attribute is a tag of ours, except the switch on <html>
+// that turns the theme on (page.ts).
+function untag(el: Element): void {
+  for (const { name } of [...el.attributes]) {
+    if (name.startsWith('data-cpp-') && name !== 'data-cpp-theme') {
+      el.removeAttribute(name);
+    }
+  }
+  // and the custom properties classify() set (original colors)
+  if (el instanceof HTMLElement || el instanceof SVGElement) {
+    for (const name of [...el.style]) {
+      if (name.startsWith('--cpp-')) el.style.removeProperty(name);
+    }
+  }
+}
+
+// a button, a nav item, a list row: styles keyed to its state or class reach
+// inside it (`button:hover > span`, `.active a`)
+function isSmallComponent(el: Element): boolean {
+  return el.getElementsByTagName('*').length <= 50;
 }
 
 function inControl(el: Element): boolean {
@@ -242,7 +300,7 @@ function probeStates(event: Event): void {
     if (seenFor.has(el) || !resting.has(el)) continue;
     seenFor.add(el);
     consider(el, el);
-    if (el.getElementsByTagName('*').length <= 50) {
+    if (isSmallComponent(el)) {
       for (const inner of el.querySelectorAll('*')) consider(inner, el);
     }
   }
@@ -318,11 +376,21 @@ function visibleBorderColor(style: CSSStyleDeclaration): string | null {
   return null;
 }
 
-// The first opaque background behind el decides; none means the page itself.
-function hasNeutralBackdrop(el: Element): boolean {
-  for (let node: Element | null = el; node; node = node.parentElement) {
-    const verdict = liftsOn(getComputedStyle(node).backgroundColor);
-    if (verdict !== undefined) return verdict;
+// Canvas's own background behind el: the first opaque one among its
+// ancestors, or the white page if none.
+function backdrop(el: Element): string {
+  for (let node = el.parentElement; node; node = node.parentElement) {
+    const color = resting.get(node) ?? getComputedStyle(node).backgroundColor;
+    if (liftsOn(color) !== undefined) return color;
   }
-  return true;
+  return 'rgb(255, 255, 255)';
+}
+
+// Whether el sits on a neutral background (its own or what's behind it),
+// which the theme darkens; colored ones (highlights, badges) aren't.
+function hasNeutralBackdrop(el: Element): boolean {
+  return (
+    liftsOn(getComputedStyle(el).backgroundColor) ??
+    liftsOn(backdrop(el)) !== false
+  );
 }
