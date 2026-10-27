@@ -6,17 +6,31 @@ import { themeEnabled } from './storage';
 // it before the first paint, then reconcile with the real setting.
 const MIRROR_KEY = 'canvas++:theme';
 
+// A same-origin frame with no URL of its own was written by Canvas's scripts,
+// like the Rich Content Editor's (TinyMCE): its body is the user's content,
+// saved as it's shown, so tags would end up in their posts. It gets the static
+// page colors only.
+const writtenByScript = window.frameElement?.hasAttribute('src') === false;
+
+let enabled = false;
+
 export async function syncThemeToPage(): Promise<void> {
+  // document.open() (how TinyMCE writes its frame) replaces <html>, theme
+  // attribute and all
+  new MutationObserver(() => {
+    apply(enabled);
+  }).observe(document, { childList: true });
   apply(readMirror());
   apply(await themeEnabled.getValue());
   themeEnabled.watch(apply);
 }
 
-function apply(enabled: boolean): void {
+function apply(on: boolean): void {
+  enabled = on;
   const root = document.documentElement;
   if (enabled) {
     root.dataset.cppTheme = 'dark';
-    startRecolor();
+    if (!writtenByScript) startRecolor();
   } else {
     delete root.dataset.cppTheme;
     stopRecolor();
