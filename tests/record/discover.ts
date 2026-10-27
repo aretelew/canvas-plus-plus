@@ -87,31 +87,69 @@ export async function discoverPages(): Promise<FixturePage[]> {
     }
   }
 
-  // New Quizzes runs in an iframe from its own origin. Record a quiz the
-  // student has taken, and its results page, from the first course with one.
-  for (const { id } of courses ?? []) {
-    const assignments = await get<
-      {
-        html_url: string;
-        is_quiz_lti_assignment?: boolean;
-        submission?: { workflow_state: string };
-      }[]
-    >(
-      `/api/v1/courses/${String(id)}/assignments?include[]=submission&per_page=100`,
+  // Pages behind a click (see interactions.ts)
+  pages.push(['courses-tray', '/']);
+  const discussion = pages.find(([name]) => name === 'discussion')?.[1];
+  if (discussion) pages.push(['discussion-reply', discussion]);
+
+  // What the student has handed in, from current courses first, then past
+  // ones: a New Quiz (an iframe from its own origin) and its results, a
+  // classic quiz (its page shows the latest attempt), and an assignment's
+  // submission details.
+  const past = await get<{ id: number }[]>(
+    '/api/v1/courses?enrollment_state=completed&enrollment_type=student&per_page=100',
+  );
+  const handedIn = (
+    await Promise.all(
+      [...(courses ?? []), ...(past ?? [])].map(({ id }) =>
+        get<
+          {
+            html_url: string;
+            course_id: number;
+            quiz_id?: number;
+            is_quiz_lti_assignment?: boolean;
+            submission?: { workflow_state: string };
+          }[]
+        >(
+          `/api/v1/courses/${String(id)}/assignments?include[]=submission&per_page=100`,
+        ),
+      ),
+    )
+  )
+    .flatMap((assignments) => assignments ?? [])
+    .filter(
+      ({ submission }) =>
+        submission && submission.workflow_state !== 'unsubmitted',
     );
-    const quiz = assignments?.find(
-      (a) =>
-        a.is_quiz_lti_assignment &&
-        a.submission &&
-        a.submission.workflow_state !== 'unsubmitted',
-    );
-    if (!quiz) continue;
-    const path = new URL(quiz.html_url).pathname;
-    const user = (window as { ENV?: { current_user_id?: string } }).ENV
-      ?.current_user_id;
-    pages.push(['new-quiz', path]);
-    if (user) pages.push(['new-quiz-results', `${path}/submissions/${user}`]);
-    break;
+  const user = (window as { ENV?: { current_user_id?: string } }).ENV
+    ?.current_user_id;
+  const pathOf = (url: string) => new URL(url).pathname;
+
+  const newQuiz = handedIn.find((a) => a.is_quiz_lti_assignment);
+  if (newQuiz) {
+    pages.push(['new-quiz', pathOf(newQuiz.html_url)]);
+    if (user) {
+      pages.push([
+        'new-quiz-results',
+        `${pathOf(newQuiz.html_url)}/submissions/${user}`,
+      ]);
+    }
+  }
+  const classic = handedIn.find((a) => a.quiz_id !== undefined);
+  if (classic?.quiz_id !== undefined) {
+    pages.push([
+      'quiz-classic',
+      `/courses/${String(classic.course_id)}/quizzes/${String(classic.quiz_id)}`,
+    ]);
+  }
+  const assignment = handedIn.find(
+    (a) => !a.is_quiz_lti_assignment && a.quiz_id === undefined,
+  );
+  if (assignment && user) {
+    pages.push([
+      'submission',
+      `${pathOf(assignment.html_url)}/submissions/${user}`,
+    ]);
   }
 
   return pages.flatMap(([name, path]) => (path ? [{ name, path }] : []));

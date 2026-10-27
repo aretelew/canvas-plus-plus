@@ -15,6 +15,7 @@ import { basename, join } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 import { expect, test } from '../extension';
+import { interactions } from '../record/interactions';
 
 const PAGES = 'tests/fixtures/pages';
 
@@ -70,6 +71,7 @@ async function open(page: Page, fixture: Fixture): Promise<void> {
   await page.routeFromHAR(fixture.har, { notFound: 'abort' });
   await page.goto(fixture.url);
   await page.waitForLoadState('networkidle');
+  await interactions[fixture.name]?.(page);
   // Under load Canvas can still be rendering after the network goes quiet, so
   // also wait for the DOM to settle (attributes excluded: our theme tags them).
   await page.evaluate(
