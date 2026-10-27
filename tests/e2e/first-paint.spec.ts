@@ -10,6 +10,9 @@ import { expect, test } from '../extension';
 
 const URL = 'https://fixture.instructure.com/first-paint';
 
+// a browser nothing ran in yet: no stored setting, no cached copy on the page
+test.use({ isolated: true });
+
 test.beforeEach(async ({ page }) => {
   await page.route(URL, (route) =>
     route.fulfill({

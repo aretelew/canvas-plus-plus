@@ -19,13 +19,15 @@ npm run dev:firefox   # Firefox
 `npm run test:browser` builds the extension and runs Playwright against it in Chrome for Testing (`$CHROME_PATH`, else the newest one [agent-browser](https://github.com/vercel-labs/agent-browser) installed):
 
 - `tests/e2e/`: checks that run anywhere, like no light flash on load.
-- `tests/visual/`: screenshots of real Canvas pages with the theme off and on, replayed offline. They need fixtures recorded from your own account:
+- `tests/visual/`: real Canvas pages replayed offline, one test per page: a screenshot with the theme off and on, and a check that the theme adds no contrast problems Canvas doesn't already have. They need fixtures recorded from your own account:
 
   ```bash
   npm run fixtures:record -- https://canvas.yourschool.edu
   ```
 
-  A browser opens; sign in (every run: Canvas ends the session when the browser closes), and it saves about 20 student pages, discovered from your most complete course. Fixtures and screenshot baselines contain your personal data, so they stay in the gitignored `tests/fixtures/`. Update baselines after an intended visual change with `npx playwright test --update-snapshots`.
+  A browser opens; sign in (every run: Canvas ends the session when the browser closes), and it saves about 25 student pages, discovered from your two most complete courses. Fixtures and screenshot baselines contain your personal data, so they stay in the gitignored `tests/fixtures/`. Update baselines after an intended visual change with `npx playwright test --update-snapshots`.
+
+  The full run takes a few minutes. While iterating, run part of it (after `npm run build`): `npx playwright test -g dashboard` for pages whose name matches, or `npx playwright test --last-failed` to re-run what just failed.
 
 ### Pointing dev mode at your browser
 
