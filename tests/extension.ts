@@ -1,5 +1,5 @@
 // Playwright fixtures: a Chromium with the built extension loaded, and a way to
-// flip the theme through the real popup.
+// flip settings through the real popup.
 //
 // Launching Chrome takes about a second, so each worker shares one browser
 // across its tests (every test still gets its own tab). Tests that need a
@@ -19,7 +19,7 @@ import { chromePath } from './chrome';
 
 const EXTENSION = resolve('.output/chrome-mv3');
 
-// The one extension API setTheme calls inside the popup (extension types
+// The one extension API setSwitch calls inside the popup (extension types
 // aren't loaded for tests).
 declare const chrome: {
   storage: { sync: { get(key: string): Promise<Record<string, unknown>> } };
@@ -50,6 +50,7 @@ export const test = base.extend<
     context: BrowserContext;
     page: Page;
     setTheme: (on: boolean) => Promise<void>;
+    setCardGrades: (on: boolean) => Promise<void>;
   },
   { sharedContext: () => Promise<BrowserContext> }
 >({
@@ -80,28 +81,39 @@ export const test = base.extend<
   },
 
   setTheme: async ({ context }, use) => {
-    await use(async (on) => {
-      const popup = await context.newPage();
-      await popup.goto(`chrome-extension://${extensionId}/popup.html`);
-      const toggle = popup.getByRole('switch', { name: 'Dark theme' });
-      // it shows "off" until storage answers; setChecked decides whether to
-      // click from the state it sees first, so let it see the real one
-      await expect(toggle).toBeEnabled();
-      await toggle.setChecked(on);
-      // the switch flips at once but the setting is saved asynchronously;
-      // closing the popup first could lose it to the next test
-      await expect
-        .poll(() =>
-          popup.evaluate(async () => {
-            const { themeEnabled } =
-              await chrome.storage.sync.get('themeEnabled');
-            return themeEnabled === true;
-          }),
-        )
-        .toBe(on);
-      await popup.close();
-    });
+    await use((on) => setSwitch(context, 'Dark theme', 'themeEnabled', on));
+  },
+
+  setCardGrades: async ({ context }, use) => {
+    await use((on) => setSwitch(context, 'Grades on cards', 'cardGrades', on));
   },
 });
+
+// Flips one of the popup's switches and waits until the setting is saved.
+async function setSwitch(
+  context: BrowserContext,
+  name: string,
+  key: string,
+  on: boolean,
+): Promise<void> {
+  const popup = await context.newPage();
+  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+  const toggle = popup.getByRole('switch', { name });
+  // it shows "off" until storage answers; setChecked decides whether to
+  // click from the state it sees first, so let it see the real one
+  await expect(toggle).toBeEnabled();
+  await toggle.setChecked(on);
+  // the switch flips at once but the setting is saved asynchronously;
+  // closing the popup first could lose it to the next test
+  await expect
+    .poll(() =>
+      popup.evaluate(
+        async (key) => (await chrome.storage.sync.get(key))[key] === true,
+        key,
+      ),
+    )
+    .toBe(on);
+  await popup.close();
+}
 
 export { expect };

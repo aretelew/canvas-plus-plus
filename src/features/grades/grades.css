@@ -1,0 +1,22 @@
+/* The grade pill on dashboard cards (cards.ts). Canvas's own white and text
+   color, so the theme's recolor pass gives it the card's dark shades. */
+.cpp-card-grade {
+  position: absolute;
+  /* it comes first in the header (cards.ts), and an image card's color sits
+     over its image at partial opacity, which would otherwise paint over it */
+  z-index: 1;
+  /* as far from the top as the card's options button */
+  top: 12px;
+  left: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background-color: #fff;
+  color: var(--ic-brand-font-color-dark, #2d3b45);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+.cpp-card-grade:hover {
+  text-decoration: underline;
+}

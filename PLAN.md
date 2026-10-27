@@ -23,7 +23,7 @@ A browser extension that improves Canvas LMS. Feature #1 is a **theme engine**: 
 
 - **Size limits** (checked in CI): content script under 15 KB gzipped, theme CSS under 20 KB gzipped, popup under 20 KB gzipped (Preact included). Any UI injected into Canvas pages uses Preact too, since it loads on every page view.
 - **Runtime:** no work on pages where the extension is off beyond one attribute check. No polling or timers. The MutationObserver only watches content containers.
-- **UI:** the popup is one toggle plus a theme picker. Everything else goes in the options page. Every new setting has to justify itself.
+- **UI:** the popup is one on/off switch per feature (plus, later, a theme picker). A feature's finer settings go in the options page. Every new setting has to justify itself.
 - **Themes:** a few carefully designed themes beat many average ones. Leaving Canvas's layout mostly alone and only recoloring it is part of the minimal look.
 - Robustness still matters: stable selectors and visual tests, because a minimal extension that breaks every Canvas update isn't clean.
 
@@ -90,6 +90,10 @@ Selector files per page turned out to be the wrong tool. Measured on real pages,
 - **Themes are data** (milestone 8): a theme is a set of token values, so switching themes rewrites one block of variables.
 - **No light flash:** see milestone 2. Manifest CSS is injected before the DOM exists, and the attribute is set from a copy cached in the page's `localStorage`.
 - **Known limits:** colors a script sets after an element is tagged (a row selected by clicking) are masked by its role, and specific states may need a rule later. Faded "completed" calendar events stay faded, as Canvas intends.
+
+### Grades on dashboard cards
+
+Off by default (popup switch). On the dashboard (the site root, top frame only), each card gets a pill at the top left of its color/image with the course's current score, linking to `/courses/:id/grades`. Scores come from one `GET /api/v1/courses?enrollment_state=active&include[]=total_scores&include[]=current_grading_period_scores&include[]=restrict_quantitative_data` request, sent the first time grades are on (`features/grades/scores.ts` picks the score, unit-tested). In a course with grading periods it's the current period's score. Courses with nothing to show get no pill: no grades yet, totals hidden, between periods, not a student, or percentages hidden from students (the course's `restrict_quantitative_data`; a letter grade alone doesn't mean that, since every course with a grading scheme has one). The pill uses Canvas's white and text colors, so the theme recolors it like any card element. In Firefox the request goes through `content.fetch` so it carries the page's session; that path is still unverified by hand.
 
 ### Contrast pass (course content)
 

@@ -1,3 +1,5 @@
+import { syncCardGrades } from '@/features/grades/cards';
+import '@/features/grades/grades.css';
 import { syncThemeToPage } from '@/features/themes/page';
 import '@/features/themes/theme.css';
 
@@ -11,5 +13,8 @@ export default defineContentScript({
   // carry meaning, so it keeps its own look
   excludeGlobs: ['https://canvadocs*'],
   runAt: 'document_start',
-  main: syncThemeToPage,
+  main() {
+    void syncThemeToPage();
+    void syncCardGrades();
+  },
 });
