@@ -1,6 +1,9 @@
 // Records Canvas pages as replayable HAR fixtures.
 //
-//   npm run fixtures:record -- https://canvas.case.edu
+//   npm run fixtures:record -- https://canvas.case.edu [filter]
+//
+// With a filter, only pages whose name contains it are recorded (and the
+// other fixtures are left as they are), e.g. `new-quiz`.
 //
 // Opens Chrome for Testing; sign in yourself (Canvas's session ends when the
 // browser closes, so every run asks). It then visits a fixed set of student
@@ -30,6 +33,7 @@ if (!arg) {
   process.exit(1);
 }
 const origin = new URL(arg).origin;
+const only = process.argv[3];
 const outDir = resolve('tests/fixtures/pages');
 
 async function waitForSignIn(page: Page): Promise<void> {
@@ -52,7 +56,9 @@ async function waitForSignIn(page: Page): Promise<void> {
 
 async function recordAll(home: Page, tmp: string): Promise<FixturePage[]> {
   await waitForSignIn(home);
-  const pages = await home.evaluate(discoverPages);
+  const pages = (await home.evaluate(discoverPages)).filter(
+    ({ name }) => !only || name.includes(only),
+  );
   console.log(`Recording ${String(pages.length)} pages…`);
   for (const { name, path } of pages) {
     const page = await home.context().newPage();
