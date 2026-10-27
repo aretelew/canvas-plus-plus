@@ -1,0 +1,13 @@
+/* Injected on every Canvas page before the DOM exists. Every rule is scoped to
+   html[data-cpp-theme], so none of it applies until a theme is turned on. */
+
+html[data-cpp-theme='dark'] {
+  color-scheme: dark;
+  --cpp-bg: #15171c;
+  --cpp-text: #e3e5e8;
+}
+
+html[data-cpp-theme] body {
+  background-color: var(--cpp-bg);
+  color: var(--cpp-text);
+}

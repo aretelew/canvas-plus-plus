@@ -1,6 +1,8 @@
+import { syncThemeToPage } from '@/features/themes/page';
+import '@/features/themes/theme.css';
+
 export default defineContentScript({
   matches: ['https://*.instructure.com/*'],
-  main() {
-    console.log('[canvas++] content script loaded on', location.hostname);
-  },
+  runAt: 'document_start',
+  main: syncThemeToPage,
 });

@@ -9,7 +9,7 @@ A browser extension that improves Canvas LMS. Feature #1 is a **theme engine**: 
 | Target                  | Canvas LMS: `*.instructure.com` plus schools' custom domains                                                     |
 | Audience                | Public: Chrome Web Store + Firefox Add-ons (AMO)                                                                 |
 | Browsers                | Chrome (and therefore Edge/Brave/Arc) and Firefox from day one                                                   |
-| Stack                   | WXT + TypeScript; React for popup/options; content scripts framework-free                                        |
+| Stack                   | WXT + TypeScript; Preact via preact/compat (React API) for all UI; theme engine framework-free                   |
 | Backend                 | None. All state lives in `storage`; we collect nothing                                                           |
 | Default                 | Themes **off** by default; the user turns them on                                                                |
 | Trigger                 | Manual toggle (popup, later a keyboard shortcut)                                                                 |
@@ -21,7 +21,7 @@ A browser extension that improves Canvas LMS. Feature #1 is a **theme engine**: 
 
 ### What "minimal and light" commits us to
 
-- **Size limits** (checked in CI): content script under 15 KB gzipped, theme CSS under 20 KB gzipped, popup under 60 KB gzipped (React included; switch to Preact if it doesn't fit).
+- **Size limits** (checked in CI): content script under 15 KB gzipped, theme CSS under 20 KB gzipped, popup under 20 KB gzipped (Preact included). Any UI injected into Canvas pages uses Preact too, since it loads on every page view.
 - **Runtime:** no work on pages where the extension is off beyond one attribute check. No polling or timers. The MutationObserver only watches content containers.
 - **UI:** the popup is one toggle plus a theme picker. Everything else goes in the options page. Every new setting has to justify itself.
 - **Themes:** a few carefully designed themes beat many average ones. Leaving Canvas's layout mostly alone and only recoloring it is part of the minimal look.
@@ -51,8 +51,8 @@ canvas++/
 │  ├─ entrypoints/
 │  │  ├─ background.ts      # service worker: permissions, dynamic script registration
 │  │  ├─ canvas.content.ts  # main content script (document_start, all_frames)
-│  │  ├─ popup/             # React: on/off toggle, theme picker, "enable on this site"
-│  │  └─ options/           # React: full settings, later the custom theme editor
+│  │  ├─ popup/             # Preact: on/off toggle, theme picker, "enable on this site"
+│  │  └─ options/           # Preact: full settings, later the custom theme editor
 │  ├─ core/
 │  │  ├─ settings.ts        # typed settings schema + storage wrapper + change events
 │  │  ├─ features.ts        # feature registry (see below)
