@@ -122,9 +122,9 @@ Each feature exports `{ id, name, defaultEnabled, settings schema, apply(ctx), t
 
 ## Testing
 
-- **Fixtures:** with your student account, save full pages (SingleFile or Playwright `page.content()` plus assets) for the pages we support. **These contain your name, grades and classmates' names, so they stay gitignored.** If we ever commit fixtures, scrub them first.
-- **Playwright with the extension loaded** (persistent context + `--load-extension`):
-  1. **Visual tests:** screenshot each fixture with each theme and compare against approved baselines. This is how we "don't break".
+- **Fixtures (built in milestone 3):** `npm run fixtures:record` signs in to your Canvas, discovers about 20 student pages and saves each as a HAR (every request and response, so the page replays offline with Canvas's own JS). Login cookies are stripped and a custom domain is rewritten to `fixture.instructure.com` so the content script runs on it. **They contain your name, grades and classmates' names, so they stay gitignored.** If we ever commit fixtures, scrub them first. agent-browser was tried for recording but loses the bodies of preloaded assets (Canvas's main bundle and fonts), so Playwright records.
+- **Playwright with the extension loaded** (persistent context + `--load-extension`, in Chrome for Testing, which still allows that and never auto-updates):
+  1. **Visual tests:** replay each fixture with a frozen clock, theme off and on, and compare full-page screenshots against approved baselines with a tight color threshold. This is how we "don't break". The off screenshots also prove our CSS does nothing while off.
   2. **Contrast audit:** run axe-core color-contrast checks on each themed fixture.
   3. **Live smoke test:** run against the real Canvas with a saved logged-in profile. Run it manually, not in CI.
 - **Unit tests (Vitest):** contrast math, settings schema migrations, `canvas-detect`.

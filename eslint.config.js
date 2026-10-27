@@ -18,7 +18,10 @@ export default defineConfig(
     files: ['**/*.js'],
     extends: [tseslint.configs.disableTypeChecked],
   },
-  reactHooks.configs.flat.recommended,
+  {
+    files: ['src/**/*.tsx'],
+    extends: [reactHooks.configs.flat.recommended],
+  },
   autoImports,
   prettier,
 );
