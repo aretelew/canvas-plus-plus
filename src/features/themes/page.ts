@@ -1,3 +1,4 @@
+import { startRecolor, stopRecolor } from './recolor';
 import { themeEnabled } from './storage';
 
 // Extension storage is async, so on its own the first paint could beat it and
@@ -13,8 +14,13 @@ export async function syncThemeToPage(): Promise<void> {
 
 function apply(enabled: boolean): void {
   const root = document.documentElement;
-  if (enabled) root.dataset.cppTheme = 'dark';
-  else delete root.dataset.cppTheme;
+  if (enabled) {
+    root.dataset.cppTheme = 'dark';
+    startRecolor();
+  } else {
+    delete root.dataset.cppTheme;
+    stopRecolor();
+  }
   writeMirror(enabled);
 }
 

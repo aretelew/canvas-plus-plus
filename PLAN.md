@@ -60,16 +60,11 @@ canvas++/
 │  │  └─ domains.ts         # list of enabled custom domains, permission helpers
 │  └─ features/
 │     └─ themes/
-│        ├─ feature.ts      # registers with core/features
-│        ├─ tokens.ts       # the token list (single source of truth)
-│        ├─ themes/         # dark.ts, oled.ts, … : just token → color maps
-│        ├─ styles/         # rules written ONLY in terms of var(--cpp-*)
-│        │  ├─ base.css     # page, text, links, borders, inputs
-│        │  ├─ instui.css   # [class*="-view--block"] etc.
-│        │  ├─ nav.css      # global nav + course nav, --ic-brand-* remap
-│        │  ├─ pages/       # dashboard.css, modules.css, grades.css, quizzes.css …
-│        │  └─ rce.css      # injected into the TinyMCE iframe
-│        └─ contrast.ts     # inline-color fixer for .user_content
+│        ├─ storage.ts      # the setting(s)
+│        ├─ page.ts         # turns the theme on/off on the page, no-flash cached copy
+│        ├─ palette.ts      # classifies a computed color into a role (pure, unit-tested)
+│        ├─ recolor.ts      # tags elements with their roles, once per frame
+│        └─ theme.css       # tokens, Canvas variable remaps, one rule per role
 └─ tests/
    ├─ fixtures/             # saved Canvas pages (GITIGNORED, has personal data)
    └─ visual/               # Playwright screenshot tests
@@ -79,29 +74,26 @@ canvas++/
 
 Each feature exports `{ id, name, defaultEnabled, settings schema, apply(ctx), teardown() }`. The content script loads settings once, then runs `apply` for each enabled feature, giving it a context with the document, settings, and an `onSettingsChange` hook. Themes is the first feature. A GPA calculator or a todo tweak would be the next ones, with no changes to the core.
 
-### Theme engine
+### Theme engine (as built in milestone 4)
 
-- **Tokens:** about 20–25 semantic variables, all prefixed `--cpp-`:
-  - Surfaces: `bg`, `surface`, `surface-raised`, `surface-sunken`, `hover`
-  - Borders: `border`, `border-strong`
-  - Text: `text`, `text-muted`, `text-inverse`
-  - Links: `link`, `link-visited`
-  - Accent: `accent`, `on-accent`
-  - Status: `success`, `warning`, `danger`, `info`
-  - Inputs and focus: `input-bg`, `focus-ring`
-  - Nav: `nav-bg`, `nav-text`
-  - Effects: `shadow`, `scrim`
-- **Themes are data:** a theme is just `{ id, name, tokens: {...} }`. Custom themes later are the same shape, created in the options page. Settings sync can hold several of them.
-- **Scoping:** every rule sits under `html[data-cpp-theme]`, so when the attribute is absent, the CSS does nothing. Turning a theme off means removing one attribute. Switching themes means rewriting one `<style>` that holds only the token values.
-- **Canvas brand vars:** remap `--ic-brand-*` to our tokens. A later option could keep the school's accent color.
-- **No light flash:** the stylesheet is declared in the manifest `css`, which Chrome injects before the DOM exists. It does nothing until the attribute is set. `storage.get` is async and can lose the race with first paint, so the content script also keeps a copy of the current theme id and token values in the page's `localStorage`. It reads that copy synchronously at `document_start`, sets the attribute immediately, and then checks it against `storage`.
+Selector files per page turned out to be the wrong tool. Measured on real pages, only 12% of Canvas's color declarations use CSS variables, and InstUI's generated class names don't say which color variant an element uses (the same `-text` class is black, grey, white or link blue). What Canvas does have is a **small, fixed neutral palette**: `#fff` surfaces, `#f2f4f4` secondary surfaces, a ladder of near-black greys for text, light grey borders.
+
+- **Roles, not selectors:** `palette.ts` classifies a computed color by luminance and saturation into a role (`surface` for any light neutral background, `text`, `muted`, `link`, `border`, `border-strong`, `hidden` for white borders). Anything saturated (course colors, status red and green, brand) gets no role and is left alone.
+- **Lift:** dark _saturated_ text (course colors as text, status text) gets the `lift` role. CSS keeps its hue and raises its lightness, `oklch(from <color> max(l, 0.75) c h)`, unless it sits on a colored backdrop such as a highlight.
+- **Backgrounds by element, not shade:** Canvas is white on white, so containers are invisible; the theme keeps it that way. A light background inside a button or input becomes `control` (lighter), one Canvas lifts with a drop shadow becomes `elevated` (cards, menus, trays; a step lighter), and everything else becomes `page`, the same color as the page. Shadowed callouts in the page flow (InstUI alerts) stay `page`. Flat elements inside a card take the card's color.
+- **Decorations made for white:** light "emboss" shadows (`text-shadow`/`box-shadow` such as `1px 1px 0 rgba(255,255,255,.5)`) are removed, because on dark they look like a ghost copy of the text. Light neutral fades (`linear-gradient(..., white)`, also on `::before`/`::after`) are rewritten to fade into the page color. Light SVG strokes (spinner tracks) become the border color.
+- **Tagging:** `recolor.ts` sets `data-cpp-bg/-fg/-border` (plus `-emboss`, `-stroke`, `-gradient`) attributes. A MutationObserver queues new elements, and they're tagged in one batch per frame from `requestAnimationFrame`, which runs after the frame's stylesheets have loaded and before it paints. The batch reads every color first, then writes every tag. The first frame is dark, measured as painted. The cost is 2–5 ms per page, about 50 ms once on an 11k-element modules page. It only runs while a theme is on, and tags are inert when it's off.
+- **CSS:** `theme.css` holds the token values, remaps Canvas's own variables (link color, font colors, the active nav icon), styles the page body statically for the first frame, and has one `!important` rule per role.
+- **States:** a color Canvas only shows on hover or focus (a grades row turning light blue) doesn't exist when elements are tagged. The first time an element is hovered or focused, `recolor.ts` reads Canvas's color for that state with transitions off, and if it's light, tags the element `data-cpp-state` (`row` gets a faint tint, `control` the lighter control shade). Small components' insides are checked too, since hover styles reach into them (`button:hover > span`).
+- **Tokens:** `bg`, `elevated`, `control`, `control-hover`, `hover`, `border`, `border-strong`, `text`, `muted`, `link`, `emphasis` (Canvas's black marks: selected radios, black borders). They grow only when a theme needs another distinction.
+- **Brand stays:** the global nav and primary buttons keep the school's colors.
+- **Themes are data** (milestone 8): a theme is a set of token values, so switching themes rewrites one block of variables.
+- **No light flash:** see milestone 2. Manifest CSS is injected before the DOM exists, and the attribute is set from a copy cached in the page's `localStorage`.
+- **Known limits:** colors a script sets after an element is tagged (a row selected by clicking) are masked by its role, and specific states may need a rule later. Faded "completed" calendar events stay faded, as Canvas intends.
 
 ### Contrast pass (course content)
 
-- Scope: `.user_content`, discussion and announcement bodies, page bodies, the RCE iframe. Leave alone `img`, `svg`, `video`, `canvas`, `.equation_image`, MathML, and course card colors.
-- For elements with inline `color`/`background-color` (or `<font color>`): compute the effective background and check WCAG contrast. If it's under 4.5:1, adjust **lightness only** (OKLCH), keeping the hue, so the instructor's "red means important" still reads as red.
-- Save the original value in a `data-cpp-orig-*` attribute so turning the theme off restores it exactly.
-- Run it once at load, then on MutationObserver batches, debounced, and only on added subtrees. Never use `querySelectorAll('*')` on the whole page.
+Partly covered by `lift`: course-colored and status text is readable, and the browser tests check that no page has more contrast problems with the theme on than Canvas itself (`@axe-core/playwright`). What's left for milestone 6 is instructor-authored HTML: arbitrary inline colors and highlights in `.user_content`, page bodies and the RCE iframe, keeping `img`, `svg`, `.equation_image` and MathML alone.
 
 ### Domains and permissions
 
@@ -125,7 +117,7 @@ Each feature exports `{ id, name, defaultEnabled, settings schema, apply(ctx), t
 - **Fixtures (built in milestone 3):** `npm run fixtures:record` signs in to your Canvas, discovers about 20 student pages and saves each as a HAR (every request and response, so the page replays offline with Canvas's own JS). Login cookies are stripped and a custom domain is rewritten to `fixture.instructure.com` so the content script runs on it. **They contain your name, grades and classmates' names, so they stay gitignored.** If we ever commit fixtures, scrub them first. agent-browser was tried for recording but loses the bodies of preloaded assets (Canvas's main bundle and fonts), so Playwright records.
 - **Playwright with the extension loaded** (persistent context + `--load-extension`, in Chrome for Testing, which still allows that and never auto-updates):
   1. **Visual tests:** replay each fixture with a frozen clock, theme off and on, and compare full-page screenshots against approved baselines with a tight color threshold. This is how we "don't break". The off screenshots also prove our CSS does nothing while off.
-  2. **Contrast audit:** run axe-core color-contrast checks on each themed fixture.
+  2. **Contrast audit:** axe-core's color-contrast rule on each fixture. The theme may not add violations Canvas doesn't already have.
   3. **Live smoke test:** run against the real Canvas with a saved logged-in profile. Run it manually, not in CI.
 - **Unit tests (Vitest):** contrast math, settings schema migrations, `canvas-detect`.
 - **Quizzes get their own checklist:** classic quiz and New Quizzes. Every question type renders, answer choices are visible, and selected/correct states are distinguishable.
@@ -136,7 +128,7 @@ Each feature exports `{ id, name, defaultEnabled, settings schema, apply(ctx), t
 1. **Setup:** `npx wxt@latest init` (React + TS), git, ESLint/Prettier, Vitest. Load unpacked in Chrome and Firefox.
 2. **Walking skeleton:** popup toggle → storage → content script sets `html[data-cpp-theme]` on `*.instructure.com`, with one rule (dark background). Verify there's no flash on hard reload.
 3. **Test harness:** save about 15 fixtures, set up Playwright with the extension, and capture the first visual baselines. _Done before the CSS work, so every rule after this gets checked._
-4. **Tokens and dark theme, student pages:** global nav + trays, dashboard (cards and list view), planner, course home, modules, assignments list and detail, submission page, grades, syllabus, pages, announcements, discussions, files, calendar, inbox, account settings, notifications, the To Do sidebar.
+4. **Tokens and dark theme, student pages** (done for the 27 recorded pages: both dashboard views and two courses; see Theme engine. The nav trays and submission page aren't recorded yet, so they work in principle but are unverified): global nav + trays, dashboard (cards and list view), planner, course home, modules, assignments list and detail, submission page, grades, syllabus, pages, announcements, discussions, files, calendar, inbox, account settings, notifications, the To Do sidebar.
 5. **Frames:** RCE iframe + TinyMCE toolbar, classic quizzes, New Quizzes. Confirm DocViewer and LTI tools are left alone and look intentional.
 6. **Contrast pass** on course content, plus restore-on-disable.
 7. **Custom domains:** detection, the permission flow, dynamic registration, and the domain list in options.
