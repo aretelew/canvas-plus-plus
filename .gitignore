@@ -1,0 +1,21 @@
+# deps & builds
+node_modules/
+.output/
+.wxt/
+dist/
+*.zip
+
+# saved Canvas pages contain personal data (names, grades) — never commit
+tests/fixtures/
+
+# test artifacts
+test-results/
+playwright-report/
+tests/visual/**/*-actual.png
+tests/visual/**/*-diff.png
+
+# env & OS
+.env*
+!.env.example
+.DS_Store
+*.log
