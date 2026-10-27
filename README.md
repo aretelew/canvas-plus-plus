@@ -12,6 +12,8 @@ npm run dev:firefox   # Firefox
 
 `npm run build` / `npm run zip` (add `:firefox` for Firefox) produce store builds in `.output/`.
 
+`npm run check` runs everything that should pass before a commit: typecheck, ESLint, Prettier and Vitest. `npm run format` fixes formatting.
+
 ### Pointing dev mode at your browser
 
 `web-ext.config.ts` is per-developer and gitignored. To use a browser other than Chrome, or to stay signed in to Canvas between runs, create it in the repo root:

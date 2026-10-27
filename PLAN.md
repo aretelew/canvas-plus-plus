@@ -4,23 +4,23 @@ A browser extension that improves Canvas LMS. Feature #1 is a **theme engine**: 
 
 ## Decisions so far
 
-| Topic | Decision |
-|---|---|
-| Target | Canvas LMS: `*.instructure.com` plus schools' custom domains |
-| Audience | Public: Chrome Web Store + Firefox Add-ons (AMO) |
-| Browsers | Chrome (and therefore Edge/Brave/Arc) and Firefox from day one |
-| Stack | WXT + TypeScript; React for popup/options; content scripts framework-free |
-| Backend | None. All state lives in `storage`; we collect nothing |
-| Default | Themes **off** by default; the user turns them on |
-| Trigger | Manual toggle (popup, later a keyboard shortcut) |
-| Engine | Our own token-based CSS + a JS contrast pass for course content |
-| Course content | Readability wins over author colors |
-| Third-party LTI iframes | Left alone (stay light) |
-| Test coverage v1 | Student-facing pages first; teacher pages later |
-
-| Positioning | **Cleaner, more minimal and lighter than Better Canvas.** It has about 2M users but looks cluttered and is heavy |
+| Topic                   | Decision                                                                                                         |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Target                  | Canvas LMS: `*.instructure.com` plus schools' custom domains                                                     |
+| Audience                | Public: Chrome Web Store + Firefox Add-ons (AMO)                                                                 |
+| Browsers                | Chrome (and therefore Edge/Brave/Arc) and Firefox from day one                                                   |
+| Stack                   | WXT + TypeScript; React for popup/options; content scripts framework-free                                        |
+| Backend                 | None. All state lives in `storage`; we collect nothing                                                           |
+| Default                 | Themes **off** by default; the user turns them on                                                                |
+| Trigger                 | Manual toggle (popup, later a keyboard shortcut)                                                                 |
+| Engine                  | Our own token-based CSS + a JS contrast pass for course content                                                  |
+| Course content          | Readability wins over author colors                                                                              |
+| Third-party LTI iframes | Left alone (stay light)                                                                                          |
+| Test coverage v1        | Student-facing pages first; teacher pages later                                                                  |
+| Positioning             | **Cleaner, more minimal and lighter than Better Canvas.** It has about 2M users but looks cluttered and is heavy |
 
 ### What "minimal and light" commits us to
+
 - **Size limits** (checked in CI): content script under 15 KB gzipped, theme CSS under 20 KB gzipped, popup under 60 KB gzipped (React included; switch to Preact if it doesn't fit).
 - **Runtime:** no work on pages where the extension is off beyond one attribute check. No polling or timers. The MutationObserver only watches content containers.
 - **UI:** the popup is one toggle plus a theme picker. Everything else goes in the options page. Every new setting has to justify itself.
@@ -28,6 +28,7 @@ A browser extension that improves Canvas LMS. Feature #1 is a **theme engine**: 
 - Robustness still matters: stable selectors and visual tests, because a minimal extension that breaks every Canvas update isn't clean.
 
 ### Open questions
+
 1. Name and branding: "canvas++" is fine for a repo, but check the store listing for trademark issues. Instructure owns "Canvas"; "for Canvas" phrasing is the usual safe pattern.
 
 ## Background from research
@@ -75,9 +76,11 @@ canvas++/
 ```
 
 ### Feature registry (for later features)
+
 Each feature exports `{ id, name, defaultEnabled, settings schema, apply(ctx), teardown() }`. The content script loads settings once, then runs `apply` for each enabled feature, giving it a context with the document, settings, and an `onSettingsChange` hook. Themes is the first feature. A GPA calculator or a todo tweak would be the next ones, with no changes to the core.
 
 ### Theme engine
+
 - **Tokens:** about 20–25 semantic variables, all prefixed `--cpp-`:
   - Surfaces: `bg`, `surface`, `surface-raised`, `surface-sunken`, `hover`
   - Borders: `border`, `border-strong`
@@ -94,21 +97,25 @@ Each feature exports `{ id, name, defaultEnabled, settings schema, apply(ctx), t
 - **No light flash:** the stylesheet is declared in the manifest `css`, which Chrome injects before the DOM exists. It does nothing until the attribute is set. `storage.get` is async and can lose the race with first paint, so the content script also keeps a copy of the current theme id and token values in the page's `localStorage`. It reads that copy synchronously at `document_start`, sets the attribute immediately, and then checks it against `storage`.
 
 ### Contrast pass (course content)
+
 - Scope: `.user_content`, discussion and announcement bodies, page bodies, the RCE iframe. Leave alone `img`, `svg`, `video`, `canvas`, `.equation_image`, MathML, and course card colors.
 - For elements with inline `color`/`background-color` (or `<font color>`): compute the effective background and check WCAG contrast. If it's under 4.5:1, adjust **lightness only** (OKLCH), keeping the hue, so the instructor's "red means important" still reads as red.
 - Save the original value in a `data-cpp-orig-*` attribute so turning the theme off restores it exactly.
 - Run it once at load, then on MutationObserver batches, debounced, and only on added subtrees. Never use `querySelectorAll('*')` on the whole page.
 
 ### Domains and permissions
+
 - **Manifest:** `host_permissions: ["https://*.instructure.com/*"]`, `optional_host_permissions: ["https://*/*"]`, `permissions: ["storage", "scripting", "activeTab"]`.
 - **Custom domain flow:** the user clicks the icon on their school's Canvas. `activeTab` lets us run `canvas-detect` on that page. If it's Canvas, the popup shows **"Turn on themes for canvas.school.edu"**. That calls `permissions.request({ origins: [that origin] })`, which must run inside a click handler, then `scripting.registerContentScripts` for that origin.
 - **Upkeep:** re-sync the registrations in `runtime.onInstalled` and `permissions.onRemoved`. It isn't confirmed that registrations survive extension updates, so don't rely on it.
 - This avoids the "read and change all your data on all websites" warning at install and the slower Web Store review that broad host permissions trigger.
 
 ### Settings
+
 `storage.sync` limits: 100 KB total, 8 KB per item, 120 writes per minute. Store small settings there: enabled, theme id, per-feature settings, custom themes (one key each). Store the domain list and caches in `storage.local`. The content script listens to `storage.onChanged`, so toggling never needs a reload.
 
 ### Firefox notes (verify while building)
+
 - WXT handles `browser.*` vs `chrome.*` and builds both manifests.
 - Firefox MV3 treats host permissions as user-grantable. Check that `*.instructure.com` is actually granted on install and that the popup handles it when it isn't.
 - Check `match_origin_as_fallback` and `registerContentScripts` support in current Firefox versions.
@@ -128,7 +135,7 @@ Each feature exports `{ id, name, defaultEnabled, settings schema, apply(ctx), t
 
 1. **Setup:** `npx wxt@latest init` (React + TS), git, ESLint/Prettier, Vitest. Load unpacked in Chrome and Firefox.
 2. **Walking skeleton:** popup toggle → storage → content script sets `html[data-cpp-theme]` on `*.instructure.com`, with one rule (dark background). Verify there's no flash on hard reload.
-3. **Test harness:** save about 15 fixtures, set up Playwright with the extension, and capture the first visual baselines. *Done before the CSS work, so every rule after this gets checked.*
+3. **Test harness:** save about 15 fixtures, set up Playwright with the extension, and capture the first visual baselines. _Done before the CSS work, so every rule after this gets checked._
 4. **Tokens and dark theme, student pages:** global nav + trays, dashboard (cards and list view), planner, course home, modules, assignments list and detail, submission page, grades, syllabus, pages, announcements, discussions, files, calendar, inbox, account settings, notifications, the To Do sidebar.
 5. **Frames:** RCE iframe + TinyMCE toolbar, classic quizzes, New Quizzes. Confirm DocViewer and LTI tools are left alone and look intentional.
 6. **Contrast pass** on course content, plus restore-on-disable.
@@ -143,11 +150,11 @@ Each feature exports `{ id, name, defaultEnabled, settings schema, apply(ctx), t
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| Canvas UI updates break rules | Stable selectors only, visual tests, and a scheduled live smoke run |
+| Risk                              | Mitigation                                                                                      |
+| --------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Canvas UI updates break rules     | Stable selectors only, visual tests, and a scheduled live smoke run                             |
 | Quiz content hidden or unreadable | Dedicated quiz fixtures + checklist. Never set `color` equal to the background on inputs/labels |
-| Contrast pass slows huge pages | Process only added subtrees, debounce, skip containers that aren't content |
-| Light flash on load | Manifest CSS + localStorage copy read synchronously at `document_start` |
-| Store rejection over permissions | Narrow required hosts, optional per-domain hosts, clear justifications |
-| Copying Better Canvas | Use it only as a reference for *which* areas need styling. Write our own rules |
+| Contrast pass slows huge pages    | Process only added subtrees, debounce, skip containers that aren't content                      |
+| Light flash on load               | Manifest CSS + localStorage copy read synchronously at `document_start`                         |
+| Store rejection over permissions  | Narrow required hosts, optional per-domain hosts, clear justifications                          |
+| Copying Better Canvas             | Use it only as a reference for _which_ areas need styling. Write our own rules                  |
