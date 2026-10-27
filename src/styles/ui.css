@@ -1,0 +1,55 @@
+@import 'tailwindcss';
+
+/* daisyUI emits every component it's allowed to, used or not (about 75 kB),
+   so list each one here as a page starts using it. rootcolor paints the
+   page in the theme's base colors. Its stock themes are replaced below. */
+@plugin 'daisyui' {
+  themes: false;
+  include: rootcolor, toggle, button;
+}
+
+/* Calm and flat: no depth, no noise, small radii. The colors mirror the
+   --cpp-* tokens in features/themes/theme.css; keep the two in step. */
+@plugin 'daisyui/theme' {
+  name: 'cpp-dark';
+  prefersdark: true;
+  color-scheme: dark;
+  --color-base-100: #15171c;
+  --color-base-200: #1e2127;
+  --color-base-300: #262a31;
+  --color-base-content: #e3e5e8;
+  --color-primary: #8ab4ff;
+  --color-primary-content: #15171c;
+  --color-neutral: #30353d;
+  --color-neutral-content: #e3e5e8;
+  --radius-selector: 1rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'cpp-light';
+  default: true;
+  color-scheme: light;
+  --color-base-100: #ffffff;
+  --color-base-200: #f4f5f7;
+  --color-base-300: #e6e8eb;
+  --color-base-content: #1f2328;
+  --color-primary: #2f62d6;
+  --color-primary-content: #ffffff;
+  --color-neutral: #e6e8eb;
+  --color-neutral-content: #1f2328;
+  --radius-selector: 1rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}

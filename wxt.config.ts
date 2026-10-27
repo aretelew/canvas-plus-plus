@@ -1,8 +1,10 @@
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'wxt';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   srcDir: 'src',
+  vite: () => ({ plugins: [tailwindcss()] }),
   // Code imports React; Preact (via its compat layer) runs it at ~1/6 the size.
   // These feed both Vite and the generated tsconfig paths, so tsc checks against
   // what compat actually supports. Back to real React: remove these, drop
