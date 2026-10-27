@@ -54,6 +54,8 @@ canvas++/
 │  │  ├─ popup/             # Preact: on/off toggle, theme picker, "enable on this site"
 │  │  └─ options/           # Preact: full settings, later the custom theme editor
 │  ├─ core/
+│  │  ├─ canvas-api.ts      # Canvas REST requests with the user's session (CSRF, Firefox's content.fetch)
+│  │  ├─ dashboard-cards.ts # keeps a feature's addition on every dashboard card while its setting is on
 │  │  ├─ settings.ts        # typed settings schema + storage wrapper + change events
 │  │  ├─ features.ts        # feature registry (see below)
 │  │  ├─ canvas-detect.ts   # "is this page Canvas?" (window.ENV, #application.ic-app, …)
@@ -94,6 +96,10 @@ Selector files per page turned out to be the wrong tool. Measured on real pages,
 ### Grades on dashboard cards
 
 Off by default (popup switch). On the dashboard (the site root, top frame only), each card gets a pill at the top left of its color/image with the course's current score, linking to `/courses/:id/grades`. Scores come from one `GET /api/v1/courses?enrollment_state=active&include[]=total_scores&include[]=current_grading_period_scores&include[]=restrict_quantitative_data` request, sent the first time grades are on (`features/grades/scores.ts` picks the score, unit-tested). In a course with grading periods it's the current period's score. Courses with nothing to show get no pill: no grades yet, totals hidden, between periods, not a student, or percentages hidden from students (the course's `restrict_quantitative_data`; a letter grade alone doesn't mean that, since every course with a grading scheme has one). The pill uses Canvas's white and text colors, so the theme recolors it like any card element. In Firefox the request goes through `content.fetch` so it carries the page's session; that path is still unverified by hand.
+
+### Assignments on dashboard cards
+
+Off by default (popup switch). On the dashboard (site root, top frame), each card ends with a "Due" list of up to 4 items for its course: unfinished work up to 2 weeks overdue (date in red), then everything due in the next 2 weeks, soonest first; finished work stays, struck through and faded. Items come from one `GET /api/v1/planner/items` request (2 weeks either side, `per_page=100`, following `Link: rel="next"`), sent the first time the lists are on. Announcements, calendar events and planner notes are left out. "Done" is Canvas's own planner rule (`features/assignments/planner.ts`, unit-tested): the user's planner override wins either way, else a peer review is done once completed and other work once submitted, unless the teacher asked for a redo. The circle checks an item off in Canvas itself (`POST /api/v1/planner/overrides`, then `PUT …/:id`, with the `_csrf_token` cookie as `X-CSRF-Token`; graded quizzes and discussions through their assignment), so it agrees with Canvas's To Do list and syncs across devices; a refused save is taken back. Better Canvas, by contrast, keeps its checkmarks in extension storage. While a card has a list, its links (Announcements, Assignments, …) sit at the bottom left of its color or image instead of under the title, so the list follows the title and cards get shorter. They're in a pill like the grade pill (white with Canvas's icon grey; the card's shades in the dark theme), since teachers' course images can be busy. This is CSS keyed on `:has(> .cpp-card-due)` (Canvas fixes that area at 146px), so it comes and goes with the list. In the dark theme the pill's colors are `!important`, because the icons may carry roles tagged before the list came. Like the grade pills, the list uses Canvas's own text colors so the theme recolors it, and done rows fade by opacity, which a role can't mask. In Firefox the requests go through `content.fetch`; unverified by hand.
 
 ### Contrast pass (course content)
 

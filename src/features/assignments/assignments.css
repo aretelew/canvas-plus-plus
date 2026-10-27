@@ -1,0 +1,150 @@
+/* The assignment list at the bottom of dashboard cards (cards.ts). Canvas's
+   own card text colors, so the theme's recolor pass gives it the card's dark
+   shades; done rows fade with opacity rather than a color, which a role would
+   mask. */
+.cpp-card-due {
+  /* level with the card's title, which it follows now that the card's links
+     sit on its color or image (below) */
+  padding: 12px 18px 14px;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--ic-brand-font-color-dark, #2d3b45);
+}
+.cpp-card-due h3 {
+  margin: 0 0 6px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+}
+.cpp-card-due p {
+  margin: 0;
+  color: #474747;
+}
+.cpp-card-due ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cpp-card-due li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+.cpp-card-due a {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cpp-card-due a:hover {
+  text-decoration: underline;
+}
+.cpp-card-due time {
+  flex: none;
+  color: #474747;
+  font-variant-numeric: tabular-nums;
+}
+.cpp-card-due .cpp-overdue time {
+  color: #c71f23;
+}
+.cpp-card-due li:not(.cpp-overdue) .cpp-late {
+  display: none;
+}
+.cpp-card-due .cpp-done > :not(input) {
+  opacity: 0.6;
+}
+.cpp-card-due .cpp-done > a {
+  text-decoration: line-through;
+}
+
+/* the circle: empty to do, filled with a check once done. As specific as
+   Canvas's own input[type=checkbox] rules plus the list's class, since
+   Canvas's stylesheets load after these. */
+.cpp-card-due input[type='checkbox'] {
+  flex: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 1.5px solid #474747;
+  border-radius: 50%;
+  background: center / 10px no-repeat;
+  cursor: pointer;
+}
+.cpp-card-due input[type='checkbox']:checked {
+  border-color: var(--ic-brand-primary, #0374b5);
+  background-color: var(--ic-brand-primary, #0374b5);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%23fff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.2 4.1 7.2 8 3'/%3E%3C/svg%3E");
+}
+.cpp-card-due input[type='checkbox']:disabled {
+  cursor: progress;
+}
+
+/* With a list, the card's links (Announcements, Assignments, …) move onto the
+   bottom of its color or image, so the list follows the title and gets the
+   room. They sit in a pill like the grade pill's at the top (grades.css), so
+   they read on any course image: Canvas's white and icon grey, and the card's
+   shades in the dark theme. */
+.ic-DashboardCard:has(> .cpp-card-due) {
+  position: relative;
+}
+.ic-DashboardCard:has(> .cpp-card-due) > .ic-DashboardCard__action-container {
+  position: absolute;
+  z-index: 1;
+  /* Canvas fixes the color or image at 146px; as far from its bottom as the
+     grade pill is from its top */
+  top: 146px;
+  left: 12px;
+  /* Canvas sets the row's height and keeps the links at its bottom */
+  height: auto;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 2px;
+  border-radius: 999px;
+  background-color: #fff;
+  transform: translateY(calc(-100% - 12px));
+}
+/* a course with every link hidden still has the row */
+.ic-DashboardCard:has(> .cpp-card-due)
+  > .ic-DashboardCard__action-container:not(:has(.ic-DashboardCard__action)) {
+  display: none;
+}
+.ic-DashboardCard:has(> .cpp-card-due) .ic-DashboardCard__action {
+  /* Canvas gives each a quarter of the card */
+  width: auto;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+}
+.ic-DashboardCard:has(> .cpp-card-due) .ic-DashboardCard__action-layout {
+  display: flex;
+  height: 100%;
+  align-items: center;
+}
+.ic-DashboardCard:has(> .cpp-card-due) .ic-DashboardCard__action:hover {
+  background-color: rgb(127 127 127 / 0.15);
+}
+/* The theme's roles come from what Canvas painted when it tagged each element,
+   which may be before the list came (or the white pill, made a page color).
+   These are what those roles would be here; `html` and !important outrank
+   them. */
+html[data-cpp-theme]
+  .ic-DashboardCard:has(> .cpp-card-due)
+  > .ic-DashboardCard__action-container {
+  background-color: var(--cpp-elevated) !important;
+}
+html[data-cpp-theme]
+  .ic-DashboardCard:has(> .cpp-card-due)
+  .ic-DashboardCard__action {
+  color: var(--cpp-muted) !important;
+}
+html[data-cpp-theme]
+  .ic-DashboardCard:has(> .cpp-card-due)
+  .ic-DashboardCard__action
+  svg {
+  fill: var(--cpp-muted) !important;
+}

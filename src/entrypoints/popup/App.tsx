@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { WxtStorageItem } from '#imports';
+import { cardAssignments } from '@/features/assignments/storage';
 import { cardGrades } from '@/features/grades/storage';
 import { themeEnabled } from '@/features/themes/storage';
 import { SiteAccess } from './SiteAccess';
@@ -15,6 +16,7 @@ function App() {
       <div className="divide-y divide-base-300 px-4 pb-1">
         <Switch label="Dark theme" setting={themeEnabled} />
         <Switch label="Grades on cards" setting={cardGrades} />
+        <Switch label="Assignments on cards" setting={cardAssignments} />
         <SiteAccess />
       </div>
     </main>
