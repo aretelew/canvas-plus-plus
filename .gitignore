@@ -14,8 +14,11 @@ playwright-report/
 tests/visual/**/*-actual.png
 tests/visual/**/*-diff.png
 
-# env & OS
+# env, per-dev config & OS
 .env*
 !.env.example
+web-ext.config.ts
+stats.html
+stats-*.json
 .DS_Store
 *.log
