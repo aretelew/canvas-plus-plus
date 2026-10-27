@@ -12,6 +12,8 @@ npm run dev:firefox   # Firefox
 
 `npm run build` / `npm run zip` (add `:firefox` for Firefox) produce store builds in `.output/`.
 
+The extension runs on `*.instructure.com` out of the box. For a school's own domain (like `canvas.case.edu`), open it and click the canvas++ button: the popup offers to turn it on there.
+
 `npm run check` runs everything that should pass before a commit: typecheck, ESLint, Prettier and Vitest. `npm run format` fixes formatting.
 
 ### Browser tests

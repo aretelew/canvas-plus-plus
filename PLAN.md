@@ -95,12 +95,12 @@ Selector files per page turned out to be the wrong tool. Measured on real pages,
 
 Partly covered by `lift`: course-colored and status text is readable, and the browser tests check that no page has more contrast problems with the theme on than Canvas itself (`@axe-core/playwright`). What's left for milestone 6 is instructor-authored HTML: arbitrary inline colors and highlights in `.user_content`, page bodies and the RCE iframe, keeping `img`, `svg`, `.equation_image` and MathML alone.
 
-### Domains and permissions
+### Domains and permissions (as built in milestone 7)
 
-- **Manifest:** `host_permissions: ["https://*.instructure.com/*"]`, `optional_host_permissions: ["https://*/*"]`, `permissions: ["storage", "scripting", "activeTab"]`.
-- **Custom domain flow:** the user clicks the icon on their school's Canvas. `activeTab` lets us run `canvas-detect` on that page. If it's Canvas, the popup shows **"Turn on themes for canvas.school.edu"**. That calls `permissions.request({ origins: [that origin] })`, which must run inside a click handler, then `scripting.registerContentScripts` for that origin.
-- **Upkeep:** re-sync the registrations in `runtime.onInstalled` and `permissions.onRemoved`. It isn't confirmed that registrations survive extension updates, so don't rely on it.
-- This avoids the "read and change all your data on all websites" warning at install and the slower Web Store review that broad host permissions trigger.
+- **Manifest:** `permissions: ["storage", "scripting", "activeTab"]`, `optional_host_permissions: ["https://*/*"]`. The content script's own match (`https://*.instructure.com/*`) is the only host access at install, so the install prompt has no "all websites" warning. Firefox needs 128+ (optional host permissions, `matchOriginAsFallback` in registrations).
+- **Custom domain flow:** on a site that isn't instructure.com, opening the popup (`activeTab`) lets it check the page for Canvas's app shell or brand stylesheet (`features/domains/detect.ts`). If it's Canvas, the popup offers **"Turn on canvas++ here"**, which calls `permissions.request` for that site as the first thing in the click (Firefox requires it, and may close the popup for the prompt).
+- **The grants are the list:** the background keeps one runtime-registered content script (the same built files as the manifest one) matching exactly the granted custom domains, and themes tabs already open on a newly granted one. No domain list is stored. The options page lists the grants and removes them.
+- **Upkeep:** both browsers drop runtime registrations when the extension updates (checked in Chromium's and Firefox's source), so the background re-syncs on `runtime.onInstalled`, `permissions.onAdded` and `permissions.onRemoved`. Grants made from the browser's own site-access menu are picked up the same way.
 
 ### Settings
 
@@ -131,7 +131,7 @@ Partly covered by `lift`: course-colored and status text is readable, and the br
 4. **Tokens and dark theme, student pages** (done for the 27 recorded pages: both dashboard views and two courses; see Theme engine. The nav trays and submission page aren't recorded yet, so they work in principle but are unverified): global nav + trays, dashboard (cards and list view), planner, course home, modules, assignments list and detail, submission page, grades, syllabus, pages, announcements, discussions, files, calendar, inbox, account settings, notifications, the To Do sidebar.
 5. **Frames** (done): New Quizzes frames are themed; DocViewer and third-party LTI tools are left alone. The Rich Content Editor's frame (TinyMCE writes it into an iframe with no URL, so the script runs there via `matchOriginAsFallback`) only gets the page attribute and static colors, never element tags: TinyMCE saves the body as shown. Classic quizzes are recorded and pass the quiz checklist.
 6. **Contrast pass** on course content, plus restore-on-disable.
-7. **Custom domains:** detection, the permission flow, dynamic registration, and the domain list in options.
+7. **Custom domains** (done; see Domains and permissions): detection, the permission flow, dynamic registration, and the domain list in options. The permission prompt itself can't be automated, so the flow is checked by hand in each browser.
 8. **More themes:** add an OLED/black theme, then a tinted one. This proves themes really are just data. Then the custom theme editor in options.
 9. **Store prep:**
    - Icons, screenshots, short and long descriptions.

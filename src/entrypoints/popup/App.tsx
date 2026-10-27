@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { themeEnabled } from '@/features/themes/storage';
+import { SiteAccess } from './SiteAccess';
 
 function App() {
   // undefined until storage answers, so the switch never flips visibly on open
@@ -31,6 +32,7 @@ function App() {
             }
           />
         </label>
+        <SiteAccess />
       </div>
     </main>
   );

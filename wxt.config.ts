@@ -20,12 +20,17 @@ export default defineConfig({
   manifest: ({ browser }) => ({
     // package.json "name" must be npm-safe, so the display name lives here
     name: 'canvas++',
-    permissions: ['storage'],
+    // scripting + activeTab: check whether the open tab is Canvas, and run the
+    // theme on schools' own domains once the user grants one (optional hosts)
+    permissions: ['storage', 'scripting', 'activeTab'],
+    optional_host_permissions: ['https://*/*'],
     ...(browser === 'firefox' && {
       browser_specific_settings: {
         gecko: {
           // permanent once published on AMO
           id: 'canvas-plus-plus@aretelew',
+          // optional_host_permissions, scripting's matchOriginAsFallback
+          strict_min_version: '128.0',
           data_collection_permissions: { required: ['none'] },
         },
       },
