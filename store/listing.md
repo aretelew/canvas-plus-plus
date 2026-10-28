@@ -73,7 +73,7 @@ The content script runs on *.instructure.com, where Canvas is hosted, to restyle
 ## Graphics
 
 - Icon: `public/icon/128.png`, uploaded with the zip.
-- Small promo tile (required): 440×280.
+- Small promo tile (required): `store/promo-tile.png`, 440×280.
 - Screenshots (at least one): 1280×800, from a demo or test Canvas account, never a real one with names or grades.
 
 ## Distribution

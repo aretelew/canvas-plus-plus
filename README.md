@@ -12,7 +12,7 @@ npm run dev:firefox   # Firefox
 
 `npm run build` / `npm run zip` (add `:firefox` for Firefox) produce store builds in `.output/`.
 
-The icon's sources are the SVGs in `design/`; after editing them, `npm run icons` re-renders `public/icon/` (it uses the same Chrome for Testing as the browser tests, below).
+The icon and the store promo tile are drawn as SVGs in `design/`; after editing them, `npm run images` re-renders `public/icon/` and `store/promo-tile.png` (it uses the same Chrome for Testing as the browser tests, below).
 
 The extension runs on `*.instructure.com` out of the box. For a school's own domain (like `canvas.case.edu`), open it and click the canvas++ button: the popup offers to turn it on there.
 
