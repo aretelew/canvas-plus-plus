@@ -19,7 +19,8 @@
     "test:browser": "CPP_TEST_BUILD=1 wxt build && playwright test",
     "fixtures:record": "node tests/record/record.ts",
     "images": "node design/render-images.ts",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "store-images": "wxt build && node design/store-images.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

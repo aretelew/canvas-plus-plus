@@ -1,3 +1,5 @@
+import { chromium, type BrowserContext } from '@playwright/test';
+import { createHash } from 'node:crypto';
 import { existsSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -24,4 +26,27 @@ export function chromePath(): string {
     newest,
     'Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
   );
+}
+
+/** Chrome for Testing at 1280×800 with the unpacked extension in `dir`. */
+export function launchWithExtension(
+  dir: string,
+  { deviceScaleFactor = 1 } = {},
+): Promise<BrowserContext> {
+  return chromium.launchPersistentContext('', {
+    executablePath: chromePath(),
+    headless: true,
+    viewport: { width: 1280, height: 800 },
+    deviceScaleFactor,
+    args: [`--disable-extensions-except=${dir}`, `--load-extension=${dir}`],
+  });
+}
+
+/** Chromium derives an unpacked extension's id from its absolute path. */
+export function extensionId(dir: string): string {
+  return createHash('sha256')
+    .update(dir)
+    .digest('hex')
+    .slice(0, 32)
+    .replace(/[0-9a-f]/g, (c) => String.fromCharCode(97 + parseInt(c, 16)));
 }

@@ -8,14 +8,12 @@
 
 import {
   test as base,
-  chromium,
   expect,
   type BrowserContext,
   type Page,
 } from '@playwright/test';
-import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
-import { chromePath } from './chrome';
+import { extensionId, launchWithExtension } from './chrome';
 
 // built by `npm run test:browser`, apart from the store build (see wxt.config.ts)
 const EXTENSION = resolve('.output/chrome-mv3-test');
@@ -26,24 +24,7 @@ declare const chrome: {
   storage: { sync: { get(key: string): Promise<Record<string, unknown>> } };
 };
 
-// Chromium derives an unpacked extension's id from its absolute path.
-const extensionId = createHash('sha256')
-  .update(EXTENSION)
-  .digest('hex')
-  .slice(0, 32)
-  .replace(/[0-9a-f]/g, (c) => String.fromCharCode(97 + parseInt(c, 16)));
-
-function launch(): Promise<BrowserContext> {
-  return chromium.launchPersistentContext('', {
-    executablePath: chromePath(),
-    headless: true,
-    viewport: { width: 1280, height: 800 },
-    args: [
-      `--disable-extensions-except=${EXTENSION}`,
-      `--load-extension=${EXTENSION}`,
-    ],
-  });
-}
+const launch = () => launchWithExtension(EXTENSION);
 
 export const test = base.extend<
   {
@@ -105,7 +86,7 @@ export const test = base.extend<
 // The popup, opened in a tab of its own.
 export async function openPopup(context: BrowserContext): Promise<Page> {
   const popup = await context.newPage();
-  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+  await popup.goto(`chrome-extension://${extensionId(EXTENSION)}/popup.html`);
   return popup;
 }
 
