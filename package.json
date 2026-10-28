@@ -16,7 +16,7 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "check": "npm run compile && npm run lint && prettier --check . && npm test",
-    "test:browser": "wxt build && playwright test",
+    "test:browser": "CPP_TEST_BUILD=1 wxt build && playwright test",
     "fixtures:record": "node tests/record/record.ts",
     "images": "node design/render-images.ts",
     "postinstall": "wxt prepare"

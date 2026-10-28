@@ -17,7 +17,8 @@ import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { chromePath } from './chrome';
 
-const EXTENSION = resolve('.output/chrome-mv3');
+// built by `npm run test:browser`, apart from the store build (see wxt.config.ts)
+const EXTENSION = resolve('.output/chrome-mv3-test');
 
 // The one extension API setSwitch calls inside the popup (extension types
 // aren't loaded for tests).

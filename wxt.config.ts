@@ -13,6 +13,11 @@ export default defineConfig({
     react: 'node_modules/preact/compat',
     'react-dom': 'node_modules/preact/compat',
   },
+  // Browser tests get a build of their own: every build deletes its folder
+  // first, which crashes a browser that has .output/chrome-mv3 loaded unpacked
+  ...(process.env.CPP_TEST_BUILD && {
+    outDirTemplate: '{{browser}}-mv{{manifestVersion}}-test',
+  }),
   // WXT defaults Firefox to MV2; we rely on MV3 APIs (optional per-domain hosts, registerContentScripts)
   manifestVersion: 3,
   // ESLint 10 reads the same flat-config format as 9; WXT only knows to ask for "9"

@@ -20,7 +20,7 @@ The extension runs on `*.instructure.com` out of the box. For a school's own dom
 
 ### Browser tests
 
-`npm run test:browser` builds the extension and runs Playwright against it in Chrome for Testing (`$CHROME_PATH`, else the newest one [agent-browser](https://github.com/vercel-labs/agent-browser) installed):
+`npm run test:browser` builds the extension into `.output/chrome-mv3-test` (so it never rewrites a `.output/chrome-mv3` you have loaded unpacked) and runs Playwright against it in Chrome for Testing (`$CHROME_PATH`, else the newest one [agent-browser](https://github.com/vercel-labs/agent-browser) installed):
 
 - `tests/e2e/`: checks that run anywhere, like no light flash on load.
 - `tests/visual/`: real Canvas pages replayed offline, one test per page: a screenshot with the theme off and on, and a check that the theme adds no contrast problems Canvas doesn't already have. They need fixtures recorded from your own account:
