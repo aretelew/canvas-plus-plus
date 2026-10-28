@@ -16,6 +16,7 @@ A cleaner, calmer Canvas LMS.
 canvas++ restyles Canvas and adds a few small things it's missing. Every feature starts off; turn on the ones you want from the toolbar button.
 
 • Dark theme: a carefully tuned dark mode for Canvas, with no white flash while pages load. Course colors, grades and your school's branding keep their meaning.
+• True black: a pure black variant of the dark theme, for OLED screens.
 • Grades on dashboard cards: each course card shows your current grade.
 • Assignments on dashboard cards: each course card lists what's due, and you can check items off right there (it updates your Canvas To Do list).
 
