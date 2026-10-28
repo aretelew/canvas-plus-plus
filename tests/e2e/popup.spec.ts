@@ -15,3 +15,18 @@ test('a switch that is on opens without sliding', async ({
   expect(await toggle.evaluate((el) => el.getAnimations().length)).toBe(0);
   await popup.close();
 });
+
+test('true black can only be switched while the dark theme is on', async ({
+  context,
+  setTheme,
+}) => {
+  await setTheme(false);
+  const popup = await openPopup(context);
+  const oled = popup.getByRole('switch', { name: 'True black (OLED)' });
+  await expect(oled).toBeDisabled();
+  await popup.getByRole('switch', { name: 'Dark theme' }).check();
+  await expect(oled).toBeEnabled();
+  await popup.close();
+  // the browser is shared with other tests
+  await setTheme(false);
+});

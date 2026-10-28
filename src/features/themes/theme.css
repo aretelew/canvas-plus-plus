@@ -2,7 +2,8 @@
    html[data-cpp-theme], so none of it applies until a theme is turned on. */
 
 /* Tokens: the only place a theme's colors live. */
-html[data-cpp-theme='dark'] {
+html[data-cpp-theme='dark'],
+html[data-cpp-theme='oled'] {
   color-scheme: dark;
   --cpp-bg: #15171c;
   --cpp-elevated: #1e2127;
@@ -18,6 +19,20 @@ html[data-cpp-theme='dark'] {
   /* Canvas's black marks (selected radio, black borders): the strongest
      contrast on the page, so the lightest color here */
   --cpp-emphasis: var(--cpp-text);
+}
+/* Dark on a true black page, for OLED screens (black pixels are off). Cards
+   and controls stay a step above black so they don't melt into the page;
+   borders are a bit stronger to make up for the smaller steps, and text a bit
+   dimmer, since bright text on black glows. */
+html[data-cpp-theme='oled'] {
+  --cpp-bg: #000;
+  --cpp-elevated: #0e0f12;
+  --cpp-control: #1a1c20;
+  --cpp-control-hover: #24272c;
+  --cpp-border: #2a2d33;
+  --cpp-border-strong: #464b53;
+  --cpp-text: #d9dce0;
+  --cpp-muted: #989fa9;
 }
 
 /* Canvas's own color variables (theme editor + font colors). Brand colors

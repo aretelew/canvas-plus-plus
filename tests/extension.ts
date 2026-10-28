@@ -51,6 +51,7 @@ export const test = base.extend<
     context: BrowserContext;
     page: Page;
     setTheme: (on: boolean) => Promise<void>;
+    setOled: (on: boolean) => Promise<void>;
     setCardGrades: (on: boolean) => Promise<void>;
     setCardAssignments: (on: boolean) => Promise<void>;
   },
@@ -84,6 +85,10 @@ export const test = base.extend<
 
   setTheme: async ({ context }, use) => {
     await use((on) => setSwitch(context, 'Dark theme', 'themeEnabled', on));
+  },
+
+  setOled: async ({ context }, use) => {
+    await use((on) => setSwitch(context, 'True black (OLED)', 'themeOled', on));
   },
 
   setCardGrades: async ({ context }, use) => {

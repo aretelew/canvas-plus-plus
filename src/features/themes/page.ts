@@ -1,5 +1,5 @@
 import { startRecolor, stopRecolor } from './recolor';
-import { themeEnabled } from './storage';
+import { type Theme, watchTheme } from './storage';
 
 // Extension storage is async, so on its own the first paint could beat it and
 // flash light. The page's own localStorage is sync: we keep a copy there, apply
@@ -12,45 +12,47 @@ const MIRROR_KEY = 'canvas++:theme';
 // page colors only.
 const writtenByScript = window.frameElement?.hasAttribute('src') === false;
 
-let enabled = false;
+let theme: Theme | undefined;
 
 export async function syncThemeToPage(): Promise<void> {
   // document.open() (how TinyMCE writes its frame) replaces <html>, theme
   // attribute and all
   new MutationObserver(() => {
-    apply(enabled);
+    apply(theme);
   }).observe(document, { childList: true });
   apply(readMirror());
-  apply(await themeEnabled.getValue());
-  themeEnabled.watch(apply);
+  await watchTheme(apply);
 }
 
-function apply(on: boolean): void {
-  enabled = on;
+function apply(next: Theme | undefined): void {
+  theme = next;
   const root = document.documentElement;
-  if (enabled) {
-    root.dataset.cppTheme = 'dark';
+  if (theme) {
+    root.dataset.cppTheme = theme;
     if (!writtenByScript) startRecolor();
   } else {
     delete root.dataset.cppTheme;
     stopRecolor();
   }
-  writeMirror(enabled);
+  writeMirror(theme);
 }
 
 // localStorage throws when the site's storage is blocked; then we just lose the
 // instant first paint and fall back to the async setting.
-function readMirror(): boolean {
+function readMirror(): Theme | undefined {
   try {
-    return localStorage.getItem(MIRROR_KEY) !== null;
+    const value = localStorage.getItem(MIRROR_KEY);
+    // copies from before OLED say '1', for dark
+    if (value === null) return undefined;
+    return value === 'oled' ? 'oled' : 'dark';
   } catch {
-    return false;
+    return undefined;
   }
 }
 
-function writeMirror(enabled: boolean): void {
+function writeMirror(theme: Theme | undefined): void {
   try {
-    if (enabled) localStorage.setItem(MIRROR_KEY, '1');
+    if (theme) localStorage.setItem(MIRROR_KEY, theme);
     else localStorage.removeItem(MIRROR_KEY);
   } catch {
     // see readMirror
