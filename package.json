@@ -18,6 +18,7 @@
     "check": "npm run compile && npm run lint && prettier --check . && npm test",
     "test:browser": "wxt build && playwright test",
     "fixtures:record": "node tests/record/record.ts",
+    "icons": "node design/render-icons.ts",
     "postinstall": "wxt prepare"
   },
   "devDependencies": {

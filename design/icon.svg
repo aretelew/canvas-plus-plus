@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- canvas++ icon: a C with one plus in its gap; the plus's ends are cut parallel to the C's ends.
+       128px store size: 96px tile with 16px padding (Chrome Web Store guideline). The strokes
+       round the corners slightly. Run `npm run icons` after editing. -->
+  <rect x="16" y="16" width="96" height="96" rx="9.3" fill="#8ab4ff"/>
+  <g fill="#1b1e24" stroke="#1b1e24" stroke-linejoin="round">
+    <path stroke-width="2.16" d="M86.9 42.28A32.52 32.52 0 1 0 86.9 85.72L77.52 77.84A20.28 20.28 0 1 1 77.52 50.16Z"/>
+    <path stroke-width="1.5" d="M67.7 59.75H98.15V68.25H67.7Z M78.67 55.23L87.17 48.1L87.17 79.9L78.67 72.77Z"/>
+  </g>
+</svg>

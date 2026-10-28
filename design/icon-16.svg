@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <!-- canvas++ icon, hand-tuned for 16px: the plus sits on whole pixels so it stays crisp -->
+  <rect width="16" height="16" rx="2" fill="#8ab4ff"/>
+  <g fill="#1b1e24">
+    <path d="M11.17 4.08A6.1 6.1 0 1 0 11.17 11.92L9.18 10.25A3.5 3.5 0 1 1 9.18 5.75Z"/>
+    <path d="M9 7H15V9H9Z M11 6H12V5H13V11H12V10H11Z"/>
+  </g>
+</svg>
