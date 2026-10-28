@@ -13,7 +13,7 @@ Text for the developer dashboard, kept here so it changes with the code. The nam
 ```
 A cleaner, calmer Canvas LMS.
 
-canvas++ restyles Canvas and adds a few small things it's missing. Every feature starts off; turn on the ones you want from the toolbar button.
+canvas++ restyles Canvas and adds a few small things it's missing, with more on the way. Every feature starts off; turn on the ones you want from the toolbar button.
 
 • Dark theme: a carefully tuned dark mode for Canvas, with no white flash while pages load. Course colors, grades and your school's branding keep their meaning.
 • True black: a pure black variant of the dark theme, for OLED screens.

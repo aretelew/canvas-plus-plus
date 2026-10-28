@@ -400,9 +400,9 @@ const SLIDES: Slide[] = [
     art: `<div class="frame" style="left: 500px; width: 740px"><img src="${src(oled.page)}"></div>`,
   },
   {
-    file: '5-yours.png',
-    headline: 'Only what you turn on',
-    text: 'Every feature starts off. No account, no server, no tracking.',
+    file: '5-more-to-come.png',
+    headline: 'More on<br>the way',
+    text: 'New features are coming. Turn on only the ones you want, with no account, server or tracking.',
     art: `<div class="frame" style="left: 700px; width: 420px"><img src="${src(popup)}"></div>`,
   },
 ];
@@ -425,9 +425,8 @@ const html = (slide: Slide) => `<!doctype html>
   h1 { font-size: 60px; line-height: 1.05; font-weight: 700; letter-spacing: -0.03em;
     color: var(--ink); }
   p { margin-top: 24px; font-size: 22px; line-height: 1.45; color: var(--muted); }
-  .logo { position: absolute; left: 64px; bottom: 44px; display: flex; align-items: center;
-    gap: 6px; font-size: 20px; font-weight: 500; color: var(--ink); }
-  .logo img { width: 52px; height: 52px; margin: -8px; }
+  /* the icon keeps the store's padding (16 of 128px): its tile lines up with the copy */
+  .logo { position: absolute; left: 72px; bottom: 40px; width: 64px; height: 64px; }
   .frame { position: absolute; top: 50%; transform: translateY(-50%);
     border-radius: 14px; overflow: hidden;
     box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 24px 60px rgb(20 30 50 / ${slide.dark ? '0.6' : '0.18'});
@@ -438,7 +437,7 @@ const html = (slide: Slide) => `<!doctype html>
 <body>
   <div class="copy"><h1>${slide.headline}</h1><p>${slide.text}</p></div>
   ${slide.art}
-  <div class="logo"><img src="${ICON}">canvas++</div>
+  <img class="logo" src="${ICON}" alt="canvas++">
 </body>`;
 
 mkdirSync(OUT, { recursive: true });
