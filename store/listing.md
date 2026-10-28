@@ -13,20 +13,20 @@ Text for the developer dashboard, kept here so it changes with the code. The nam
 ```
 A cleaner, calmer Canvas LMS. Lightweight, fast, and private.
 
-canvas++ restyles Canvas and adds a few small things it's missing, with more on the way. Every feature starts off; turn on the ones you want from the toolbar button.
+canvas++ restyles Canvas and adds a few things it's missing, with more on the way. Everything starts off, and you turn on what you want from the toolbar button.
 
-• Dark theme: a carefully tuned dark mode for Canvas, with no white flash while pages load. Course colors, grades and your school's branding keep their meaning.
-• True black: a pure black variant of the dark theme, for OLED screens.
-• Grades on dashboard cards: each course card shows your current grade.
-• Assignments on dashboard cards: each course card lists what's due, and you can check items off right there (it updates your Canvas To Do list).
+• Dark theme: a dark mode made for Canvas, with no white flash between pages. Course colors, grades and your school's branding keep their meaning.
+• True black: a pure black version of the dark theme for OLED screens.
+• Grades on cards: each dashboard card shows your current grade in that course.
+• Assignments on cards: each card lists what's due. Check something off there and Canvas marks it done in your To Do list too.
 
-Works on any school's Canvas at *.instructure.com right away. If your school uses its own address (like canvas.yourschool.edu), open Canvas, click the canvas++ button and choose Turn on.
+It works right away on any Canvas at *.instructure.com. If your school uses its own address, like canvas.yourschool.edu, open Canvas, click the canvas++ button and choose Turn on.
 
-Private by design: canvas++ has no server. It only talks to your school's Canvas, with your existing login, and never sends your data anywhere else. No ads, no analytics, no tracking.
+canvas++ has no server. It only talks to your school's Canvas, using your existing login, and never sends your data anywhere else. There are no ads or tracking.
 
-Open source: https://github.com/aretelew/canvas-plus-plus
+Source code: https://github.com/aretelew/canvas-plus-plus
 
-canvas++ is an independent project, not affiliated with or endorsed by Instructure. Canvas is a trademark of Instructure, Inc.
+canvas++ is an independent project and isn't affiliated with or endorsed by Instructure. Canvas is a trademark of Instructure, Inc.
 ```
 
 ## Privacy practices tab
