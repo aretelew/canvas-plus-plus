@@ -363,57 +363,74 @@ interface Slide {
   headline: string;
   text: string;
   dark?: boolean;
+  // where the art column sits; it's centered top to bottom
+  left: number;
+  width: number;
   art: string;
 }
+
+const frame = (inner: string) => `<div class="frame">${inner}</div>`;
 
 const SLIDES: Slide[] = [
   {
     file: '1-calmer.png',
     headline: 'A calmer<br>Canvas',
     text: 'A dark theme made for Canvas, with no white flash between pages.',
+    left: 500,
+    width: 740,
     // the same dashboard, light giving way to dark
-    art: `
-      <div class="frame" style="left: 500px; width: 740px">
-        <img src="${src(light.page)}">
-        <img src="${src(dark.page)}" class="over" style="clip-path: polygon(58% 0, 100% 0, 100% 100%, 38% 100%)">
-      </div>`,
+    art: frame(`
+      <img src="${src(light.page)}">
+      <img src="${src(dark.page)}" class="over" style="clip-path: polygon(58% 0, 100% 0, 100% 100%, 38% 100%)">`),
   },
   {
     file: '2-grades.png',
     headline: 'Your grade on every card',
     text: 'See where you stand in each course without opening Grades.',
     // large enough to read the grades, so it runs off the right edge
-    art: `<div class="frame" style="left: 520px; width: 1000px"><img src="${src(dark.row)}"></div>`,
+    left: 520,
+    width: 1000,
+    art: frame(`<img src="${src(dark.row)}">`),
   },
   {
     file: '3-assignments.png',
     headline: "What's due,<br>on the card",
     text: "Check work off there, and Canvas's own To Do list updates too.",
-    art: `<div class="frame" style="left: 700px; width: 420px"><img src="${src(light.card)}"></div>`,
+    left: 700,
+    width: 420,
+    art: frame(`<img src="${src(light.card)}">`),
   },
   {
     file: '4-true-black.png',
-    headline: 'True black for OLED',
+    headline: 'True black<br>for OLED',
     text: 'A pure black version of the dark theme, easy on OLED screens.',
     dark: true,
-    art: `<div class="frame" style="left: 500px; width: 740px"><img src="${src(oled.page)}"></div>`,
+    left: 500,
+    width: 740,
+    art: frame(`<img src="${src(oled.page)}">`),
   },
   {
     file: '5-more-to-come.png',
     headline: 'More on<br>the way',
-    text: 'New features are coming. Turn on only the ones you want, with no account, server or tracking.',
-    art: `<div class="frame" style="left: 700px; width: 420px"><img src="${src(popup)}"></div>`,
+    text: 'Turn on only the features you want. No account, no server, no tracking.',
+    left: 700,
+    width: 420,
+    // the popup, with a dashed card where the next feature goes
+    art: `${frame(`<img src="${src(popup)}">`)}
+      <div class="soon">
+        <svg class="plus" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#8ab4ff"/><path d="M20 12v16M12 20h16" stroke="#1b1e24" stroke-width="3" stroke-linecap="round"/></svg>
+        <div><b>More features coming soon</b><span>canvas++ is just getting started.</span></div>
+      </div>`,
   },
 ];
 
 const html = (slide: Slide) => `<!doctype html>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=block" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,700&display=block" rel="stylesheet">
 <style>
   * { margin: 0; box-sizing: border-box; }
   body {
     width: 1280px; height: 800px; overflow: hidden; position: relative;
-    font-family: Inter, sans-serif;
+    font-family: Satoshi, sans-serif;
     --ink: ${slide.dark ? '#f2f4f8' : '#1b1e24'};
     --muted: ${slide.dark ? '#a3abb8' : '#5a6270'};
     background: ${pluses(slide.dark ? '#16181d' : '#e3e9f3')} -12px -12px,
@@ -421,22 +438,28 @@ const html = (slide: Slide) => `<!doctype html>
   }
   .copy { position: absolute; left: 80px; top: 0; bottom: 0; width: 380px;
     display: flex; flex-direction: column; justify-content: center; }
-  h1 { font-size: 60px; line-height: 1.05; font-weight: 700; letter-spacing: -0.03em;
+  h1 { font-size: 60px; line-height: 1.05; font-weight: 700; letter-spacing: -0.025em;
     color: var(--ink); }
   p { margin-top: 24px; font-size: 22px; line-height: 1.45; color: var(--muted); }
   .logo { position: absolute; left: 80px; bottom: 48px; width: 50px; height: 48px;
     color: var(--ink); }
   .logo svg { display: block; width: 100%; height: 100%; }
-  .frame { position: absolute; top: 50%; transform: translateY(-50%);
-    border-radius: 14px; overflow: hidden;
+  .art { position: absolute; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 20px; }
+  .frame { position: relative; border-radius: 14px; overflow: hidden;
     box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 24px 60px rgb(20 30 50 / ${slide.dark ? '0.6' : '0.18'});
     outline: 1px solid ${slide.dark ? '#2a2e36' : 'rgb(20 30 50 / 0.06)'}; }
   .frame img { display: block; width: 100%; }
   .frame .over { position: absolute; inset: 0; }
+  .soon { display: flex; align-items: center; gap: 16px; padding: 20px 22px;
+    border: 2px dashed #b9c4d4; border-radius: 14px; background: rgb(255 255 255 / 0.6); }
+  .soon b { display: block; font-size: 20px; font-weight: 700; color: var(--ink); }
+  .soon span { font-size: 17px; color: var(--muted); }
+  .plus { flex: none; width: 44px; height: 44px; }
 </style>
 <body>
   <div class="copy"><h1>${slide.headline}</h1><p>${slide.text}</p></div>
-  ${slide.art}
+  <div class="art" style="left: ${String(slide.left)}px; width: ${String(slide.width)}px">${slide.art}</div>
   <div class="logo">${MARK}</div>
 </body>`;
 
