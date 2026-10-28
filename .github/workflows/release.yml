@@ -1,0 +1,42 @@
+# Pushing a tag like v0.2.0 checks, zips and submits that version to the
+# Chrome Web Store for review. The first upload has to be made by hand in the
+# developer dashboard; this only ships updates to an existing listing.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+# Two tags pushed close together would race to submit; let them queue instead
+concurrency: release
+
+jobs:
+  chrome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run check
+
+      # The zip is named after package.json's version; `npm version` bumps it
+      # and makes the matching tag together
+      - run: npm run zip
+
+      - name: Submit to Chrome Web Store
+        run: npx wxt submit --chrome-zip .output/*-chrome.zip
+        env:
+          CHROME_API_VERSION: v2
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
+          CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL: ${{ secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL }}
+          CHROME_SERVICE_ACCOUNT_PRIVATE_KEY: ${{ secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY }}
