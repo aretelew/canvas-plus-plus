@@ -1,0 +1,81 @@
+# Chrome Web Store listing
+
+Text for the developer dashboard, kept here so it changes with the code. The name ("canvas++") and summary come from the manifest, which takes them from `wxt.config.ts` and `package.json`'s `description`.
+
+## Store listing tab
+
+**Category:** Education (under Productivity)
+
+**Language:** English
+
+**Description:**
+
+```
+A cleaner, calmer Canvas LMS.
+
+canvas++ restyles Canvas and adds a few small things it's missing. Every feature starts off; turn on the ones you want from the toolbar button.
+
+• Dark theme: a carefully tuned dark mode for Canvas, with no white flash while pages load. Course colors, grades and your school's branding keep their meaning.
+• Grades on dashboard cards: each course card shows your current grade.
+• Assignments on dashboard cards: each course card lists what's due, and you can check items off right there (it updates your Canvas To Do list).
+
+Works on any school's Canvas at *.instructure.com right away. If your school uses its own address (like canvas.yourschool.edu), open Canvas, click the canvas++ button and choose Turn on.
+
+Private by design: canvas++ has no server. It only talks to your school's Canvas, with your existing login, and never sends your data anywhere else. No ads, no analytics, no tracking.
+
+Open source: https://github.com/aretelew/canvas-plus-plus
+
+canvas++ is an independent project, not affiliated with or endorsed by Instructure. Canvas is a trademark of Instructure, Inc.
+```
+
+## Privacy practices tab
+
+**Single purpose:**
+
+```
+canvas++ improves the Canvas LMS website: it restyles Canvas pages with a dark theme and adds each course's grade and assignment list to the Canvas dashboard.
+```
+
+**Permission justifications:**
+
+`storage`
+
+```
+Saves which canvas++ features the user has turned on.
+```
+
+`scripting`
+
+```
+When the user turns canvas++ on for their school's own Canvas address, registers the content script for that one site so Canvas pages there are restyled. Also checks whether the open tab is a Canvas page when the user opens the popup.
+```
+
+`activeTab`
+
+```
+When the user opens the popup, checks whether the current tab is a Canvas page so the popup can offer to turn canvas++ on for that site. Nothing runs on the tab until the user clicks the toolbar button.
+```
+
+Host permissions (content script on `https://*.instructure.com/*`, optional `https://*/*`)
+
+```
+The content script runs on *.instructure.com, where Canvas is hosted, to restyle Canvas pages and add the dashboard features. Many schools serve Canvas from their own domain instead, so https://*/* is declared as an optional permission only: it is requested for one site at a time (like https://canvas.yourschool.edu/*) when the user clicks "Turn on" in the popup on that site, and never for all sites. Users can remove a site from the options page.
+```
+
+**Remote code:** No, I am not using remote code.
+
+**Data usage:** check none of the data types, since nothing leaves the device (what's read and saved is in [PRIVACY.md](../PRIVACY.md)). If the form's help text counts data handled only on the device, "Website content" is the one that would apply.
+
+**Certifications:** check all three (no selling data, no use unrelated to the single purpose, no use for creditworthiness or lending).
+
+**Privacy policy URL:** https://github.com/aretelew/canvas-plus-plus/blob/main/PRIVACY.md
+
+## Graphics
+
+- Icon: `public/icon/128.png`, uploaded with the zip.
+- Small promo tile (required): 440×280.
+- Screenshots (at least one): 1280×800, from a demo or test Canvas account, never a real one with names or grades.
+
+## Distribution
+
+Start with **Unlisted** visibility and deferred publishing, then switch to Public once it's been tried.

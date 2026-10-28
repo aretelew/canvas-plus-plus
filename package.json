@@ -2,7 +2,7 @@
   "name": "canvas-plus-plus",
   "description": "A cleaner, calmer Canvas. Themes, dark mode first.",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -41,5 +41,6 @@
   },
   "dependencies": {
     "preact": "^11.1.0"
-  }
+  },
+  "license": "MIT"
 }
