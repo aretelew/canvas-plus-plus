@@ -99,14 +99,34 @@ export function roleOf(
 const NEAR_BLACK = 0.025;
 
 /**
- * Whether lifted text may sit on this background: an opaque neutral one, which
- * the theme darkens. Colored ones (highlights, badges) keep dark text.
+ * Whether a background in course content (a teacher's highlight, table cell or
+ * callout) is too light for the theme's light text, which needs one darker
+ * than TINT_ABOVE. The theme darkens these to a shade of their own hue. Light
+ * neutral ones are surfaces instead, and dark ones (a navy banner) read as
+ * they are.
+ */
+export function tints(background: string): boolean {
+  const color = parse(background);
+  if (!color || color.a < 0.5) return false;
+  return luminance(color) > TINT_ABOVE && roleOf('bg', background) === null;
+}
+
+// The theme's text (#e3e5e8) reads at 4.5:1 on backgrounds up to about 0.13
+const TINT_ABOVE = 0.12;
+
+/**
+ * Whether lifted text may sit on this background: one the theme darkens, which
+ * is an opaque neutral one, or in course content (`content`) any that tints.
+ * Colored ones in Canvas's own UI (badges) keep dark text.
  * Returns undefined for transparent backgrounds, which don't decide.
  */
-export function liftsOn(background: string): boolean | undefined {
+export function liftsOn(
+  background: string,
+  content = false,
+): boolean | undefined {
   const color = parse(background);
   if (!color || color.a < 0.5) return undefined;
-  return isNeutral(color);
+  return isNeutral(color) || (content && tints(background));
 }
 
 /**

@@ -18,6 +18,10 @@ html[data-cpp-theme='dark'] {
   /* Canvas's black marks (selected radio, black borders): the strongest
      contrast on the page, so the lightest color here */
   --cpp-emphasis: var(--cpp-text);
+  /* teachers' highlights in course content: their hue at this lightness, with
+     at most this much color, so the theme's text reads on them */
+  --cpp-tint-l: 0.32;
+  --cpp-tint-c: 0.07;
 }
 
 /* Canvas's own color variables (theme editor + font colors). Brand colors
@@ -55,6 +59,14 @@ html[data-cpp-theme] [data-cpp-bg='elevated'] {
 html[data-cpp-theme] [data-cpp-bg='control'] {
   --cpp-surface: var(--cpp-control);
   background-color: var(--cpp-control) !important;
+}
+/* a teacher's highlight or colored cell in course content, darkened to a shade
+   of its color (recolor.ts stores the original in --cpp-tint) */
+html[data-cpp-theme] [data-cpp-bg='tint'] {
+  --cpp-surface: oklch(
+    from var(--cpp-tint) var(--cpp-tint-l) min(c, var(--cpp-tint-c)) h
+  );
+  background-color: var(--cpp-surface) !important;
 }
 /* elements Canvas lightens on hover/focus (rows, list items, buttons), found by
    recolor.ts the first time they're hovered or focused */

@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   darkenGradient,
+  liftsOn,
   recolorRing,
   roleOf,
   shadowKind,
+  tints,
   toRgb,
 } from './palette';
 
@@ -130,5 +132,37 @@ describe('recolorRing', () => {
     'rgb(0, 48, 113) 0px 0px 0px 2px', // brand-colored focus ring
   ])('leaves %s alone', (css) => {
     expect(recolorRing(css, 'var(--cpp-emphasis)')).toBeNull();
+  });
+});
+
+// Backgrounds teachers set in course content, from the editor's color choices
+describe('tints', () => {
+  it.each([
+    ['rgb(251, 238, 184)', true], // light yellow highlight
+    ['rgb(241, 196, 15)', true], // yellow
+    ['rgb(53, 152, 219)', true], // blue
+    ['rgb(206, 212, 217)', true], // medium grey, too dark to be a surface
+    ['rgb(126, 140, 141)', true], // dark grey
+    ['rgb(186, 55, 42)', true], // dark red, light text only just reads
+    ['rgb(52, 73, 94)', false], // navy: light text reads on it as it is
+    ['rgb(132, 63, 161)', false], // dark purple
+    ['rgb(236, 240, 241)', false], // light grey: a surface
+    ['rgb(255, 255, 255)', false],
+    ['rgba(251, 238, 184, 0.2)', false], // barely there
+    ['rgba(0, 0, 0, 0)', false],
+  ])('%s: %s', (css, tinted) => {
+    expect(tints(css)).toBe(tinted);
+  });
+});
+
+describe('liftsOn', () => {
+  it.each([
+    ['rgb(255, 255, 255)', false, true],
+    ['rgb(251, 238, 184)', false, false], // a colored badge in Canvas's UI
+    ['rgb(251, 238, 184)', true, true], // a teacher's highlight, darkened
+    ['rgb(52, 73, 94)', true, false], // a navy banner, kept as written
+    ['rgba(0, 0, 0, 0)', true, undefined],
+  ])('%s (course content: %s): %s', (css, content, lifts) => {
+    expect(liftsOn(css, content)).toBe(lifts);
   });
 });

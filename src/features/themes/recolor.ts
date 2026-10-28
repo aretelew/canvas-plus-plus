@@ -4,6 +4,7 @@ import {
   recolorRing,
   roleOf,
   shadowKind,
+  tints,
   toRgb,
   type Role,
 } from './palette';
@@ -46,6 +47,11 @@ const CONTROLS = [
 
 // Shadowed like cards, but callouts in the page flow rather than floating.
 const IN_FLOW = '[class*="-view-alert"], [role="alert"]';
+
+// What teachers write (pages, assignments, announcements, discussions, quiz
+// questions, the syllabus): their highlights and colored cells, too light for
+// the theme's text, are darkened to a shade of their color.
+const CONTENT = '.user_content';
 
 type Background = 'page' | 'elevated' | 'control';
 
@@ -160,17 +166,20 @@ function classify(el: Element): Tags {
 
   if (roleOf('bg', style.backgroundColor)) {
     attrs['data-cpp-bg'] = background(el, style, border);
+  } else if (tints(style.backgroundColor) && el.closest(CONTENT)) {
+    attrs['data-cpp-bg'] = 'tint';
+    vars['--cpp-tint'] = style.backgroundColor;
   }
   const fg = roleOf('fg', style.color, brand);
   if (fg === 'lift') {
-    if (hasNeutralBackdrop(el)) {
+    if (onDarkenedBackdrop(el)) {
       attrs['data-cpp-fg'] = 'lift';
       vars['--cpp-fg'] = style.color;
     }
   } else if (fg) {
     attrs['data-cpp-fg'] = fg;
   }
-  if (el instanceof SVGElement && hasNeutralBackdrop(el)) {
+  if (el instanceof SVGElement && onDarkenedBackdrop(el)) {
     // lines drawn for a white page (spinner tracks, progress rings)
     if (roleOf('bg', style.stroke)) attrs['data-cpp-stroke'] = '';
     // icons filled with Canvas's text greys; currentColor ones (same as
@@ -386,11 +395,13 @@ function backdrop(el: Element): string {
   return 'rgb(255, 255, 255)';
 }
 
-// Whether el sits on a neutral background (its own or what's behind it),
-// which the theme darkens; colored ones (highlights, badges) aren't.
-function hasNeutralBackdrop(el: Element): boolean {
+// Whether el sits on a background the theme darkens (its own or what's behind
+// it): a neutral one, or in course content any that tints. Colored ones in
+// Canvas's own UI (badges) aren't.
+function onDarkenedBackdrop(el: Element): boolean {
+  const content = el.closest(CONTENT) !== null;
   return (
-    liftsOn(getComputedStyle(el).backgroundColor) ??
-    liftsOn(backdrop(el)) !== false
+    liftsOn(getComputedStyle(el).backgroundColor, content) ??
+    liftsOn(backdrop(el), content) !== false
   );
 }
