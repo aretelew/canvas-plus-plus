@@ -11,7 +11,7 @@ Text for the developer dashboard, kept here so it changes with the code. The nam
 **Description:**
 
 ```
-A cleaner, calmer Canvas LMS.
+A cleaner, calmer Canvas LMS. Lightweight, fast, and private.
 
 canvas++ restyles Canvas and adds a few small things it's missing, with more on the way. Every feature starts off; turn on the ones you want from the toolbar button.
 

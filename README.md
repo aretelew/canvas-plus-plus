@@ -1,6 +1,6 @@
 # canvas++
 
-A cleaner, calmer Canvas LMS. A small browser extension for Chrome and Firefox: themes first (dark mode), more features later. See [PLAN.md](PLAN.md) for the roadmap and design.
+A cleaner, calmer Canvas LMS: lightweight, fast, and private. A small browser extension for Chrome and Firefox. See [PLAN.md](PLAN.md) for the roadmap and design.
 
 ## Develop
 

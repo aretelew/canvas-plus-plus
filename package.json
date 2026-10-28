@@ -1,6 +1,6 @@
 {
   "name": "canvas-plus-plus",
-  "description": "A cleaner, calmer Canvas. Themes, dark mode first.",
+  "description": "A cleaner, calmer Canvas. Lightweight, fast, and private.",
   "private": true,
   "version": "0.1.0",
   "type": "module",
