@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="30 30 70 68">
+  <!-- canvas++ mark: the icon without its tile, cropped to the mark and drawn in the text color
+       around it (currentColor). The paths are copied from icon.svg. -->
+  <g fill="currentColor" stroke="currentColor" stroke-linejoin="round">
+    <path stroke-width="2.16" d="M86.9 42.28A32.52 32.52 0 1 0 86.9 85.72L77.52 77.84A20.28 20.28 0 1 1 77.52 50.16Z"/>
+    <path stroke-width="1.5" d="M67.7 59.75H98.15V68.25H67.7Z M78.67 55.23L87.17 48.1L87.17 79.9L78.67 72.77Z"/>
+  </g>
+</svg>

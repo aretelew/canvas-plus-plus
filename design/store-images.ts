@@ -349,9 +349,8 @@ const popup = await popupBuffer();
 
 const src = (shot: Buffer) =>
   `data:image/png;base64,${shot.toString('base64')}`;
-const ICON = `data:image/svg+xml;base64,${readFileSync(
-  new URL('icon.svg', import.meta.url),
-).toString('base64')}`;
+// inlined, so it takes the slide's text color
+const MARK = readFileSync(new URL('mark.svg', import.meta.url), 'utf8');
 
 // the promo tile's grid of pluses, every 24px
 const pluses = (color: string) =>
@@ -425,8 +424,9 @@ const html = (slide: Slide) => `<!doctype html>
   h1 { font-size: 60px; line-height: 1.05; font-weight: 700; letter-spacing: -0.03em;
     color: var(--ink); }
   p { margin-top: 24px; font-size: 22px; line-height: 1.45; color: var(--muted); }
-  /* the icon keeps the store's padding (16 of 128px): its tile lines up with the copy */
-  .logo { position: absolute; left: 72px; bottom: 40px; width: 64px; height: 64px; }
+  .logo { position: absolute; left: 80px; bottom: 48px; width: 50px; height: 48px;
+    color: var(--ink); }
+  .logo svg { display: block; width: 100%; height: 100%; }
   .frame { position: absolute; top: 50%; transform: translateY(-50%);
     border-radius: 14px; overflow: hidden;
     box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 24px 60px rgb(20 30 50 / ${slide.dark ? '0.6' : '0.18'});
@@ -437,7 +437,7 @@ const html = (slide: Slide) => `<!doctype html>
 <body>
   <div class="copy"><h1>${slide.headline}</h1><p>${slide.text}</p></div>
   ${slide.art}
-  <img class="logo" src="${ICON}" alt="canvas++">
+  <div class="logo">${MARK}</div>
 </body>`;
 
 mkdirSync(OUT, { recursive: true });
