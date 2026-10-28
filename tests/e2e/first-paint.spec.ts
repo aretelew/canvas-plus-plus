@@ -54,3 +54,17 @@ test('follows the switch without a reload', async ({ page, setTheme }) => {
   await setTheme(false);
   await expect(page.locator('html')).not.toHaveAttribute('data-cpp-theme');
 });
+
+test('is true black from the first frame with OLED on', async ({
+  page,
+  setTheme,
+  setOled,
+}) => {
+  await setTheme(true);
+  await setOled(true);
+  await page.goto(URL);
+  await expect(page.locator('html')).toHaveAttribute('data-cpp-theme', 'oled');
+
+  await page.reload();
+  expect(await firstFrameBg(page)).toBe('rgb(0, 0, 0)');
+});
