@@ -27,6 +27,17 @@ const card = (id: string, name: string) => `
 // the dashboard as the server sends it: Canvas's scripts draw the cards later
 const PAGE = `<!doctype html><title>Dashboard</title>
 <style>
+  /* Canvas's cards: fixed-width boxes that wrap, each as tall as its
+     contents, and full width on narrow screens */
+  .ic-DashboardCard__box__container { margin: -36px 0 0 -36px; }
+  .ic-DashboardCard {
+    display: inline-block; vertical-align: top; box-sizing: border-box;
+    width: 262px; margin: 36px 0 0 36px;
+  }
+  @media only screen and (max-width: 620px) {
+    .ic-DashboardCard { width: 100%; margin-left: 0; }
+    .ic-DashboardCard__box__container { margin-left: 0; }
+  }
   /* Canvas's link row: a set height, the links at its bottom */
   .ic-DashboardCard__action-container {
     display: flex; height: 40px; padding-bottom: 12px; align-items: flex-end;
@@ -59,7 +70,7 @@ const ITEMS = [
 async function drawCards(page: Page): Promise<void> {
   await page.locator('#DashboardCard_Container').evaluate(
     (container, html) => {
-      container.innerHTML = html;
+      container.innerHTML = `<div class="ic-DashboardCard__box__container">${html}</div>`;
     },
     card('1', 'Intro to Operating Systems') + card('2', 'Experience Portfolio'),
   );
@@ -207,6 +218,51 @@ test("the card's links move onto its color while it lists work", async ({
   );
   await setCardAssignments(false);
   await expect.poll(bottom).toBe(false);
+});
+
+test('every card is as tall as the tallest', async ({
+  page,
+  setCardAssignments,
+}) => {
+  await setCardAssignments(true);
+  await page.goto(`${ORIGIN}/`);
+  await drawCards(page);
+  // a list of three and "Nothing due"
+  await expect(page.locator('.cpp-card-due')).toHaveCount(2);
+  // where the two cards are, and the width they're laid out in
+  const layout = async () => {
+    const {
+      cards: [first, second],
+      width,
+    } = await page.evaluate(() => {
+      // DOMRect's fields are getters, which don't survive leaving the page
+      const rect = (e: Element) => {
+        const { x, y, width, height } = e.getBoundingClientRect();
+        return { x, y, width, height };
+      };
+      const container = document.querySelector(
+        '.ic-DashboardCard__box__container',
+      );
+      return {
+        cards: [...document.querySelectorAll('.ic-DashboardCard')].map(rect),
+        width: container ? rect(container).width : NaN,
+      };
+    });
+    if (!first || !second) throw new Error('expected two cards');
+    return { first, second, width };
+  };
+
+  // side by side, in Canvas's own columns
+  const wide = await layout();
+  expect(wide.second.height).toBe(wide.first.height);
+  expect([wide.first.width, wide.second.x - wide.first.x]).toEqual([262, 298]);
+
+  // one above the other, full width, as Canvas lays them out on a phone
+  await page.setViewportSize({ width: 400, height: 800 });
+  const narrow = await layout();
+  expect(narrow.second.y).toBeGreaterThan(narrow.first.y);
+  expect(narrow.second.height).toBe(narrow.first.height);
+  expect(narrow.first.width).toBe(narrow.width);
 });
 
 test('cards drawn again get their list again', async ({

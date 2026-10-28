@@ -83,6 +83,21 @@
   cursor: progress;
 }
 
+/* Lists differ in length, so every card is made as tall as the tallest.
+   Canvas wraps fixed-width inline blocks, each only as tall as its contents;
+   a grid keeps its columns (a 36px gap, then a 262px card) and makes every
+   row as tall as the tallest. Below 620px Canvas stacks full-width cards. */
+.ic-DashboardCard__box__container:has(> .ic-DashboardCard > .cpp-card-due) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, calc(36px + 262px));
+  grid-auto-rows: 1fr;
+}
+@media only screen and (max-width: 620px) {
+  .ic-DashboardCard__box__container:has(> .ic-DashboardCard > .cpp-card-due) {
+    grid-template-columns: 100%;
+  }
+}
+
 /* With a list, the card's links (Announcements, Assignments, …) move onto the
    bottom of its color or image, so the list follows the title and gets the
    room. They sit in a pill like the grade pill's at the top (grades.css), so
