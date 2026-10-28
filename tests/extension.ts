@@ -96,6 +96,13 @@ export const test = base.extend<
   },
 });
 
+// The popup, opened in a tab of its own.
+export async function openPopup(context: BrowserContext): Promise<Page> {
+  const popup = await context.newPage();
+  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+  return popup;
+}
+
 // Flips one of the popup's switches and waits until the setting is saved.
 async function setSwitch(
   context: BrowserContext,
@@ -103,12 +110,8 @@ async function setSwitch(
   key: string,
   on: boolean,
 ): Promise<void> {
-  const popup = await context.newPage();
-  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+  const popup = await openPopup(context);
   const toggle = popup.getByRole('switch', { name });
-  // it shows "off" until storage answers; setChecked decides whether to
-  // click from the state it sees first, so let it see the real one
-  await expect(toggle).toBeEnabled();
   await toggle.setChecked(on);
   // the switch flips at once but the setting is saved asynchronously;
   // closing the popup first could lose it to the next test

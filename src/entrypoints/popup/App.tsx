@@ -30,8 +30,9 @@ function Switch({
   label: string;
   setting: WxtStorageItem<boolean, Record<string, unknown>>;
 }) {
-  // undefined until storage answers, so the switch never flips visibly on open
+  // undefined until storage answers
   const [on, setOn] = useState<boolean>();
+  const loading = on === undefined;
 
   useEffect(() => {
     void setting.getValue().then(setOn);
@@ -41,12 +42,15 @@ function Switch({
   return (
     <label className="flex cursor-pointer items-center justify-between gap-4 py-2.5 text-sm">
       {label}
+      {/* hidden until storage answers, then swapped for a fresh input: flipping
+          this one would play the toggle's slide every time the popup opens */}
       <input
+        key={loading ? 'loading' : 'loaded'}
         type="checkbox"
         role="switch"
-        className="toggle toggle-primary toggle-sm"
+        className={`toggle toggle-primary toggle-sm ${loading ? 'invisible' : ''}`}
         checked={on ?? false}
-        disabled={on === undefined}
+        disabled={loading}
         onChange={(e) => void setting.setValue(e.currentTarget.checked)}
       />
     </label>
