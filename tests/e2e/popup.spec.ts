@@ -1,6 +1,7 @@
 // Opening the popup shows each switch as it already is: one that's on shows
 // up on, without sliding over from off while storage answers. Switches sit in
-// sections the main page opens, with a back arrow to return.
+// sections the main page opens, with a back arrow to return, and the popup
+// keeps one height across them.
 
 import { expect, openPopup, test } from '../extension';
 
@@ -48,5 +49,21 @@ test('the back arrow returns to the sections, focused where it left', async ({
   await back.click();
   await expect(back).toBeHidden();
   await expect(popup.getByRole('button', { name: 'Dashboard' })).toBeFocused();
+  // and again, into the same section
+  await popup.getByRole('button', { name: 'Dashboard' }).click();
+  await back.click();
+  await expect(popup.getByRole('button', { name: 'Dashboard' })).toBeFocused();
+  await popup.close();
+});
+
+test('the popup keeps its height from page to page', async ({ context }) => {
+  const popup = await openPopup(context);
+  const main = popup.locator('main');
+  const height = await main.evaluate((el) => el.clientHeight);
+  for (const title of ['Appearance', 'Dashboard', 'Sidebar']) {
+    await popup.getByRole('button', { name: title }).click();
+    expect(await main.evaluate((el) => el.clientHeight)).toBe(height);
+    await popup.getByRole('button', { name: 'Back' }).click();
+  }
   await popup.close();
 });

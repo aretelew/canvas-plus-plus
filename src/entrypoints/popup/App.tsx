@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import type { WxtStorageItem } from '#imports';
 import { cardAssignments } from '@/features/assignments/storage';
 import { hideFooter } from '@/features/footer/storage';
@@ -42,8 +42,8 @@ const sections: Section[] = [
 
 function App() {
   const [open, setOpen] = useState<Section>();
-  // the section just closed, so focus goes back to its row
-  const [closed, setClosed] = useState<Section>();
+  // the section opened last, so closing it focuses its row
+  const [last, setLast] = useState<Section>();
 
   return (
     <main className="w-72">
@@ -57,7 +57,6 @@ function App() {
             className="flex h-full w-10 cursor-pointer items-center justify-center hover:bg-base-200"
             aria-label="Back"
             onClick={() => {
-              setClosed(open);
               setOpen(undefined);
             }}
           >
@@ -66,51 +65,71 @@ function App() {
         )}
         <h1 className="col-start-2 text-sm font-semibold">canvas++</h1>
       </header>
-      {/* rows separated by lines rather than boxed; padded per row, not here,
-          so the lines and the hover tint run edge to edge */}
-      <div className="divide-y divide-base-300">
-        {open ? (
-          open.rows.map((row) =>
-            row.under ? (
-              <DependentSwitch
-                key={row.label}
-                label={row.label}
-                setting={row.setting}
-                under={row.under}
+      {/* every page sits in the same cell, the ones not showing hidden, so
+          the popup keeps one height (the tallest page's) as it moves between
+          them */}
+      <div className="grid">
+        <Page shown={!open}>
+          {sections.map((section) => (
+            <button
+              key={section.title}
+              ref={!open && section === last ? focus : undefined}
+              type="button"
+              className="group flex w-full cursor-pointer items-center justify-between px-4 py-2.5 text-sm hover:bg-base-200"
+              onClick={() => {
+                setLast(section);
+                setOpen(section);
+              }}
+            >
+              {section.title}
+              <Chevron
+                direction="right"
+                className="text-base-content/50 group-hover:text-base-content"
               />
-            ) : (
-              <Switch key={row.label} label={row.label} setting={row.setting} />
-            ),
-          )
-        ) : (
-          <>
-            {sections.map((section) => (
-              <button
-                key={section.title}
-                ref={section === closed ? focus : undefined}
-                type="button"
-                className="group flex w-full cursor-pointer items-center justify-between px-4 py-2.5 text-sm hover:bg-base-200"
-                onClick={() => {
-                  setOpen(section);
-                }}
-              >
-                {section.title}
-                <Chevron
-                  direction="right"
-                  className="text-base-content/50 group-hover:text-base-content"
+            </button>
+          ))}
+          <SiteAccess />
+        </Page>
+        {sections.map((section) => (
+          <Page key={section.title} shown={section === open}>
+            {section.rows.map((row) =>
+              row.under ? (
+                <DependentSwitch
+                  key={row.label}
+                  label={row.label}
+                  setting={row.setting}
+                  under={row.under}
                 />
-              </button>
-            ))}
-            <SiteAccess />
-          </>
-        )}
+              ) : (
+                <Switch
+                  key={row.label}
+                  label={row.label}
+                  setting={row.setting}
+                />
+              ),
+            )}
+          </Page>
+        ))}
       </div>
     </main>
   );
 }
 
-// Focuses an element as it appears. Module-level, so re-renders don't call
-// it again.
+// One page of the popup, in the cell all of them share. Rows are separated by
+// lines rather than boxed, and padded per row, not here, so the lines and the
+// hover tint run edge to edge.
+function Page({ shown, children }: { shown: boolean; children: ReactNode }) {
+  return (
+    <div
+      className={`col-start-1 row-start-1 divide-y divide-base-300 ${shown ? '' : 'invisible'}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+// Focuses an element as it appears, or as a ref is pointed at it. Module-level,
+// so re-renders don't call it again.
 function focus(el: HTMLElement | null) {
   el?.focus();
 }
