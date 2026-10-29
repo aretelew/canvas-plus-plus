@@ -1,0 +1,22 @@
+/* The circle that checks work off (done-check.ts): empty to do, filled with a
+   check once done. As specific as Canvas's own input[type=checkbox] rules plus
+   a class, since Canvas's stylesheets load after these. */
+input[type='checkbox'].cpp-check {
+  flex: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 1.5px solid #474747;
+  border-radius: 50%;
+  background: center / 10px no-repeat;
+  cursor: pointer;
+}
+input[type='checkbox'].cpp-check:checked {
+  border-color: var(--ic-brand-primary, #0374b5);
+  background-color: var(--ic-brand-primary, #0374b5);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%23fff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.2 4.1 7.2 8 3'/%3E%3C/svg%3E");
+}
+input[type='checkbox'].cpp-check:disabled {
+  cursor: progress;
+}

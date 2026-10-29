@@ -36,6 +36,7 @@ export const test = base.extend<
     setCardGrades: (on: boolean) => Promise<void>;
     setCardAssignments: (on: boolean) => Promise<void>;
     setHideLogo: (on: boolean) => Promise<void>;
+    setTidySidebar: (on: boolean) => Promise<void>;
   },
   { sharedContext: () => Promise<BrowserContext> }
 >({
@@ -85,6 +86,10 @@ export const test = base.extend<
 
   setHideLogo: async ({ context }, use) => {
     await use((on) => setSwitch(context, 'Hide school logo', 'hideLogo', on));
+  },
+
+  setTidySidebar: async ({ context }, use) => {
+    await use((on) => setSwitch(context, 'Tidy To Do list', 'tidySidebar', on));
   },
 });
 

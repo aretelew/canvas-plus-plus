@@ -1,21 +1,4 @@
-// The parts of GET /api/v1/courses?include[]=total_scores
-// &include[]=current_grading_period_scores&include[]=restrict_quantitative_data
-// that the card grades use, with ids as strings (Accept:
-// application/json+canvas-string-ids). Canvas leaves the score fields out when
-// a course hides its totals from students.
-export interface Course {
-  id: string;
-  // the teacher shows students letter grades instead of percentages
-  restrict_quantitative_data?: boolean;
-  enrollments?: Enrollment[];
-}
-
-interface Enrollment {
-  type: string;
-  has_grading_periods?: boolean;
-  computed_current_score?: number | null;
-  current_period_computed_current_score?: number | null;
-}
+import type { Course } from '@/core/courses';
 
 /**
  * Each course's current score (a percentage) by course id, for courses the

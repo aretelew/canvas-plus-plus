@@ -34,6 +34,19 @@ export function canvasFetch(
   return import.meta.env.FIREFOX ? content.fetch(url, init) : fetch(url, init);
 }
 
+/** The response's JSON, or undefined when the request fails. */
+export async function canvasJson<T>(
+  path: string,
+  request?: Request,
+): Promise<T | undefined> {
+  try {
+    const response = await canvasFetch(path, request);
+    return response.ok ? ((await response.json()) as T) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function csrfToken(): string {
   const token = /(?:^|;\s*)_csrf_token=([^;]*)/.exec(document.cookie)?.[1];
   return token ? decodeURIComponent(token) : '';

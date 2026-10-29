@@ -1,0 +1,158 @@
+/* The sidebar's To Do and Recent Feedback (page.ts). Canvas's own lists are
+   hidden while the switch is on, unless ours couldn't be shown (cpp-keep);
+   on the dashboard so is Canvas's View Grades button, which ours replaces. */
+html[data-cpp-sidebar] #right-side .Sidebar__TodoListContainer:not(.cpp-keep),
+html[data-cpp-sidebar] #right-side .recent_feedback:not(.cpp-keep),
+html[data-cpp-sidebar]
+  #right-side
+  .recent_feedback:not(.cpp-keep)
+  + div:has(> a[href='/grades']) {
+  display: none;
+}
+
+/* Canvas's own sidebar text colors, so the theme's recolor pass gives it the
+   page's shades; done rows fade with opacity rather than a color, which a
+   role would mask. Headings as Canvas's: bold, with a line under them. */
+.cpp-sidebar {
+  /* as Recent Feedback is spaced; what follows To Do in a course (its
+     groups) has no margin of its own */
+  margin: 18px 0;
+  font-size: 0.875rem;
+  line-height: 1.125rem;
+  color: var(--ic-brand-font-color-dark, #2d3b45);
+}
+/* Beside the Dashboard heading, To Do's line continues the heading's: that
+   one is 84px down (Canvas's header, 72px tall, 12px into the page) and with
+   the usual 18px above it, To Do's would end 10px short. */
+#content-wrapper:has(.ic-Dashboard-header__layout)
+  ~ #right-side-wrapper
+  .cpp-todo:first-child {
+  margin-top: 28px;
+}
+.cpp-sidebar h2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 0 6px;
+  padding: 0 0 6px;
+  border-bottom: 1px solid #e8eaec;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.5rem;
+}
+.cpp-sidebar .cpp-count {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #474747;
+}
+.cpp-sidebar h3 {
+  margin: 10px 0 2px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1rem;
+  color: #474747;
+}
+.cpp-sidebar h3.cpp-overdue,
+.cpp-sidebar .cpp-value.cpp-overdue {
+  color: #c71f23;
+}
+.cpp-sidebar p {
+  margin: 6px 0 0;
+  color: #474747;
+}
+.cpp-sidebar ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cpp-sidebar li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 5px 0;
+}
+.cpp-sidebar li > input {
+  /* level with the title's first line */
+  margin-top: 1px;
+}
+.cpp-sidebar .cpp-main {
+  flex: 1;
+  min-width: 0;
+}
+.cpp-sidebar .cpp-title {
+  display: -webkit-box;
+  overflow: hidden;
+  color: inherit;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.cpp-sidebar a.cpp-title:hover {
+  text-decoration: underline;
+}
+.cpp-sidebar .cpp-course {
+  display: block;
+  overflow: hidden;
+  margin-top: 1px;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #474747;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cpp-sidebar .cpp-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border-radius: 50%;
+}
+.cpp-sidebar .cpp-comment {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  font-style: italic;
+  line-height: 1rem;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.cpp-sidebar .cpp-value {
+  flex: none;
+  font-size: 0.75rem;
+  line-height: 1.125rem;
+  color: #474747;
+  font-variant-numeric: tabular-nums;
+}
+.cpp-sidebar .cpp-done > :not(input) {
+  opacity: 0.6;
+}
+.cpp-sidebar .cpp-done .cpp-title {
+  text-decoration: line-through;
+}
+/* rows and groups behind "Show N more"; rows are flex, which would show them,
+   and the footer is empty once its button is used on a course's page */
+.cpp-sidebar [hidden],
+.cpp-sidebar .cpp-footer:empty {
+  display: none;
+}
+.cpp-sidebar .cpp-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+.cpp-sidebar .cpp-more,
+.cpp-sidebar .cpp-footer a {
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ic-link-color, #0374b5);
+  cursor: pointer;
+}
+.cpp-sidebar .cpp-more:hover,
+.cpp-sidebar .cpp-footer a:hover {
+  text-decoration: underline;
+}

@@ -4,6 +4,8 @@ import { syncCardGrades } from '@/features/grades/cards';
 import '@/features/grades/grades.css';
 import { syncLogoToPage } from '@/features/logo/page';
 import '@/features/logo/logo.css';
+import { syncSidebar } from '@/features/sidebar/page';
+import '@/features/sidebar/sidebar.css';
 import { syncThemeToPage } from '@/features/themes/page';
 import '@/features/themes/theme.css';
 
@@ -22,5 +24,6 @@ export default defineContentScript({
     void syncLogoToPage();
     void syncCardGrades();
     void syncCardAssignments();
+    void syncSidebar();
   },
 });
