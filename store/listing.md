@@ -1,6 +1,6 @@
 # Chrome Web Store listing
 
-Text for the developer dashboard, kept here so it changes with the code. The name ("canvas++") and summary come from the manifest, which takes them from `wxt.config.ts` and `package.json`'s `description`.
+Text for the developer dashboard, kept here so it changes with the code. The name ("canvas++") and summary come from the manifest, which takes them from `wxt.config.ts` and `package.json`'s `description`. The store shows the summary right above the description, so the description doesn't repeat it.
 
 ## Store listing tab
 
@@ -11,8 +11,6 @@ Text for the developer dashboard, kept here so it changes with the code. The nam
 **Description:**
 
 ```
-A cleaner, calmer Canvas LMS. Lightweight, fast, and private.
-
 canvas++ restyles Canvas and adds a few things it's missing, with more on the way. Everything starts off, and you turn on what you want from the toolbar button.
 
 • Dark theme: a dark mode made for Canvas, with no white flash between pages. Course colors, grades and your school's branding keep their meaning.
