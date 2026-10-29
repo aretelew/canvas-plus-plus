@@ -24,7 +24,6 @@ const sections: Section[] = [
       { label: 'Dark theme', setting: themeEnabled },
       { label: 'True black (OLED)', setting: themeOled, under: themeEnabled },
       { label: 'Hide school logo', setting: hideLogo },
-      { label: 'Hide footer', setting: hideFooter },
     ],
   },
   {
@@ -32,6 +31,7 @@ const sections: Section[] = [
     rows: [
       { label: 'Grades on cards', setting: cardGrades },
       { label: 'Assignments on cards', setting: cardAssignments },
+      { label: 'Hide footer', setting: hideFooter },
     ],
   },
   {

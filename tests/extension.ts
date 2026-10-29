@@ -105,7 +105,7 @@ export const test = base.extend<
 
   setHideFooter: async ({ context }, use) => {
     await use((on) =>
-      setSwitch(context, 'Appearance', 'Hide footer', 'hideFooter', on),
+      setSwitch(context, 'Dashboard', 'Hide footer', 'hideFooter', on),
     );
   },
 
