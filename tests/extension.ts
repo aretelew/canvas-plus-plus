@@ -35,6 +35,7 @@ export const test = base.extend<
     setOled: (on: boolean) => Promise<void>;
     setCardGrades: (on: boolean) => Promise<void>;
     setCardAssignments: (on: boolean) => Promise<void>;
+    setHideLogo: (on: boolean) => Promise<void>;
   },
   { sharedContext: () => Promise<BrowserContext> }
 >({
@@ -80,6 +81,10 @@ export const test = base.extend<
     await use((on) =>
       setSwitch(context, 'Assignments on cards', 'cardAssignments', on),
     );
+  },
+
+  setHideLogo: async ({ context }, use) => {
+    await use((on) => setSwitch(context, 'Hide school logo', 'hideLogo', on));
   },
 });
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { WxtStorageItem } from '#imports';
 import { cardAssignments } from '@/features/assignments/storage';
 import { cardGrades } from '@/features/grades/storage';
+import { hideLogo } from '@/features/logo/storage';
 import { themeEnabled, themeOled } from '@/features/themes/storage';
 import { SiteAccess } from './SiteAccess';
 
@@ -26,6 +27,7 @@ function App() {
         />
         <Switch label="Grades on cards" setting={cardGrades} />
         <Switch label="Assignments on cards" setting={cardAssignments} />
+        <Switch label="Hide school logo" setting={hideLogo} />
         <SiteAccess />
       </div>
     </main>

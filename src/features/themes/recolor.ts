@@ -121,8 +121,26 @@ function forget(el: Element): void {
   }
 }
 
+// The tags this file sets. Other data-cpp-* attributes are features' switches
+// on <html> (the theme's own, hiding the logo), which <html>'s tags come and go
+// beside.
+const TAGS = [
+  'data-cpp-bg',
+  'data-cpp-fg',
+  'data-cpp-border',
+  'data-cpp-stroke',
+  'data-cpp-fill',
+  'data-cpp-gradient',
+  'data-cpp-emboss',
+  'data-cpp-ring',
+  'data-cpp-state',
+  'data-cpp-state-owner',
+] as const;
+
+type Tag = (typeof TAGS)[number];
+
 interface Tags {
-  attrs: Record<string, string>;
+  attrs: Partial<Record<Tag, string>>;
   vars: Record<string, string>; // custom properties on the element
 }
 
@@ -157,7 +175,7 @@ function flush(): void {
 function classify(el: Element): Tags {
   const style = getComputedStyle(el);
   resting.set(el, style.backgroundColor);
-  const attrs: Record<string, string> = {};
+  const attrs: Tags['attrs'] = {};
   const vars: Record<string, string> = {};
 
   const borderColor = visibleBorderColor(style);
@@ -239,14 +257,8 @@ function background(
     : 'page';
 }
 
-// Every data-cpp-* attribute is a tag of ours, except the switch on <html>
-// that turns the theme on (page.ts).
 function untag(el: Element): void {
-  for (const { name } of [...el.attributes]) {
-    if (name.startsWith('data-cpp-') && name !== 'data-cpp-theme') {
-      el.removeAttribute(name);
-    }
-  }
+  for (const name of TAGS) el.removeAttribute(name);
   // and the custom properties classify() set (original colors)
   if (el instanceof HTMLElement || el instanceof SVGElement) {
     for (const name of [...el.style]) {

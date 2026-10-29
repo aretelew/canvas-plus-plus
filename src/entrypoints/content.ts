@@ -2,6 +2,8 @@ import { syncCardAssignments } from '@/features/assignments/cards';
 import '@/features/assignments/assignments.css';
 import { syncCardGrades } from '@/features/grades/cards';
 import '@/features/grades/grades.css';
+import { syncLogoToPage } from '@/features/logo/page';
+import '@/features/logo/logo.css';
 import { syncThemeToPage } from '@/features/themes/page';
 import '@/features/themes/theme.css';
 
@@ -17,6 +19,7 @@ export default defineContentScript({
   runAt: 'document_start',
   main() {
     void syncThemeToPage();
+    void syncLogoToPage();
     void syncCardGrades();
     void syncCardAssignments();
   },

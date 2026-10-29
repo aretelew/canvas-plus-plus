@@ -1,0 +1,6 @@
+/* Hidden but still taking its space, so the nav's buttons stay where they
+   were. visibility also takes the logo's link out of the tab order and away
+   from screen readers; the nav's Dashboard button goes to the same place. */
+html[data-cpp-hide-logo] .ic-app-header__logomark-container {
+  visibility: hidden;
+}
