@@ -67,8 +67,8 @@ function App() {
       </header>
       {/* every page sits in the same cell, the ones not showing hidden, so
           the popup keeps one height (the tallest page's) as it moves between
-          them */}
-      <div className="grid">
+          them; clipped, so the tallest page's last line falls off the edge */}
+      <div className="grid overflow-hidden">
         <Page shown={!open}>
           {sections.map((section) => (
             <button
@@ -117,11 +117,13 @@ function App() {
 
 // One page of the popup, in the cell all of them share. Rows are separated by
 // lines rather than boxed, and padded per row, not here, so the lines and the
-// hover tint run edge to edge.
+// hover tint run edge to edge. Each row has a line under it, so a page shorter
+// than the popup ends on one; pulling the page up by that line's width keeps
+// it out of the cell's height, so the tallest page's last line is clipped.
 function Page({ shown, children }: { shown: boolean; children: ReactNode }) {
   return (
     <div
-      className={`col-start-1 row-start-1 divide-y divide-base-300 ${shown ? '' : 'invisible'}`}
+      className={`col-start-1 row-start-1 -mb-px *:border-b *:border-base-300 ${shown ? '' : 'invisible'}`}
     >
       {children}
     </div>
