@@ -9,30 +9,131 @@ import { SiteAccess } from './SiteAccess';
 
 type Setting = WxtStorageItem<boolean, Record<string, unknown>>;
 
+// `under` is the switch a setting depends on: it's indented under it, and can
+// only be switched while that's on.
+type Row = { label: string; setting: Setting; under?: Setting };
+type Section = { title: string; rows: Row[] };
+
+// The popup's main page lists these, grouped by the part of Canvas they change;
+// each opens to its switches.
+const sections: Section[] = [
+  {
+    title: 'Appearance',
+    rows: [
+      { label: 'Dark theme', setting: themeEnabled },
+      { label: 'True black (OLED)', setting: themeOled, under: themeEnabled },
+      { label: 'Hide school logo', setting: hideLogo },
+    ],
+  },
+  {
+    title: 'Dashboard',
+    rows: [
+      { label: 'Grades on cards', setting: cardGrades },
+      { label: 'Assignments on cards', setting: cardAssignments },
+    ],
+  },
+  {
+    title: 'Sidebar',
+    rows: [{ label: 'Tidy To Do list', setting: tidySidebar }],
+  },
+];
+
 function App() {
-  const dark = useSetting(themeEnabled);
+  const [open, setOpen] = useState<Section>();
+  // the section just closed, so focus goes back to its row
+  const [closed, setClosed] = useState<Section>();
+
   return (
     <main className="w-72">
-      {/* padded per section, not on main, so the header's line runs edge to edge */}
-      <h1 className="border-b border-base-300 px-4 py-2 text-sm font-semibold">
-        canvas++
-      </h1>
-      {/* settings rows, separated by lines rather than boxed */}
-      <div className="divide-y divide-base-300 px-4 pb-1">
-        <Switch label="Dark theme" setting={themeEnabled} />
-        <Switch
-          label="True black (OLED)"
-          setting={themeOled}
-          nested
-          disabled={!dark}
-        />
-        <Switch label="Grades on cards" setting={cardGrades} />
-        <Switch label="Assignments on cards" setting={cardAssignments} />
-        <Switch label="Tidy To Do list" setting={tidySidebar} />
-        <Switch label="Hide school logo" setting={hideLogo} />
-        <SiteAccess />
+      {/* three columns keep the name centered beside the back arrow, which
+          fills the header's corner like the rows fill theirs */}
+      <header className="grid h-10 grid-cols-[1fr_auto_1fr] items-center border-b border-base-300">
+        {open && (
+          <button
+            ref={focus}
+            type="button"
+            className="flex h-full w-10 cursor-pointer items-center justify-center hover:bg-base-200"
+            aria-label="Back"
+            onClick={() => {
+              setClosed(open);
+              setOpen(undefined);
+            }}
+          >
+            <Chevron direction="left" />
+          </button>
+        )}
+        <h1 className="col-start-2 text-sm font-semibold">canvas++</h1>
+      </header>
+      {/* rows separated by lines rather than boxed; padded per row, not here,
+          so the lines and the hover tint run edge to edge */}
+      <div className="divide-y divide-base-300">
+        {open ? (
+          open.rows.map((row) =>
+            row.under ? (
+              <DependentSwitch
+                key={row.label}
+                label={row.label}
+                setting={row.setting}
+                under={row.under}
+              />
+            ) : (
+              <Switch key={row.label} label={row.label} setting={row.setting} />
+            ),
+          )
+        ) : (
+          <>
+            {sections.map((section) => (
+              <button
+                key={section.title}
+                ref={section === closed ? focus : undefined}
+                type="button"
+                className="group flex w-full cursor-pointer items-center justify-between px-4 py-2.5 text-sm hover:bg-base-200"
+                onClick={() => {
+                  setOpen(section);
+                }}
+              >
+                {section.title}
+                <Chevron
+                  direction="right"
+                  className="text-base-content/50 group-hover:text-base-content"
+                />
+              </button>
+            ))}
+            <SiteAccess />
+          </>
+        )}
       </div>
     </main>
+  );
+}
+
+// Focuses an element as it appears. Module-level, so re-renders don't call
+// it again.
+function focus(el: HTMLElement | null) {
+  el?.focus();
+}
+
+// The back arrow, or the arrow into a section.
+function Chevron({
+  direction,
+  className = '',
+}: {
+  direction: 'left' | 'right';
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={`size-4 ${className}`}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={direction === 'left' ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'} />
+    </svg>
   );
 }
 
@@ -44,6 +145,11 @@ function useSetting(setting: Setting): boolean | undefined {
     return setting.watch(setOn);
   }, [setting]);
   return on;
+}
+
+function DependentSwitch({ label, setting, under }: Required<Row>) {
+  const parentOn = useSetting(under);
+  return <Switch label={label} setting={setting} nested disabled={!parentOn} />;
 }
 
 // `nested` is a sub-setting of the switch above it, indented under it.
@@ -63,7 +169,7 @@ function Switch({
 
   return (
     <label
-      className={`flex items-center justify-between gap-4 py-2.5 text-sm ${nested ? 'pl-4' : ''} ${disabled ? 'cursor-default text-base-content/50' : 'cursor-pointer'}`}
+      className={`flex items-center justify-between gap-4 py-2.5 pr-4 text-sm ${nested ? 'pl-8' : 'pl-4'} ${disabled ? 'cursor-default text-base-content/50' : 'cursor-pointer hover:bg-base-200'}`}
     >
       {label}
       {/* hidden until storage answers, then swapped for a fresh input: flipping

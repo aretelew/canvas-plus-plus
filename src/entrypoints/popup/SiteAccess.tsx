@@ -34,15 +34,17 @@ export function SiteAccess() {
     void currentSite().then(setSite);
   }, []);
 
-  // a row of the popup's settings list, like the theme switch
+  // a row of the popup's main page, under the sections
   if (!site) return null;
   if (site.status === 'on') {
     return (
-      <p className="py-2.5 text-sm text-base-content/70">On for {site.host}</p>
+      <p className="px-4 py-2.5 text-sm text-base-content/70">
+        On for {site.host}
+      </p>
     );
   }
   return (
-    <div className="flex items-center justify-between gap-4 py-2.5 text-sm">
+    <div className="flex items-center justify-between gap-4 px-4 py-2.5 text-sm">
       {/* hosts have no spaces to wrap at, and some are long */}
       <span className="min-w-0 wrap-anywhere">
         {site.host} looks like Canvas

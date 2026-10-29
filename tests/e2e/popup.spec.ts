@@ -1,5 +1,6 @@
 // Opening the popup shows each switch as it already is: one that's on shows
-// up on, without sliding over from off while storage answers.
+// up on, without sliding over from off while storage answers. Switches sit in
+// sections the main page opens, with a back arrow to return.
 
 import { expect, openPopup, test } from '../extension';
 
@@ -9,6 +10,7 @@ test('a switch that is on opens without sliding', async ({
 }) => {
   await setTheme(true);
   const popup = await openPopup(context);
+  await popup.getByRole('button', { name: 'Appearance' }).click();
   const toggle = popup.getByRole('switch', { name: 'Dark theme' });
   await expect(toggle).toBeChecked();
   // the slide is a CSS transition, and running ones show up as animations
@@ -22,6 +24,7 @@ test('true black can only be switched while the dark theme is on', async ({
 }) => {
   await setTheme(false);
   const popup = await openPopup(context);
+  await popup.getByRole('button', { name: 'Appearance' }).click();
   const oled = popup.getByRole('switch', { name: 'True black (OLED)' });
   await expect(oled).toBeDisabled();
   await popup.getByRole('switch', { name: 'Dark theme' }).check();
@@ -29,4 +32,21 @@ test('true black can only be switched while the dark theme is on', async ({
   await popup.close();
   // the browser is shared with other tests
   await setTheme(false);
+});
+
+test('the back arrow returns to the sections, focused where it left', async ({
+  context,
+}) => {
+  const popup = await openPopup(context);
+  const back = popup.getByRole('button', { name: 'Back' });
+  await expect(back).toBeHidden();
+  await popup.getByRole('button', { name: 'Dashboard' }).click();
+  await expect(
+    popup.getByRole('switch', { name: 'Grades on cards' }),
+  ).toBeVisible();
+  await expect(popup.getByRole('button', { name: 'Appearance' })).toBeHidden();
+  await back.click();
+  await expect(back).toBeHidden();
+  await expect(popup.getByRole('button', { name: 'Dashboard' })).toBeFocused();
+  await popup.close();
 });

@@ -23,7 +23,7 @@ A browser extension that improves Canvas LMS. Feature #1 is a **theme engine**: 
 
 - **Size limits** (checked in CI): content script under 15 KB gzipped, theme CSS under 20 KB gzipped, popup under 20 KB gzipped (Preact included). Any UI injected into Canvas pages uses Preact too, since it loads on every page view.
 - **Runtime:** no work on pages where the extension is off beyond one attribute check. No polling or timers. The MutationObserver only watches content containers.
-- **UI:** the popup is one on/off switch per feature (plus, later, a theme picker). A feature's finer settings go in the options page. Every new setting has to justify itself.
+- **UI:** the popup is one on/off switch per feature (plus, later, a theme picker), grouped into sections by the part of Canvas they change (Appearance, Dashboard, Sidebar). Its main page lists the sections, and each opens to its switches with a back arrow. A feature's finer settings go in the options page. Every new setting has to justify itself.
 - **Themes:** a few carefully designed themes beat many average ones. Leaving Canvas's layout mostly alone and only recoloring it is part of the minimal look.
 - Robustness still matters: stable selectors and visual tests, because a minimal extension that breaks every Canvas update isn't clean.
 

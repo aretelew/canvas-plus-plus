@@ -67,29 +67,45 @@ export const test = base.extend<
   },
 
   setTheme: async ({ context }, use) => {
-    await use((on) => setSwitch(context, 'Dark theme', 'themeEnabled', on));
+    await use((on) =>
+      setSwitch(context, 'Appearance', 'Dark theme', 'themeEnabled', on),
+    );
   },
 
   setOled: async ({ context }, use) => {
-    await use((on) => setSwitch(context, 'True black (OLED)', 'themeOled', on));
+    await use((on) =>
+      setSwitch(context, 'Appearance', 'True black (OLED)', 'themeOled', on),
+    );
   },
 
   setCardGrades: async ({ context }, use) => {
-    await use((on) => setSwitch(context, 'Grades on cards', 'cardGrades', on));
+    await use((on) =>
+      setSwitch(context, 'Dashboard', 'Grades on cards', 'cardGrades', on),
+    );
   },
 
   setCardAssignments: async ({ context }, use) => {
     await use((on) =>
-      setSwitch(context, 'Assignments on cards', 'cardAssignments', on),
+      setSwitch(
+        context,
+        'Dashboard',
+        'Assignments on cards',
+        'cardAssignments',
+        on,
+      ),
     );
   },
 
   setHideLogo: async ({ context }, use) => {
-    await use((on) => setSwitch(context, 'Hide school logo', 'hideLogo', on));
+    await use((on) =>
+      setSwitch(context, 'Appearance', 'Hide school logo', 'hideLogo', on),
+    );
   },
 
   setTidySidebar: async ({ context }, use) => {
-    await use((on) => setSwitch(context, 'Tidy To Do list', 'tidySidebar', on));
+    await use((on) =>
+      setSwitch(context, 'Sidebar', 'Tidy To Do list', 'tidySidebar', on),
+    );
   },
 });
 
@@ -100,14 +116,17 @@ export async function openPopup(context: BrowserContext): Promise<Page> {
   return popup;
 }
 
-// Flips one of the popup's switches and waits until the setting is saved.
+// Flips one of the popup's switches, in its section, and waits until the
+// setting is saved.
 async function setSwitch(
   context: BrowserContext,
+  section: string,
   name: string,
   key: string,
   on: boolean,
 ): Promise<void> {
   const popup = await openPopup(context);
+  await popup.getByRole('button', { name: section }).click();
   const toggle = popup.getByRole('switch', { name });
   await toggle.setChecked(on);
   // the switch flips at once but the setting is saved asynchronously;
