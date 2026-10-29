@@ -1,9 +1,12 @@
+import { syncPageFlag } from '@/core/page-flag';
 import { syncCardAssignments } from '@/features/assignments/cards';
 import '@/features/assignments/assignments.css';
+import { hideFooter } from '@/features/footer/storage';
+import '@/features/footer/footer.css';
 import { syncCardGrades } from '@/features/grades/cards';
 import '@/features/grades/grades.css';
-import { syncLogoToPage } from '@/features/logo/page';
 import '@/features/logo/logo.css';
+import { hideLogo } from '@/features/logo/storage';
 import { syncSidebar } from '@/features/sidebar/page';
 import '@/features/sidebar/sidebar.css';
 import { syncThemeToPage } from '@/features/themes/page';
@@ -21,7 +24,8 @@ export default defineContentScript({
   runAt: 'document_start',
   main() {
     void syncThemeToPage();
-    void syncLogoToPage();
+    void syncPageFlag(hideLogo, 'hide-logo');
+    void syncPageFlag(hideFooter, 'hide-footer');
     void syncCardGrades();
     void syncCardAssignments();
     void syncSidebar();

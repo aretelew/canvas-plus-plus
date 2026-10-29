@@ -114,6 +114,10 @@ Off by default (popup switch). Canvas's right sidebar (the dashboard's, and a co
 
 Off by default (popup switch). It hides the school's logo at the top of the global nav with `visibility: hidden` on `.ic-app-header__logomark-container`, which keeps the logo's space so the nav's buttons stay exactly where they were, in the expanded and the collapsed nav alike. It also takes the logo's link out of the tab order and away from screen readers; the Dashboard button goes to the same place. The switch is `html[data-cpp-hide-logo]`, cached in the page's `localStorage` like the theme (`core/page-mirror.ts`) so the logo doesn't show for a moment on every page load. The theme's recolor pass only takes off the tags it sets, so switches like this one survive it.
 
+### Hiding the footer
+
+Off by default (popup switch). It hides the bar of Instructure's links at the bottom of every page (Privacy Policy, Cookie Notice, Acceptable Use Policy, Facebook, X.com) with `display: none` on `#footer.ic-app-footer`; nothing comes after it, so nothing else moves. The switch is `html[data-cpp-hide-footer]`, cached like the logo's: both go through `core/page-flag.ts`, which tags `<html>` while a switch is on and keeps the copy in the page's `localStorage`.
+
 ### Contrast pass (course content, as built in milestone 6)
 
 Teachers write course content in Canvas's editor, which offers 22 colors (TinyMCE's default map) for text and highlight. Canvas renders it inside `.user_content` on every content page (pages, assignments, announcements, discussions, both quiz types, the syllabus). Measured with the theme on, colored _text_ already read through `lift`; colored _backgrounds_ didn't: the theme made the text light but left a highlight, colored table cell or callout box as written, so light highlights fell to about 1:1.

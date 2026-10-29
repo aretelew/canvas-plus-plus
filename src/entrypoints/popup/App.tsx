@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { WxtStorageItem } from '#imports';
 import { cardAssignments } from '@/features/assignments/storage';
+import { hideFooter } from '@/features/footer/storage';
 import { cardGrades } from '@/features/grades/storage';
 import { hideLogo } from '@/features/logo/storage';
 import { tidySidebar } from '@/features/sidebar/storage';
@@ -23,6 +24,7 @@ const sections: Section[] = [
       { label: 'Dark theme', setting: themeEnabled },
       { label: 'True black (OLED)', setting: themeOled, under: themeEnabled },
       { label: 'Hide school logo', setting: hideLogo },
+      { label: 'Hide footer', setting: hideFooter },
     ],
   },
   {

@@ -1,0 +1,6 @@
+/* The bar of Instructure's links at the bottom of every page (privacy policy,
+   cookie notice, social media). Nothing comes after it, so taking it out moves
+   nothing else. */
+html[data-cpp-hide-footer] #footer.ic-app-footer {
+  display: none;
+}
