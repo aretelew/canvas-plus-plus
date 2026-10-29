@@ -115,6 +115,24 @@ export function tints(background: string): boolean {
 const TINT_ABOVE = 0.12;
 
 /**
+ * Whether a light background is one of Canvas's pale blue highlights (a
+ * selected inbox row; a grades row on hover) rather than a plain surface. The
+ * theme shows these as its hover tint, so they still stand out on dark.
+ */
+export function highlights(background: string): boolean {
+  const color = parse(background);
+  return (
+    !!color &&
+    roleOf('bg', background) === 'surface' &&
+    color.b - color.r >= HIGHLIGHT_CAST
+  );
+}
+
+// Canvas's light greys lean blue by a few steps at most (#f2f4f4), its pale
+// blues by about 20 (#e0ebf5, #e5f2f8)
+const HIGHLIGHT_CAST = 12;
+
+/**
  * Whether lifted text may sit on this background: one the theme darkens, which
  * is an opaque neutral one, or in course content (`content`) any that tints.
  * Colored ones in Canvas's own UI (badges) keep dark text.

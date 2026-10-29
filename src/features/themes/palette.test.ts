@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   darkenGradient,
+  highlights,
   liftsOn,
   recolorRing,
   roleOf,
@@ -152,6 +153,21 @@ describe('tints', () => {
     ['rgba(0, 0, 0, 0)', false],
   ])('%s: %s', (css, tinted) => {
     expect(tints(css)).toBe(tinted);
+  });
+});
+
+// Colors measured on real Canvas pages
+describe('highlights', () => {
+  it.each([
+    ['rgb(229, 242, 248)', true], // the inbox's selected row
+    ['rgb(224, 235, 245)', true], // a grades row on hover
+    ['rgb(242, 244, 244)', false], // light grey: a surface
+    ['rgb(236, 240, 241)', false],
+    ['rgb(255, 255, 255)', false],
+    ['rgb(53, 152, 219)', false], // blue, too dark to be a surface
+    ['rgba(229, 242, 248, 0.2)', false],
+  ])('%s: %s', (css, highlighted) => {
+    expect(highlights(css)).toBe(highlighted);
   });
 });
 

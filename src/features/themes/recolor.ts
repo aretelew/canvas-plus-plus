@@ -1,5 +1,6 @@
 import {
   darkenGradient,
+  highlights,
   liftsOn,
   recolorRing,
   roleOf,
@@ -25,13 +26,15 @@ import {
 // hovered or focused, before that frame paints.
 //
 // Canvas also recolors by moving a class (the global nav's white "active"
-// highlight follows the clicked item), so an element whose class changes is
+// highlight follows the clicked item) or by changing an inline color (the
+// inbox's selected row), so an element whose class or inline colors change is
 // forgotten, with its insides if it's a small component, and tagged again like
 // a new one.
 
 // Light backgrounds inside these keep a lighter shade so controls stay visible;
 // everything else light goes flat (page color), or card color if Canvas lifts
-// it with a drop shadow.
+// it with a drop shadow, or the hover tint if it's one of Canvas's pale blue
+// highlights.
 const CONTROLS = [
   'button',
   'input',
@@ -53,7 +56,7 @@ const IN_FLOW = '[class*="-view-alert"], [role="alert"]';
 // the theme's text, are darkened to a shade of their color.
 const CONTENT = '.user_content';
 
-type Background = 'page' | 'elevated' | 'control';
+type Background = 'page' | 'elevated' | 'control' | 'highlight';
 
 let observer: MutationObserver | undefined;
 let queue: Element[] = [];
@@ -70,8 +73,19 @@ const probed = {
 export function startRecolor(): void {
   if (observer) return;
   observer = new MutationObserver((records) => {
-    for (const { type, target, addedNodes } of records) {
-      if (type === 'attributes' && target instanceof Element) {
+    for (const {
+      type,
+      target,
+      attributeName,
+      oldValue,
+      addedNodes,
+    } of records) {
+      if (
+        type === 'attributes' &&
+        target instanceof Element &&
+        (attributeName !== 'style' ||
+          inlineColors(oldValue) !== inlineColors(target.getAttribute('style')))
+      ) {
         forget(target);
         enqueue(target);
       }
@@ -84,7 +98,8 @@ export function startRecolor(): void {
   observer.observe(document, {
     childList: true,
     subtree: true,
-    attributeFilter: ['class'],
+    attributeFilter: ['class', 'style'],
+    attributeOldValue: true,
   });
   enqueue(document.documentElement);
   for (const type of ['mouseover', 'focusin']) {
@@ -106,6 +121,26 @@ export function stopRecolor(): void {
 
 function enqueue(el: Element): void {
   if (queue.push(el) === 1) requestAnimationFrame(flush);
+}
+
+// The colors an inline style sets, from the style attribute's text. Canvas
+// recolors with inline styles too (the inbox's selected row gets a light blue
+// background, with no class to go with it), but most of its inline changes
+// move things (popover positions), and the custom properties and paused
+// transitions this file sets are inline as well: none of those recolor.
+// (shorthands are read as their longhands: `border` as border-top-color, ...)
+const COLOR_PROPERTIES =
+  /^(?:color|background-(?:color|image)|border-.*color|box-shadow|text-shadow|fill|stroke)$/;
+let scratch: HTMLElement | undefined;
+
+function inlineColors(css: string | null): string {
+  scratch ??= document.createElement('div');
+  scratch.style.cssText = css ?? '';
+  const { style } = scratch;
+  return [...style]
+    .filter((name) => COLOR_PROPERTIES.test(name))
+    .map((name) => `${name}:${style.getPropertyValue(name)}`)
+    .join(';');
 }
 
 // el is tagged from scratch on the next flush, and so is everything inside it
@@ -252,6 +287,7 @@ function background(
       ? 'control'
       : 'page';
   }
+  if (highlights(style.backgroundColor)) return 'highlight';
   return shadowKind(style.boxShadow) === 'drop' && !el.matches(IN_FLOW)
     ? 'elevated'
     : 'page';

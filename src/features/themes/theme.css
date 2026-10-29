@@ -75,6 +75,11 @@ html[data-cpp-theme] [data-cpp-bg='control'] {
   --cpp-surface: var(--cpp-control);
   background-color: var(--cpp-control) !important;
 }
+/* Canvas's pale blue highlights (a selected inbox row), shown as the theme's
+   hover tint, like a row lit up on hover */
+html[data-cpp-theme] [data-cpp-bg='highlight'] {
+  background-color: var(--cpp-hover) !important;
+}
 /* a teacher's highlight or colored cell in course content, darkened to a shade
    of its color (recolor.ts stores the original in --cpp-tint) */
 html[data-cpp-theme] [data-cpp-bg='tint'] {
