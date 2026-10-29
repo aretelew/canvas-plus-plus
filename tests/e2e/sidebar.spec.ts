@@ -145,7 +145,7 @@ test('To Do lists only work to do, grouped by when it is due', async ({
   await expect(p.getByRole('link', { name: 'View Grades' })).toBeHidden();
 });
 
-test('Recent Feedback shows three, then the rest on request', async ({
+test('Recent Feedback shows three, the rest on request, and folds back', async ({
   page: p,
   setTidySidebar,
 }) => {
@@ -158,13 +158,16 @@ test('Recent Feedback shows three, then the rest on request', async ({
     /Analytic Essay 2\s*CSDS 338\s*"fantastic"\s*95\/100/,
     /Participation\s*CSDS 338\s*A/,
   ]);
-  await feedback(p).getByRole('button', { name: 'Show 1 more' }).click();
+  const toggle = feedback(p).getByRole('button');
+  await expect(toggle).toHaveText('Show 1 more');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await toggle.click();
   await expect(rows).toHaveCount(4);
-  await expect(feedback(p).getByRole('button')).toHaveCount(0);
-  // focus goes to the row it showed
-  await expect(
-    feedback(p).getByRole('link', { name: 'Midterm' }),
-  ).toBeFocused();
+  await expect(toggle).toHaveText('Show less');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await toggle.click();
+  await expect(rows).toHaveCount(3);
+  await expect(toggle).toHaveText('Show 1 more');
   await expect(
     feedback(p).getByRole('link', { name: 'All grades' }),
   ).toHaveAttribute('href', '/grades');
@@ -250,9 +253,12 @@ test('To Do shows seven, and a row behind "more" still follows its card', async 
   await expect(todo(p).locator('.cpp-count')).toHaveText('8');
   await todo(p).getByRole('button', { name: 'Show 2 more' }).click();
   await expect(rows).toHaveCount(9);
-  const shown = todo(p).getByRole('checkbox', { name: 'Mark Lab 8 as done' });
-  await expect(shown).toBeFocused();
-  await expect(shown).toBeChecked();
+  await expect(
+    todo(p).getByRole('checkbox', { name: 'Mark Lab 8 as done' }),
+  ).toBeChecked();
+  // and fold back to seven
+  await todo(p).getByRole('button', { name: 'Show less' }).click();
+  await expect(rows).toHaveCount(7);
   await setCardAssignments(false);
 });
 

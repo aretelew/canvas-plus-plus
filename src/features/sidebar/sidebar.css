@@ -131,7 +131,7 @@ html[data-cpp-sidebar]
   text-decoration: line-through;
 }
 /* rows and groups behind "Show N more"; rows are flex, which would show them,
-   and the footer is empty once its button is used on a course's page */
+   and the footer is empty on a course's page with nothing more to show */
 .cpp-sidebar [hidden],
 .cpp-sidebar .cpp-footer:empty {
   display: none;

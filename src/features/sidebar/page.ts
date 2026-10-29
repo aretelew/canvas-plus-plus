@@ -20,7 +20,7 @@ import { dueLabel, todoGroups, type When } from './todo';
 const MIRROR_KEY = 'canvas++:tidy-sidebar';
 // on Canvas's list when ours can't be shown, so it shows instead
 const KEEP = 'cpp-keep';
-// rows shown before "Show N more"
+// rows shown while the list is collapsed
 const SHOWN_TODO = 7;
 const SHOWN_FEEDBACK = 3;
 
@@ -344,23 +344,24 @@ function courseLine(
   return line;
 }
 
-// "Show N more" for what's hidden, which shows it and, since the button is
-// gone, moves focus to the first of it. Nothing when nothing is hidden.
+// "Show N more" for what's hidden, which shows it, then "Show less", which
+// hides it again. Nothing when nothing is hidden.
 function showMore(
   hidden: HTMLElement[],
   count: number,
 ): HTMLButtonElement | undefined {
-  const [first] = hidden;
-  if (!first) return undefined;
-  for (const element of hidden) element.hidden = true;
+  if (hidden.length === 0) return undefined;
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'cpp-more';
-  button.textContent = `Show ${String(count)} more`;
+  const show = (expanded: boolean) => {
+    for (const element of hidden) element.hidden = !expanded;
+    button.setAttribute('aria-expanded', String(expanded));
+    button.textContent = expanded ? 'Show less' : `Show ${String(count)} more`;
+  };
   button.addEventListener('click', () => {
-    for (const element of hidden) element.hidden = false;
-    button.remove();
-    first.querySelector<HTMLElement>('input, a')?.focus();
+    show(button.getAttribute('aria-expanded') !== 'true');
   });
+  show(false);
   return button;
 }
