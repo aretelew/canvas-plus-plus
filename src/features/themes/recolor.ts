@@ -29,7 +29,9 @@ import {
 // highlight follows the clicked item) or by changing an inline color (the
 // inbox's selected row), so an element whose class or inline colors change is
 // forgotten, with its insides if it's a small component, and tagged again like
-// a new one.
+// a new one. Checking a radio button or checkbox recolors without either (its
+// facade is styled through the input's :checked), so a checked input's
+// surroundings are forgotten too.
 
 // Light backgrounds inside these keep a lighter shade so controls stay visible;
 // everything else light goes flat (page color), or card color if Canvas lifts
@@ -108,6 +110,7 @@ export function startRecolor(): void {
       passive: true,
     });
   }
+  document.addEventListener('change', recheck, { capture: true });
 }
 
 export function stopRecolor(): void {
@@ -116,6 +119,30 @@ export function stopRecolor(): void {
   queue = [];
   for (const type of ['mouseover', 'focusin']) {
     document.removeEventListener(type, probeStates, { capture: true });
+  }
+  document.removeEventListener('change', recheck, { capture: true });
+}
+
+// Canvas draws its own radio buttons and checkboxes beside a hidden input
+// (`input:checked + label .facade`), so checking one changes no class. Its
+// parent holds the facade; a radio's group changes with it, since the one that
+// unchecks gets no event of its own.
+function recheck({ target }: Event): void {
+  if (
+    !(target instanceof HTMLInputElement) ||
+    (target.type !== 'radio' && target.type !== 'checkbox')
+  ) {
+    return;
+  }
+  const inputs =
+    target.type === 'radio' && target.name
+      ? document.getElementsByName(target.name)
+      : [target];
+  for (const input of inputs) {
+    const around = input.parentElement;
+    if (!around) continue;
+    forget(around);
+    enqueue(around);
   }
 }
 
