@@ -1,6 +1,7 @@
 # Pushing a tag like v0.2.0 checks, zips and submits that version to the
-# Chrome Web Store for review. The first upload has to be made by hand in the
-# developer dashboard; this only ships updates to an existing listing.
+# Chrome Web Store and Firefox Add-ons for review. The first upload to each has
+# to be made by hand in its developer dashboard; this only ships updates to
+# existing listings.
 name: Release
 
 on:
@@ -40,3 +41,33 @@ jobs:
           CHROME_PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
           CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL: ${{ secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL }}
           CHROME_SERVICE_ACCOUNT_PRIVATE_KEY: ${{ secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY }}
+
+  # A job of its own, so a store that refuses the version can be re-run alone
+  firefox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run check
+
+      # Also makes the sources zip: the build is bundled and minified, so AMO
+      # reviewers rebuild it from source
+      - run: npm run zip:firefox
+
+      - name: Submit to Firefox Add-ons
+        run: >-
+          npx wxt submit
+          --firefox-zip .output/*-firefox.zip
+          --firefox-sources-zip .output/*-sources.zip
+        env:
+          # the gecko id in wxt.config.ts
+          FIREFOX_EXTENSION_ID: canvas-plus-plus@aretelew
+          FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
+          FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}

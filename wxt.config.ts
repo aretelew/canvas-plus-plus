@@ -20,6 +20,11 @@ export default defineConfig({
   }),
   // WXT defaults Firefox to MV2; we rely on MV3 APIs (optional per-domain hosts, registerContentScripts)
   manifestVersion: 3,
+  // The Firefox sources zip ignores .gitignore, so it would ship tests/fixtures'
+  // saved Canvas pages (personal data) to AMO reviewers; they only need to rebuild
+  zip: {
+    excludeSources: ['tests/**', 'test-results/**', 'playwright-report/**'],
+  },
   // ESLint 10 reads the same flat-config format as 9; WXT only knows to ask for "9"
   imports: { eslintrc: { enabled: 9 } },
   manifest: ({ browser }) => ({
@@ -34,10 +39,13 @@ export default defineConfig({
         gecko: {
           // permanent once published on AMO
           id: 'canvas-plus-plus@aretelew',
-          // optional_host_permissions, scripting's matchOriginAsFallback
-          strict_min_version: '128.0',
+          // AMO requires data_collection_permissions, which Firefox reads from
+          // 140 (142 on Android); older versions would also need a
+          // data-collection notice of our own
+          strict_min_version: '140.0',
           data_collection_permissions: { required: ['none'] },
         },
+        gecko_android: { strict_min_version: '142.0' },
       },
     }),
   }),
