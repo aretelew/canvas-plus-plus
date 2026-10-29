@@ -1,36 +1,50 @@
 import { storage } from '#imports';
 
-export const themeEnabled = storage.defineItem<boolean>('sync:themeEnabled', {
-  fallback: false,
+// 'system' is dark only while the operating system is.
+export type ThemeMode = 'off' | 'on' | 'system';
+
+export const themeMode = storage.defineItem<ThemeMode>('sync:themeMode', {
+  fallback: 'off',
 });
 
-// A variant of the dark theme: it only applies while that's on, and is kept
-// while it's off.
+// A variant of the dark theme: it only applies while that does, and is kept
+// while it doesn't.
 export const themeOled = storage.defineItem<boolean>('sync:themeOled', {
   fallback: false,
 });
 
-// The theme the settings pick; undefined while the theme is off.
+// The theme on the page; undefined while there's none.
 export type Theme = 'dark' | 'oled';
 
-/** Calls `onChange` with the current theme, then again whenever it changes. */
-export async function watchTheme(
-  onChange: (theme: Theme | undefined) => void,
+export type ThemeSettings = { mode: ThemeMode; oled: boolean };
+
+/** The theme `settings` put on the page while the system is or isn't dark. */
+export function resolveTheme(
+  { mode, oled }: ThemeSettings,
+  systemDark: boolean,
+): Theme | undefined {
+  if (mode === 'off' || (mode === 'system' && !systemDark)) return undefined;
+  return oled ? 'oled' : 'dark';
+}
+
+/** Calls `onChange` with the current settings, then again whenever they change. */
+export async function watchThemeSettings(
+  onChange: (settings: ThemeSettings) => void,
 ): Promise<void> {
-  let [enabled, oled] = await Promise.all([
-    themeEnabled.getValue(),
+  let [mode, oled] = await Promise.all([
+    themeMode.getValue(),
     themeOled.getValue(),
   ]);
   const report = () => {
-    onChange(enabled ? (oled ? 'oled' : 'dark') : undefined);
+    onChange({ mode, oled });
   };
   report();
-  themeEnabled.watch((on) => {
-    enabled = on;
+  themeMode.watch((next) => {
+    mode = next;
     report();
   });
-  themeOled.watch((on) => {
-    oled = on;
+  themeOled.watch((next) => {
+    oled = next;
     report();
   });
 }

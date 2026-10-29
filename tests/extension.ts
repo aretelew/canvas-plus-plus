@@ -18,7 +18,7 @@ import { extensionId, launchWithExtension } from './chrome';
 // built by `npm run test:browser`, apart from the store build (see wxt.config.ts)
 const EXTENSION = resolve('.output/chrome-mv3-test');
 
-// The one extension API setSwitch calls inside the popup (extension types
+// The one extension API setInPopup calls inside the popup (extension types
 // aren't loaded for tests).
 declare const chrome: {
   storage: { sync: { get(key: string): Promise<Record<string, unknown>> } };
@@ -32,6 +32,7 @@ export const test = base.extend<
     context: BrowserContext;
     page: Page;
     setTheme: (on: boolean) => Promise<void>;
+    setThemeMode: (mode: 'Off' | 'On' | 'System') => Promise<void>;
     setOled: (on: boolean) => Promise<void>;
     setCardGrades: (on: boolean) => Promise<void>;
     setCardAssignments: (on: boolean) => Promise<void>;
@@ -67,10 +68,12 @@ export const test = base.extend<
     await page.close();
   },
 
+  setThemeMode: async ({ context }, use) => {
+    await use((mode) => setThemeMode(context, mode));
+  },
+
   setTheme: async ({ context }, use) => {
-    await use((on) =>
-      setSwitch(context, 'Appearance', 'Dark theme', 'themeEnabled', on),
-    );
+    await use((on) => setThemeMode(context, on ? 'On' : 'Off'));
   },
 
   setOled: async ({ context }, use) => {
@@ -125,27 +128,62 @@ export async function openPopup(context: BrowserContext): Promise<Page> {
 
 // Flips one of the popup's switches, in its section, and waits until the
 // setting is saved.
-async function setSwitch(
+function setSwitch(
   context: BrowserContext,
   section: string,
   name: string,
   key: string,
   on: boolean,
 ): Promise<void> {
+  return setInPopup(context, section, key, on, false, (popup) =>
+    popup.getByRole('switch', { name }).setChecked(on),
+  );
+}
+
+// Picks one of the dark theme's options, and waits until it's saved.
+function setThemeMode(
+  context: BrowserContext,
+  mode: 'Off' | 'On' | 'System',
+): Promise<void> {
+  return setInPopup(
+    context,
+    'Appearance',
+    'themeMode',
+    mode.toLowerCase(),
+    'off',
+    (popup) =>
+      popup
+        .getByRole('radiogroup', { name: 'Dark theme' })
+        .getByRole('radio', { name: mode })
+        .check(),
+  );
+}
+
+// Opens the popup to a section, changes a setting there, and waits until it's
+// stored as `value`; `unset` is what it reads as while nothing is stored, as
+// before it's first changed.
+async function setInPopup<T extends string | boolean>(
+  context: BrowserContext,
+  section: string,
+  key: string,
+  value: T,
+  unset: T,
+  change: (popup: Page) => Promise<void>,
+): Promise<void> {
   const popup = await openPopup(context);
   await popup.getByRole('button', { name: section }).click();
-  const toggle = popup.getByRole('switch', { name });
-  await toggle.setChecked(on);
-  // the switch flips at once but the setting is saved asynchronously;
+  await change(popup);
+  // the control changes at once but the setting is saved asynchronously;
   // closing the popup first could lose it to the next test
   await expect
     .poll(() =>
       popup.evaluate(
-        async (key) => (await chrome.storage.sync.get(key))[key] === true,
-        key,
+        async ([key, unset]) =>
+          (await chrome.storage.sync.get(key))[key] ?? unset,
+        [key, unset] as const,
       ),
     )
-    .toBe(on);
+    .toBe(value);
   await popup.close();
 }
 

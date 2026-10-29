@@ -38,21 +38,18 @@ export function SiteAccess() {
   if (!site) return null;
   if (site.status === 'on') {
     return (
-      <p className="px-4 py-2.5 text-sm text-base-content/70">
-        On for {site.host}
-      </p>
+      <div className="px-4 py-2.5">
+        <SiteStatus host={site.host} state="Enabled" />
+      </div>
     );
   }
   return (
-    <div className="flex items-center justify-between gap-4 px-4 py-2.5 text-sm">
-      {/* hosts have no spaces to wrap at, and some are long */}
-      <span className="min-w-0 wrap-anywhere">
-        {site.host} looks like Canvas
-      </span>
+    <div className="flex items-center justify-between gap-4 px-4 py-2.5">
+      <SiteStatus host={site.host} state="Not enabled" />
       <button
         type="button"
-        className="btn btn-primary btn-sm shrink-0"
-        aria-label={`Turn on canvas++ for ${site.host}`}
+        className="btn btn-primary btn-sm shrink-0 rounded-none text-sm transition-none"
+        aria-label={`Enable canvas++ on ${site.host}`}
         onClick={() => {
           // first thing in the click: Firefox only allows it from a user action
           void browser.permissions
@@ -62,8 +59,19 @@ export function SiteAccess() {
             });
         }}
       >
-        Turn on
+        Enable
       </button>
+    </div>
+  );
+}
+
+// The site's host, in mono like an address, over what canvas++ does there.
+function SiteStatus({ host, state }: { host: string; state: string }) {
+  return (
+    <div className="min-w-0 text-sm">
+      {/* hosts have no spaces to wrap at, and some are long */}
+      <p className="font-mono wrap-anywhere">{host}</p>
+      <p className="text-base-content/70">{state}</p>
     </div>
   );
 }

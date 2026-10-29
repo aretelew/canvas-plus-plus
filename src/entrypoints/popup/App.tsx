@@ -1,116 +1,128 @@
-import { type ReactNode, useEffect, useState } from 'react';
-import type { WxtStorageItem } from '#imports';
-import { cardAssignments } from '@/features/assignments/storage';
-import { hideFooter } from '@/features/footer/storage';
-import { cardGrades } from '@/features/grades/storage';
-import { hideLogo } from '@/features/logo/storage';
-import { tidySidebar } from '@/features/sidebar/storage';
-import { themeEnabled, themeOled } from '@/features/themes/storage';
+import { type ReactNode, useEffect, useId, useState } from 'react';
+import { focus } from './focus';
+import { Chevron, Gear } from './icons';
+import { PageLink } from './PageLink';
+import {
+  type ChoiceRow,
+  type Item,
+  type Section,
+  sections,
+  type SwitchRow,
+} from './sections';
+import { Settings, Sites } from './Settings';
 import { SiteAccess } from './SiteAccess';
 
-type Setting = WxtStorageItem<boolean, Record<string, unknown>>;
-
-// `under` is the switch a setting depends on: it's indented under it, and can
-// only be switched while that's on.
-type Row = { label: string; setting: Setting; under?: Setting };
-type Section = { title: string; rows: Row[] };
-
-// The popup's main page lists these, grouped by the part of Canvas they change;
-// each opens to its switches.
-const sections: Section[] = [
-  {
-    title: 'Appearance',
-    rows: [
-      { label: 'Dark theme', setting: themeEnabled },
-      { label: 'True black (OLED)', setting: themeOled, under: themeEnabled },
-      { label: 'Hide school logo', setting: hideLogo },
-    ],
-  },
-  {
-    title: 'Dashboard',
-    rows: [
-      { label: 'Grades on cards', setting: cardGrades },
-      { label: 'Assignments on cards', setting: cardAssignments },
-      { label: 'Hide footer', setting: hideFooter },
-    ],
-  },
-  {
-    title: 'Sidebar',
-    rows: [{ label: 'Tidy To Do list', setting: tidySidebar }],
-  },
-];
+// a page of the popup besides the main one: a section, the gear's settings,
+// or the sites the settings open
+type Opened = Section | 'settings' | 'sites';
 
 function App() {
-  const [open, setOpen] = useState<Section>();
-  // the section opened last, so closing it focuses its row
-  const [last, setLast] = useState<Section>();
+  // the pages open over the main one, the last showing; Back closes it
+  const [stack, setStack] = useState<Opened[]>([]);
+  // the page Back closed last, so the row that opened it takes the focus
+  const [closed, setClosed] = useState<Opened>();
+  const open = stack.at(-1);
+  const inSettings = stack[0] === 'settings';
+  const push = (page: Opened) => {
+    setStack([...stack, page]);
+  };
 
   return (
     <main className="w-72">
-      {/* three columns keep the name centered beside the back arrow, which
-          fills the header's corner like the rows fill theirs */}
+      {/* three columns keep the name centered between the back arrow and the
+          gear, which fill the header's corners like the rows fill theirs */}
       <header className="grid h-10 grid-cols-[1fr_auto_1fr] items-center border-b border-base-300">
         {open && (
           <button
+            // a fresh one per page, so it takes the focus on each
+            key={stack.length}
             ref={focus}
             type="button"
             className="flex h-full w-10 cursor-pointer items-center justify-center hover:bg-base-200"
             aria-label="Back"
             onClick={() => {
-              setOpen(undefined);
+              setClosed(open);
+              setStack(stack.slice(0, -1));
             }}
           >
             <Chevron direction="left" />
           </button>
         )}
         <h1 className="col-start-2 text-sm font-semibold">canvas++</h1>
+        {!inSettings && (
+          <button
+            ref={!open && closed === 'settings' ? focus : undefined}
+            type="button"
+            className="flex h-full w-10 cursor-pointer items-center justify-center justify-self-end text-base-content/50 hover:bg-base-200 hover:text-base-content"
+            aria-label="Settings"
+            onClick={() => {
+              // from a section too: Back then goes to the main page
+              setStack(['settings']);
+            }}
+          >
+            <Gear />
+          </button>
+        )}
       </header>
-      {/* every page sits in the same cell, the ones not showing hidden, so
-          the popup keeps one height (the tallest page's) as it moves between
-          them; clipped, so the tallest page's last line falls off the edge */}
-      <div className="grid overflow-hidden">
-        <Page shown={!open}>
-          {sections.map((section) => (
-            <button
-              key={section.title}
-              ref={!open && section === last ? focus : undefined}
-              type="button"
-              className="group flex w-full cursor-pointer items-center justify-between px-4 py-2.5 text-sm hover:bg-base-200"
-              onClick={() => {
-                setLast(section);
-                setOpen(section);
-              }}
-            >
-              {section.title}
-              <Chevron
-                direction="right"
-                className="text-base-content/50 group-hover:text-base-content"
+      {inSettings ? (
+        // on their own, as tall as they need: the list of sites can grow, and
+        // the other pages shouldn't grow with it
+        <div className="grid overflow-hidden">
+          <Page shown>
+            {open === 'sites' ? (
+              <Sites />
+            ) : (
+              <Settings
+                sitesFocused={closed === 'sites'}
+                onOpenSites={() => {
+                  push('sites');
+                }}
               />
-            </button>
-          ))}
-          <SiteAccess />
-        </Page>
-        {sections.map((section) => (
-          <Page key={section.title} shown={section === open}>
-            {section.rows.map((row) =>
-              row.under ? (
-                <DependentSwitch
-                  key={row.label}
-                  label={row.label}
-                  setting={row.setting}
-                  under={row.under}
-                />
-              ) : (
-                <Switch
-                  key={row.label}
-                  label={row.label}
-                  setting={row.setting}
-                />
-              ),
             )}
           </Page>
-        ))}
-      </div>
+        </div>
+      ) : (
+        // every page sits in the same cell, the ones not showing hidden, so
+        // the popup keeps one height (the tallest page's) as it moves between
+        // them; clipped, so the tallest page's last line falls off the edge
+        <div className="grid overflow-hidden">
+          <Page shown={!open}>
+            {sections.map((section) => (
+              <PageLink
+                key={section.title}
+                label={section.title}
+                focused={!open && section === closed}
+                onOpen={() => {
+                  push(section);
+                }}
+              />
+            ))}
+            <SiteAccess />
+          </Page>
+          {sections.map((section) => (
+            <Page key={section.title} shown={section === open}>
+              {section.rows.map((row) =>
+                'options' in row ? (
+                  <Choice key={row.label} {...row} />
+                ) : row.under ? (
+                  <DependentSwitch
+                    key={row.label}
+                    label={row.label}
+                    setting={row.setting}
+                    under={row.under}
+                  />
+                ) : (
+                  <Switch
+                    key={row.label}
+                    label={row.label}
+                    setting={row.setting}
+                  />
+                ),
+              )}
+            </Page>
+          ))}
+        </div>
+      )}
     </main>
   );
 }
@@ -130,49 +142,59 @@ function Page({ shown, children }: { shown: boolean; children: ReactNode }) {
   );
 }
 
-// Focuses an element as it appears, or as a ref is pointed at it. Module-level,
-// so re-renders don't call it again.
-function focus(el: HTMLElement | null) {
-  el?.focus();
+// A setting's value, kept current; undefined until storage answers.
+function useSetting<T>(setting: Item<T>): T | undefined {
+  const [value, setValue] = useState<T>();
+  useEffect(() => {
+    void setting.getValue().then(setValue);
+    return setting.watch(setValue);
+  }, [setting]);
+  return value;
 }
 
-// The back arrow, or the arrow into a section.
-function Chevron({
-  direction,
-  className = '',
-}: {
-  direction: 'left' | 'right';
-  className?: string;
-}) {
+function DependentSwitch({ label, setting, under }: Required<SwitchRow>) {
+  const parent = useSetting(under.setting);
   return (
-    <svg
-      viewBox="0 0 24 24"
-      className={`size-4 ${className}`}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d={direction === 'left' ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'} />
-    </svg>
+    <Switch
+      label={label}
+      setting={setting}
+      nested
+      disabled={parent === undefined || parent === under.off}
+    />
   );
 }
 
-// A setting's value, kept current; undefined until storage answers.
-function useSetting(setting: Setting): boolean | undefined {
-  const [on, setOn] = useState<boolean>();
-  useEffect(() => {
-    void setting.getValue().then(setOn);
-    return setting.watch(setOn);
-  }, [setting]);
-  return on;
-}
+// The options read as one control, the chosen one filled in. It fills the
+// row's end, top to bottom, like the header's back arrow fills its corner.
+// Hidden until storage answers, like a switch.
+function Choice<T extends string>({ label, setting, options }: ChoiceRow<T>) {
+  const value = useSetting(setting);
+  const id = useId();
 
-function DependentSwitch({ label, setting, under }: Required<Row>) {
-  const parentOn = useSetting(under);
-  return <Switch label={label} setting={setting} nested disabled={!parentOn} />;
+  return (
+    <div className="flex justify-between gap-4 pl-4 text-sm">
+      <span id={id} className="py-2.5">
+        {label}
+      </span>
+      <div
+        role="radiogroup"
+        aria-labelledby={id}
+        className={`flex ${value === undefined ? 'invisible' : ''}`}
+      >
+        {options.map((option) => (
+          <input
+            key={option.value}
+            type="radio"
+            name={id}
+            aria-label={option.label}
+            className="btn h-auto rounded-none border-0 border-base-300 px-3 text-sm transition-none not-last:border-r"
+            checked={value === option.value}
+            onChange={() => void setting.setValue(option.value)}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // `nested` is a sub-setting of the switch above it, indented under it.
@@ -183,7 +205,7 @@ function Switch({
   disabled = false,
 }: {
   label: string;
-  setting: Setting;
+  setting: Item<boolean>;
   nested?: boolean;
   disabled?: boolean;
 }) {

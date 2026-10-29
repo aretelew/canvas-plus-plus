@@ -21,7 +21,7 @@ If you check off an item in a dashboard card's list, canvas++ marks it as done i
 
 - Your settings (which features are on), in the browser's extension storage. If you use your browser's sync, the browser syncs them across your devices like any other extension's settings.
 - On each Canvas site where the theme is on, one value in that site's local storage, so the theme can apply before the page first paints.
-- The Canvas sites you've turned canvas++ on for, as the browser's own site permissions, which you can remove from the canvas++ options page or the browser's extension settings.
+- The Canvas sites you've turned canvas++ on for, as the browser's own site permissions, which you can remove from the canvas++ settings (the gear in its popup) or the browser's extension settings.
 
 ## Where data goes
 

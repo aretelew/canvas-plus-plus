@@ -18,7 +18,7 @@ canvas++ restyles Canvas and adds a few things it's missing, with more on the wa
 • Grades on cards: each dashboard card shows your current grade in that course.
 • Assignments on cards: each card lists what's due. Check something off there and Canvas marks it done in your To Do list too.
 
-It works right away on any Canvas at *.instructure.com. If your school uses its own address, like canvas.yourschool.edu, open Canvas, click the canvas++ button and choose Turn on.
+It works right away on any Canvas at *.instructure.com. If your school uses its own address, like canvas.yourschool.edu, open Canvas, click the canvas++ button and choose Enable.
 
 canvas++ has no server. It only talks to your school's Canvas, using your existing login, and never sends your data anywhere else. There are no ads or tracking.
 
@@ -58,7 +58,7 @@ When the user opens the popup, checks whether the current tab is a Canvas page, 
 Host permissions (content script on `https://*.instructure.com/*`, optional `https://*/*`)
 
 ```
-The content script runs on *.instructure.com, where Canvas is hosted, to restyle pages and add the dashboard features. Some schools host Canvas on their own domain, so https://*/* is optional. canvas++ requests it for one site at a time (for example https://canvas.yourschool.edu/*) when the user clicks Turn on in the popup, and the user can remove a site from the options page.
+The content script runs on *.instructure.com, where Canvas is hosted, to restyle pages and add the dashboard features. Some schools host Canvas on their own domain, so https://*/* is optional. canvas++ requests it for one site at a time (for example https://canvas.yourschool.edu/*) when the user clicks Enable in the popup, and the user can remove a site from the settings in the popup.
 ```
 
 **Remote code:** No, I am not using remote code.

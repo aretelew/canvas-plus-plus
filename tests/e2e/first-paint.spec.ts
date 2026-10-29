@@ -68,3 +68,19 @@ test('is true black from the first frame with OLED on', async ({
   await page.reload();
   expect(await firstFrameBg(page)).toBe('rgb(0, 0, 0)');
 });
+
+test('follows the system when set to match it', async ({
+  page,
+  setThemeMode,
+}) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto(URL);
+  await setThemeMode('System');
+  await expect(page.locator('html')).toHaveAttribute('data-cpp-theme', 'dark');
+
+  await page.reload();
+  expect(await firstFrameBg(page)).toBe('rgb(21, 23, 28)');
+
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect(page.locator('html')).not.toHaveAttribute('data-cpp-theme');
+});

@@ -23,7 +23,7 @@ A browser extension that improves Canvas LMS. Feature #1 is a **theme engine**: 
 
 - **Size limits** (checked in CI): content script under 15 KB gzipped, theme CSS under 20 KB gzipped, popup under 20 KB gzipped (Preact included). Any UI injected into Canvas pages uses Preact too, since it loads on every page view.
 - **Runtime:** no work on pages where the extension is off beyond one attribute check. No polling or timers. The MutationObserver only watches content containers.
-- **UI:** the popup is one on/off switch per feature (plus, later, a theme picker), grouped into sections by the part of Canvas they change (Appearance, Dashboard, Sidebar). Its main page lists the sections, and each opens to its switches with a back arrow. A feature's finer settings go in the options page. Every new setting has to justify itself.
+- **UI:** the popup is one on/off switch per feature (plus, later, a theme picker), grouped into sections by the part of Canvas they change (Appearance, Dashboard, Sidebar). Its main page lists the sections, and each opens to its switches with a back arrow. The gear opens the settings: what's set once rather than flipped often (school domains, reset, about). Every new setting has to justify itself.
 - **Themes:** a few carefully designed themes beat many average ones. Leaving Canvas's layout mostly alone and only recoloring it is part of the minimal look.
 - Robustness still matters: stable selectors and visual tests, because a minimal extension that breaks every Canvas update isn't clean.
 
@@ -131,8 +131,8 @@ Teachers write course content in Canvas's editor, which offers 22 colors (TinyMC
 ### Domains and permissions (as built in milestone 7)
 
 - **Manifest:** `permissions: ["storage", "scripting", "activeTab"]`, `optional_host_permissions: ["https://*/*"]`. The content script's own match (`https://*.instructure.com/*`) is the only host access at install, so the install prompt has no "all websites" warning. Firefox needs 128+ (optional host permissions, `matchOriginAsFallback` in registrations).
-- **Custom domain flow:** on a site that isn't instructure.com, opening the popup (`activeTab`) lets it check the page for Canvas's app shell or brand stylesheet (`features/domains/detect.ts`). If it's Canvas, the popup offers **"Turn on canvas++ here"**, which calls `permissions.request` for that site as the first thing in the click (Firefox requires it, and may close the popup for the prompt).
-- **The grants are the list:** the background keeps one runtime-registered content script (the same built files as the manifest one) matching exactly the granted custom domains, and themes tabs already open on a newly granted one. No domain list is stored. The options page lists the grants and removes them.
+- **Custom domain flow:** on a site that isn't instructure.com, opening the popup (`activeTab`) lets it check the page for Canvas's app shell or brand stylesheet (`features/domains/detect.ts`). If it's Canvas, the popup offers to **Enable** canvas++ there, which calls `permissions.request` for that site as the first thing in the click (Firefox requires it, and may close the popup for the prompt).
+- **The grants are the list:** the background keeps one runtime-registered content script (the same built files as the manifest one) matching exactly the granted custom domains, and themes tabs already open on a newly granted one. No domain list is stored. The popup's settings list the grants and remove them.
 - **Upkeep:** both browsers drop runtime registrations when the extension updates (checked in Chromium's and Firefox's source), so the background re-syncs on `runtime.onInstalled`, `permissions.onAdded` and `permissions.onRemoved`. Grants made from the browser's own site-access menu are picked up the same way.
 
 ### Settings

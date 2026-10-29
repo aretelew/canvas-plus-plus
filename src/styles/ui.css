@@ -22,6 +22,8 @@
   --color-primary-content: #15171c;
   --color-neutral: #30353d;
   --color-neutral-content: #e3e5e8;
+  /* for what takes something away, like a site's Remove */
+  --color-error: #ff7b72;
   --radius-selector: 1rem;
   --radius-field: 0.375rem;
   --radius-box: 0.5rem;
@@ -44,6 +46,7 @@
   --color-primary-content: #ffffff;
   --color-neutral: #e6e8eb;
   --color-neutral-content: #1f2328;
+  --color-error: #c9302c;
   --radius-selector: 1rem;
   --radius-field: 0.375rem;
   --radius-box: 0.5rem;
@@ -52,4 +55,10 @@
   --border: 1px;
   --depth: 0;
   --noise: 0;
+}
+
+/* Monospace runs large: at the same size its lowercase stands taller than the
+   sans text beside it. Scaled to the sans's x-height (about 0.53 of its size). */
+.font-mono {
+  font-size-adjust: ex-height 0.53;
 }

@@ -256,7 +256,7 @@ declare const chrome: {
 
 async function settings(
   context: BrowserContext,
-  values: Record<string, boolean>,
+  values: Record<string, boolean | string>,
 ): Promise<void> {
   const popup = await context.newPage();
   await popup.goto(`chrome-extension://${extensionId(EXTENSION)}/popup.html`);
@@ -270,9 +270,9 @@ const context = await launchWithExtension(EXTENSION, { deviceScaleFactor: 2 });
 // --- shots of the product ------------------------------------------------------
 
 const THEMES = {
-  light: { themeEnabled: false, themeOled: false },
-  dark: { themeEnabled: true, themeOled: false },
-  oled: { themeEnabled: true, themeOled: true },
+  light: { themeMode: 'off', themeOled: false },
+  dark: { themeMode: 'on', themeOled: false },
+  oled: { themeMode: 'on', themeOled: true },
 };
 
 interface DashboardBuffers {
@@ -332,9 +332,7 @@ async function popupBuffer(): Promise<Buffer> {
   const popup = await context.newPage();
   await popup.emulateMedia({ colorScheme: 'dark' });
   await popup.goto(`chrome-extension://${extensionId(EXTENSION)}/popup.html`);
-  await popup
-    .getByRole('switch', { name: 'Dark theme', checked: true })
-    .waitFor();
+  await popup.getByRole('radio', { name: 'On', checked: true }).waitFor();
   const shot = await popup.locator('main').screenshot();
   await popup.close();
   return shot;
