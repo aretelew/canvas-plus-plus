@@ -75,23 +75,12 @@ const probed = {
 export function startRecolor(): void {
   if (observer) return;
   observer = new MutationObserver((records) => {
-    for (const {
-      type,
-      target,
-      attributeName,
-      oldValue,
-      addedNodes,
-    } of records) {
-      if (
-        type === 'attributes' &&
-        target instanceof Element &&
-        (attributeName !== 'style' ||
-          inlineColors(oldValue) !== inlineColors(target.getAttribute('style')))
-      ) {
-        forget(target);
-        enqueue(target);
+    for (const record of records) {
+      const { target } = record;
+      if (target instanceof Element && changesColors(record, target)) {
+        retag(target);
       }
-      for (const node of addedNodes) {
+      for (const node of record.addedNodes) {
         if (node instanceof Element) enqueue(node);
       }
     }
@@ -139,15 +128,25 @@ function recheck({ target }: Event): void {
       ? document.getElementsByName(target.name)
       : [target];
   for (const input of inputs) {
-    const around = input.parentElement;
-    if (!around) continue;
-    forget(around);
-    enqueue(around);
+    if (input.parentElement) retag(input.parentElement);
   }
 }
 
 function enqueue(el: Element): void {
   if (queue.push(el) === 1) requestAnimationFrame(flush);
+}
+
+// Whether an attribute change may have recolored el: any class change, or a
+// change to its inline colors.
+function changesColors(
+  { type, attributeName, oldValue }: MutationRecord,
+  el: Element,
+): boolean {
+  if (type !== 'attributes') return false;
+  return (
+    attributeName !== 'style' ||
+    inlineColors(oldValue) !== inlineColors(el.getAttribute('style'))
+  );
 }
 
 // The colors an inline style sets, from the style attribute's text. Canvas
@@ -174,13 +173,14 @@ function inlineColors(css: string | null): string {
 // if it's a small component. Big containers change classes all the time that
 // don't recolor their insides (body's "webkit chrome", each module's
 // "completed" while Modules loads), and tagging those again costs a lot.
-function forget(el: Element): void {
+function retag(el: Element): void {
   const inside = isSmallComponent(el) ? [...el.querySelectorAll('*')] : [];
   for (const inner of [el, ...inside]) {
     resting.delete(inner);
     probed.mouseover.delete(inner);
     probed.focusin.delete(inner);
   }
+  enqueue(el);
 }
 
 // The tags this file sets. Other data-cpp-* attributes are features' switches
