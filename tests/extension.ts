@@ -28,14 +28,15 @@ const launch = () => launchWithExtension(EXTENSION);
 
 export const THEMES = ['dark', 'oled', 'ember', 'nord'] as const;
 
-// each theme's value in storage, and its switch in the popup
-const THEME_SWITCHES = {
+// each theme's value in storage, and its switch in the popup: on the Themes
+// page, or on the Dark mode page that opens from it
+const THEME_PAGE = { ember: 'Ember', nord: 'Nord' };
+const DARK_MODE_PAGE = {
   dark: 'Dark',
   oled: 'Dark (OLED)',
-  ember: 'Ember',
-  nord: 'Nord',
   system: 'System',
 };
+const THEME_SWITCHES = { ...THEME_PAGE, ...DARK_MODE_PAGE };
 type ThemeValue = 'off' | keyof typeof THEME_SWITCHES;
 
 export const test = base.extend<
@@ -151,6 +152,8 @@ function setSwitch(
 function setTheme(context: BrowserContext, theme: ThemeValue): Promise<void> {
   const themeSwitch = (popup: Page, name: string) =>
     popup.getByRole('switch', { name, exact: true });
+  const openDarkMode = (popup: Page) =>
+    popup.getByRole('button', { name: 'Dark mode' }).click();
   return setInPopup(
     context,
     ['Appearance', 'Themes'],
@@ -159,10 +162,15 @@ function setTheme(context: BrowserContext, theme: ThemeValue): Promise<void> {
     'off',
     async (popup) => {
       if (theme !== 'off') {
+        if (!(theme in THEME_PAGE)) await openDarkMode(popup);
         await themeSwitch(popup, THEME_SWITCHES[theme]).check();
         return;
       }
-      for (const name of Object.values(THEME_SWITCHES)) {
+      for (const name of Object.values(THEME_PAGE)) {
+        await themeSwitch(popup, name).uncheck();
+      }
+      await openDarkMode(popup);
+      for (const name of Object.values(DARK_MODE_PAGE)) {
         await themeSwitch(popup, name).uncheck();
       }
     },

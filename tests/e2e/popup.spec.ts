@@ -34,6 +34,7 @@ test('themes open on the one chosen', async ({ context, setTheme }) => {
   const popup = await openPopup(context);
   await popup.getByRole('button', { name: 'Appearance' }).click();
   await popup.getByRole('button', { name: 'Themes' }).click();
+  await popup.getByRole('button', { name: 'Dark mode' }).click();
   await expect(popup.getByRole('switch', { name: 'System' })).toBeChecked();
   await expect(
     popup.getByRole('switch', { name: 'Dark', exact: true }),
@@ -50,6 +51,7 @@ test('turning a theme on turns the others off, and off leaves none', async ({
   const popup = await openPopup(context);
   await popup.getByRole('button', { name: 'Appearance' }).click();
   await popup.getByRole('button', { name: 'Themes' }).click();
+  await popup.getByRole('button', { name: 'Dark mode' }).click();
   const dark = popup.getByRole('switch', { name: 'Dark', exact: true });
   const oled = popup.getByRole('switch', { name: 'Dark (OLED)' });
   const system = popup.getByRole('switch', { name: 'System' });
@@ -66,7 +68,15 @@ test('turning a theme on turns the others off, and off leaves none', async ({
   await expect(dark).not.toBeChecked();
   await expect(oled).not.toBeChecked();
   await expect(system).not.toBeChecked();
+
+  // across pages too
+  await dark.check();
+  await popup.getByRole('button', { name: 'Back' }).click();
+  await popup.getByRole('switch', { name: 'Ember' }).check();
+  await popup.getByRole('button', { name: 'Dark mode' }).click();
+  await expect(dark).not.toBeChecked();
   await popup.close();
+  await setTheme('off');
 });
 
 test('themes open from the appearance section, and back retraces them', async ({
@@ -76,15 +86,22 @@ test('themes open from the appearance section, and back retraces them', async ({
   const back = popup.getByRole('button', { name: 'Back' });
   const appearance = popup.getByRole('button', { name: 'Appearance' });
   const themes = popup.getByRole('button', { name: 'Themes' });
+  const darkMode = popup.getByRole('button', { name: 'Dark mode' });
+  const system = popup.getByRole('switch', { name: 'System' });
   await expect(themes).toBeHidden();
   await appearance.click();
   await themes.click();
   await expect(themes).toBeHidden();
-  await expect(popup.getByRole('switch', { name: 'System' })).toBeVisible();
+  await expect(popup.getByRole('switch', { name: 'Ember' })).toBeVisible();
+  await expect(system).toBeHidden();
+  await darkMode.click();
+  await expect(system).toBeVisible();
 
   await back.click();
+  await expect(darkMode).toBeFocused();
+  await expect(system).toBeHidden();
+  await back.click();
   await expect(themes).toBeFocused();
-  await expect(popup.getByRole('switch', { name: 'System' })).toBeHidden();
   await back.click();
   await expect(appearance).toBeFocused();
   await popup.close();
@@ -122,6 +139,8 @@ test('the popup keeps its height from page to page', async ({ context }) => {
   }
   await popup.getByRole('button', { name: 'Appearance' }).click();
   await popup.getByRole('button', { name: 'Themes' }).click();
+  expect(await main.evaluate((el) => el.clientHeight)).toBe(height);
+  await popup.getByRole('button', { name: 'Dark mode' }).click();
   expect(await main.evaluate((el) => el.clientHeight)).toBe(height);
   await popup.close();
 });
