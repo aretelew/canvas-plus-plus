@@ -1,10 +1,10 @@
-import { type ReactNode, useEffect, useId, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { focus } from './focus';
 import { Chevron, Gear } from './icons';
 import { PageLink } from './PageLink';
 import {
-  type ChoiceRow,
   type Item,
+  pages,
   type Section,
   sections,
   type SwitchRow,
@@ -99,24 +99,20 @@ function App() {
             ))}
             <SiteAccess />
           </Page>
-          {sections.map((section) => (
-            <Page key={section.title} shown={section === open}>
-              {section.rows.map((row) =>
-                'options' in row ? (
-                  <Choice key={row.label} {...row} />
-                ) : row.under ? (
-                  <DependentSwitch
-                    key={row.label}
-                    label={row.label}
-                    setting={row.setting}
-                    under={row.under}
+          {pages.map((page) => (
+            <Page key={page.title} shown={page === open}>
+              {page.rows.map((row) =>
+                'rows' in row ? (
+                  <PageLink
+                    key={row.title}
+                    label={row.title}
+                    focused={page === open && row === closed}
+                    onOpen={() => {
+                      push(row);
+                    }}
                   />
                 ) : (
-                  <Switch
-                    key={row.label}
-                    label={row.label}
-                    setting={row.setting}
-                  />
+                  <Switch key={row.label} {...row} />
                 ),
               )}
             </Page>
@@ -152,70 +148,12 @@ function useSetting<T>(setting: Item<T>): T | undefined {
   return value;
 }
 
-function DependentSwitch({ label, setting, under }: Required<SwitchRow>) {
-  const parent = useSetting(under.setting);
-  return (
-    <Switch
-      label={label}
-      setting={setting}
-      nested
-      disabled={parent === undefined || parent === under.off}
-    />
-  );
-}
-
-// The options read as one control, the chosen one filled in. It fills the
-// row's end, top to bottom, like the header's back arrow fills its corner.
-// Hidden until storage answers, like a switch.
-function Choice<T extends string>({ label, setting, options }: ChoiceRow<T>) {
+function Switch<T>({ label, setting, on, off }: SwitchRow<T>) {
   const value = useSetting(setting);
-  const id = useId();
+  const loading = value === undefined;
 
   return (
-    <div className="flex justify-between gap-4 pl-4 text-sm">
-      <span id={id} className="py-2.5">
-        {label}
-      </span>
-      <div
-        role="radiogroup"
-        aria-labelledby={id}
-        className={`flex ${value === undefined ? 'invisible' : ''}`}
-      >
-        {options.map((option) => (
-          <input
-            key={option.value}
-            type="radio"
-            name={id}
-            aria-label={option.label}
-            className="btn h-auto rounded-none border-0 border-base-300 px-3 text-sm transition-none not-last:border-r"
-            checked={value === option.value}
-            onChange={() => void setting.setValue(option.value)}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// `nested` is a sub-setting of the switch above it, indented under it.
-function Switch({
-  label,
-  setting,
-  nested = false,
-  disabled = false,
-}: {
-  label: string;
-  setting: Item<boolean>;
-  nested?: boolean;
-  disabled?: boolean;
-}) {
-  const on = useSetting(setting);
-  const loading = on === undefined;
-
-  return (
-    <label
-      className={`flex items-center justify-between gap-4 py-2.5 pr-4 text-sm ${nested ? 'pl-8' : 'pl-4'} ${disabled ? 'cursor-default text-base-content/50' : 'cursor-pointer hover:bg-base-200'}`}
-    >
+    <label className="flex cursor-pointer items-center justify-between gap-4 px-4 py-2.5 text-sm hover:bg-base-200">
       {label}
       {/* hidden until storage answers, then swapped for a fresh input: flipping
           this one would play the toggle's slide every time the popup opens */}
@@ -224,9 +162,11 @@ function Switch({
         type="checkbox"
         role="switch"
         className={`toggle toggle-primary toggle-sm ${loading ? 'invisible' : ''}`}
-        checked={on ?? false}
-        disabled={loading || disabled}
-        onChange={(e) => void setting.setValue(e.currentTarget.checked)}
+        checked={value === on}
+        disabled={loading}
+        onChange={(e) =>
+          void setting.setValue(e.currentTarget.checked ? on : off)
+        }
       />
     </label>
   );

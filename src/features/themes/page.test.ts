@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { syncThemeToPage } from './page';
-import { themeMode, themeOled } from './storage';
+import { themeChoice } from './storage';
 
 const MIRROR_KEY = 'canvas++:theme';
 const theme = () => document.documentElement.dataset.cppTheme;
@@ -35,58 +35,38 @@ describe('syncThemeToPage', () => {
     expect(localStorage.getItem(MIRROR_KEY)).toBeNull();
   });
 
-  it('applies the stored setting and caches it for the next load', async () => {
-    await themeMode.setValue('on');
+  it('applies the stored theme and caches it for the next load', async () => {
+    await themeChoice.setValue('oled');
 
     await syncThemeToPage();
 
-    expect(theme()).toBe('dark');
-    expect(localStorage.getItem(MIRROR_KEY)).toBe('dark');
+    expect(theme()).toBe('oled');
+    expect(localStorage.getItem(MIRROR_KEY)).toBe('oled');
   });
 
   it('follows the setting live', async () => {
     await syncThemeToPage();
 
-    await themeMode.setValue('on');
+    await themeChoice.setValue('dark');
     await vi.waitFor(() => {
       expect(theme()).toBe('dark');
     });
 
-    await themeMode.setValue('off');
-    await vi.waitFor(() => {
-      expect(theme()).toBeUndefined();
-    });
-  });
-
-  it('applies OLED only while the dark theme is on', async () => {
-    await themeOled.setValue(true);
-    await syncThemeToPage();
-    expect(theme()).toBeUndefined();
-
-    await themeMode.setValue('on');
+    await themeChoice.setValue('oled');
     await vi.waitFor(() => {
       expect(theme()).toBe('oled');
     });
-    expect(localStorage.getItem(MIRROR_KEY)).toBe('oled');
 
-    await themeOled.setValue(false);
+    await themeChoice.setValue('off');
     await vi.waitFor(() => {
-      expect(theme()).toBe('dark');
+      expect(theme()).toBeUndefined();
     });
-  });
-
-  it('reads a cached copy from before OLED as dark', () => {
-    localStorage.setItem(MIRROR_KEY, '1');
-
-    void syncThemeToPage();
-
-    expect(theme()).toBe('dark');
   });
 });
 
 describe('matching the system', () => {
   it('is dark only while the system is, and follows it live', async () => {
-    await themeMode.setValue('system');
+    await themeChoice.setValue('system');
     await syncThemeToPage();
     expect(theme()).toBeUndefined();
 
@@ -97,23 +77,22 @@ describe('matching the system', () => {
     expect(theme()).toBeUndefined();
   });
 
-  it('caches the setting, not the theme it gave', async () => {
-    await themeMode.setValue('system');
-    await themeOled.setValue(true);
+  it('caches the choice, not the theme it gave', async () => {
+    await themeChoice.setValue('system');
 
     await syncThemeToPage();
 
-    expect(localStorage.getItem(MIRROR_KEY)).toBe('system-oled');
+    expect(localStorage.getItem(MIRROR_KEY)).toBe('system');
   });
 
   it('checks the system as it is now on the first paint', () => {
-    localStorage.setItem(MIRROR_KEY, 'system-oled');
+    localStorage.setItem(MIRROR_KEY, 'system');
 
     void syncThemeToPage();
     expect(theme()).toBeUndefined();
 
     system.matches = true;
     void syncThemeToPage();
-    expect(theme()).toBe('oled');
+    expect(theme()).toBe('dark');
   });
 });

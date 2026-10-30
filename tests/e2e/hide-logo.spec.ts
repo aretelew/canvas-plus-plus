@@ -68,7 +68,7 @@ test('stays hidden with the dark theme on', async ({
     );
   await setHideLogo(true);
   await page.goto(URL);
-  await setTheme(true);
+  await setTheme('dark');
   await expect(page.locator('html')).toHaveAttribute('data-cpp-theme');
   await nextFrame();
   await page.evaluate(() => {
@@ -76,5 +76,5 @@ test('stays hidden with the dark theme on', async ({
   });
   await nextFrame();
   await expect(page.locator('.ic-app-header__logomark')).toBeHidden();
-  await setTheme(false);
+  await setTheme('off');
 });

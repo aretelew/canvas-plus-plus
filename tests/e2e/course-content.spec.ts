@@ -176,11 +176,11 @@ test('course content reads in every editor color', async ({
   await page.route(URL, (route) =>
     route.fulfill({ contentType: 'text/html', body: PAGE }),
   );
-  await setTheme(false);
+  await setTheme('off');
   await page.goto(URL);
   const off = await measure(page);
 
-  await setTheme(true);
+  await setTheme('dark');
   // tagged in the frame after the theme comes on
   await expect(
     page.locator('p[data-sample] span[data-cpp-fg]').first(),
@@ -199,7 +199,7 @@ test('course content reads in every editor color', async ({
     expect.soft(on[label]?.background, label).not.toBe(pageColor);
   }
 
-  await setTheme(false);
+  await setTheme('off');
   await expect(page.locator('html')).not.toHaveAttribute('data-cpp-theme');
   expect(await measure(page)).toEqual(off);
 });

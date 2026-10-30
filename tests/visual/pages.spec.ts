@@ -103,13 +103,11 @@ async function contrastViolations(page: Page): Promise<number> {
 }
 
 for (const fixture of fixtures) {
-  test(fixture.name, async ({ context, setTheme, setOled }) => {
+  test(fixture.name, async ({ context, setTheme }) => {
     let canvasProblems = 0;
-    for (const mode of ['off', 'on', 'oled'] as const) {
+    for (const mode of ['off', 'dark', 'oled'] as const) {
       await test.step(`theme ${mode}`, async () => {
-        await setTheme(mode !== 'off');
-        // only switchable while the dark theme is on
-        if (mode !== 'off') await setOled(mode === 'oled');
+        await setTheme(mode);
         // a fresh tab per load: the clock and HAR routes are per page
         const page = await context.newPage();
         try {

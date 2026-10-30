@@ -25,7 +25,7 @@ test('an editor iframe written by script is themed', async ({
   page,
   setTheme,
 }) => {
-  await setTheme(true);
+  await setTheme('dark');
   await page.route(URL, (route) =>
     route.fulfill({ contentType: 'text/html', body: PAGE }),
   );

@@ -270,9 +270,9 @@ const context = await launchWithExtension(EXTENSION, { deviceScaleFactor: 2 });
 // --- shots of the product ------------------------------------------------------
 
 const THEMES = {
-  light: { themeMode: 'off', themeOled: false },
-  dark: { themeMode: 'on', themeOled: false },
-  oled: { themeMode: 'on', themeOled: true },
+  light: { theme: 'off' },
+  dark: { theme: 'dark' },
+  oled: { theme: 'oled' },
 };
 
 interface DashboardBuffers {

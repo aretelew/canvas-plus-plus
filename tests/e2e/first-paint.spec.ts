@@ -39,7 +39,7 @@ test('stays out of the way while off', async ({ page }) => {
 });
 
 test('is dark from the first frame on reload', async ({ page, setTheme }) => {
-  await setTheme(true);
+  await setTheme('dark');
   await page.goto(URL);
   await expect(page.locator('html')).toHaveAttribute('data-cpp-theme', 'dark');
 
@@ -49,19 +49,17 @@ test('is dark from the first frame on reload', async ({ page, setTheme }) => {
 
 test('follows the switch without a reload', async ({ page, setTheme }) => {
   await page.goto(URL);
-  await setTheme(true);
+  await setTheme('dark');
   await expect(page.locator('html')).toHaveAttribute('data-cpp-theme', 'dark');
-  await setTheme(false);
+  await setTheme('off');
   await expect(page.locator('html')).not.toHaveAttribute('data-cpp-theme');
 });
 
 test('is true black from the first frame with OLED on', async ({
   page,
   setTheme,
-  setOled,
 }) => {
-  await setTheme(true);
-  await setOled(true);
+  await setTheme('oled');
   await page.goto(URL);
   await expect(page.locator('html')).toHaveAttribute('data-cpp-theme', 'oled');
 
@@ -69,13 +67,10 @@ test('is true black from the first frame with OLED on', async ({
   expect(await firstFrameBg(page)).toBe('rgb(0, 0, 0)');
 });
 
-test('follows the system when set to match it', async ({
-  page,
-  setThemeMode,
-}) => {
+test('follows the system when set to match it', async ({ page, setTheme }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto(URL);
-  await setThemeMode('System');
+  await setTheme('system');
   await expect(page.locator('html')).toHaveAttribute('data-cpp-theme', 'dark');
 
   await page.reload();

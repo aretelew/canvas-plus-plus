@@ -102,14 +102,14 @@ test('shows with the dark theme on', async ({
   setTheme,
   setCardGrades,
 }) => {
-  await setTheme(true);
+  await setTheme('dark');
   await setCardGrades(true);
   await page.goto(`${ORIGIN}/`);
   await drawCards(page);
   const pill = page.locator('.cpp-card-grade');
   await expect(pill).toHaveAttribute('data-cpp-bg');
   await expect(pill).toBeVisible();
-  await setTheme(false);
+  await setTheme('off');
 });
 
 test('stays off by default', async ({ page }) => {

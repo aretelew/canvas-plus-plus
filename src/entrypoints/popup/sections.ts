@@ -4,44 +4,35 @@ import { hideFooter } from '@/features/footer/storage';
 import { cardGrades } from '@/features/grades/storage';
 import { hideLogo } from '@/features/logo/storage';
 import { tidySidebar } from '@/features/sidebar/storage';
-import {
-  type ThemeMode,
-  themeMode,
-  themeOled,
-} from '@/features/themes/storage';
+import { type ThemeChoice, themeChoice } from '@/features/themes/storage';
 
 export type Item<T> = WxtStorageItem<T, Record<string, unknown>>;
 
-// A choice of a few values, shown as a row of buttons. `off` is the one that
-// turns the feature off.
-export type ChoiceRow<T extends string> = {
+// A switch: on while the setting is `on`, and switching it off sets `off`. A
+// setting with more values has a switch for each, so one turning on turns the
+// others off.
+export type SwitchRow<T> = {
   label: string;
   setting: Item<T>;
-  options: { value: T; label: string }[];
+  on: T;
   off: T;
 };
 
-// `under` is the choice a switch depends on: it's indented under it, and can
-// only be switched while that isn't off.
-export type SwitchRow = {
-  label: string;
-  setting: Item<boolean>;
-  under?: ChoiceRow<string>;
-};
-
-export type Row = SwitchRow | ChoiceRow<string>;
+// A section in a row opens from there, as a page of its own.
+export type Row = SwitchRow<boolean | string> | Section;
 export type Section = { title: string; rows: Row[] };
 
-const darkTheme: ChoiceRow<ThemeMode> = {
-  label: 'Dark theme',
-  setting: themeMode,
-  options: [
-    { value: 'off', label: 'Off' },
-    { value: 'on', label: 'On' },
-    { value: 'system', label: 'System' },
-  ],
+const switchRow = (
+  label: string,
+  setting: Item<boolean>,
+): SwitchRow<boolean> => ({ label, setting, on: true, off: false });
+
+const themeRow = (label: string, on: ThemeChoice): SwitchRow<ThemeChoice> => ({
+  label,
+  setting: themeChoice,
+  on,
   off: 'off',
-};
+});
 
 // The popup's main page lists these, grouped by the part of Canvas they change;
 // each opens to its switches.
@@ -49,26 +40,44 @@ export const sections: Section[] = [
   {
     title: 'Appearance',
     rows: [
-      darkTheme,
-      { label: 'True black (OLED)', setting: themeOled, under: darkTheme },
-      { label: 'Hide school logo', setting: hideLogo },
+      {
+        title: 'Themes',
+        rows: [
+          themeRow('Dark', 'dark'),
+          themeRow('Dark (OLED)', 'oled'),
+          themeRow('System', 'system'),
+        ],
+      },
     ],
   },
   {
     title: 'Dashboard',
     rows: [
-      { label: 'Grades on cards', setting: cardGrades },
-      { label: 'Assignments on cards', setting: cardAssignments },
-      { label: 'Hide footer', setting: hideFooter },
+      switchRow('Grades on cards', cardGrades),
+      switchRow('Assignments on cards', cardAssignments),
+      switchRow('Hide school logo', hideLogo),
+      switchRow('Hide footer', hideFooter),
     ],
   },
   {
     title: 'Sidebar',
-    rows: [{ label: 'Tidy To Do list', setting: tidySidebar }],
+    rows: [switchRow('Tidy To Do list', tidySidebar)],
   },
 ];
 
+const withOpened = (section: Section): Section[] => [
+  section,
+  ...section.rows.flatMap((row) => ('rows' in row ? withOpened(row) : [])),
+];
+
+// Every section, the ones that open from another section included.
+export const pages = sections.flatMap(withOpened);
+
 // Every setting there is: a feature with no row here has nothing to set.
-export const settings = sections.flatMap((section) =>
-  section.rows.map((row) => row.setting),
-);
+export const settings = [
+  ...new Set(
+    pages.flatMap((page) =>
+      page.rows.flatMap((row) => ('rows' in row ? [] : [row.setting])),
+    ),
+  ),
+];

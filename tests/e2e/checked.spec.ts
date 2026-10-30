@@ -29,7 +29,7 @@ const PAGE = `<!doctype html><title>t</title>
 const ring = (el: Element) => getComputedStyle(el).boxShadow;
 
 test.beforeEach(async ({ page, setTheme }) => {
-  await setTheme(true);
+  await setTheme('dark');
   await page.route(URL, (route) =>
     route.fulfill({ contentType: 'text/html', body: PAGE }),
   );

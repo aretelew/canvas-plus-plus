@@ -26,14 +26,20 @@ declare const chrome: {
 
 const launch = () => launchWithExtension(EXTENSION);
 
+// each theme's value in storage, and its switch in the popup
+const THEME_SWITCHES = {
+  dark: 'Dark',
+  oled: 'Dark (OLED)',
+  system: 'System',
+};
+type ThemeValue = 'off' | keyof typeof THEME_SWITCHES;
+
 export const test = base.extend<
   {
     isolated: boolean;
     context: BrowserContext;
     page: Page;
-    setTheme: (on: boolean) => Promise<void>;
-    setThemeMode: (mode: 'Off' | 'On' | 'System') => Promise<void>;
-    setOled: (on: boolean) => Promise<void>;
+    setTheme: (theme: ThemeValue) => Promise<void>;
     setCardGrades: (on: boolean) => Promise<void>;
     setCardAssignments: (on: boolean) => Promise<void>;
     setHideLogo: (on: boolean) => Promise<void>;
@@ -68,18 +74,8 @@ export const test = base.extend<
     await page.close();
   },
 
-  setThemeMode: async ({ context }, use) => {
-    await use((mode) => setThemeMode(context, mode));
-  },
-
   setTheme: async ({ context }, use) => {
-    await use((on) => setThemeMode(context, on ? 'On' : 'Off'));
-  },
-
-  setOled: async ({ context }, use) => {
-    await use((on) =>
-      setSwitch(context, 'Appearance', 'True black (OLED)', 'themeOled', on),
-    );
+    await use((theme) => setTheme(context, theme));
   },
 
   setCardGrades: async ({ context }, use) => {
@@ -102,7 +98,7 @@ export const test = base.extend<
 
   setHideLogo: async ({ context }, use) => {
     await use((on) =>
-      setSwitch(context, 'Appearance', 'Hide school logo', 'hideLogo', on),
+      setSwitch(context, 'Dashboard', 'Hide school logo', 'hideLogo', on),
     );
   },
 
@@ -135,43 +131,48 @@ function setSwitch(
   key: string,
   on: boolean,
 ): Promise<void> {
-  return setInPopup(context, section, key, on, false, (popup) =>
+  return setInPopup(context, [section], key, on, false, (popup) =>
     popup.getByRole('switch', { name }).setChecked(on),
   );
 }
 
-// Picks one of the dark theme's options, and waits until it's saved.
-function setThemeMode(
-  context: BrowserContext,
-  mode: 'Off' | 'On' | 'System',
-): Promise<void> {
+// Turns on one theme's switch, or all of them off, and waits until it's saved.
+function setTheme(context: BrowserContext, theme: ThemeValue): Promise<void> {
+  const themeSwitch = (popup: Page, name: string) =>
+    popup.getByRole('switch', { name, exact: true });
   return setInPopup(
     context,
-    'Appearance',
-    'themeMode',
-    mode.toLowerCase(),
+    ['Appearance', 'Themes'],
+    'theme',
+    theme,
     'off',
-    (popup) =>
-      popup
-        .getByRole('radiogroup', { name: 'Dark theme' })
-        .getByRole('radio', { name: mode })
-        .check(),
+    async (popup) => {
+      if (theme !== 'off') {
+        await themeSwitch(popup, THEME_SWITCHES[theme]).check();
+        return;
+      }
+      for (const name of Object.values(THEME_SWITCHES)) {
+        await themeSwitch(popup, name).uncheck();
+      }
+    },
   );
 }
 
-// Opens the popup to a section, changes a setting there, and waits until it's
-// stored as `value`; `unset` is what it reads as while nothing is stored, as
-// before it's first changed.
+// Opens the popup through `path`'s sections, changes a setting on the last, and
+// waits until it's stored as `value`; `unset` is what it reads as while nothing
+// is stored, as before it's first changed.
 async function setInPopup<T extends string | boolean>(
   context: BrowserContext,
-  section: string,
+  path: string[],
   key: string,
   value: T,
   unset: T,
   change: (popup: Page) => Promise<void>,
 ): Promise<void> {
   const popup = await openPopup(context);
-  await popup.getByRole('button', { name: section }).click();
+  for (const section of path) {
+    await popup.getByRole('button', { name: section }).click();
+  }
   await change(popup);
   // the control changes at once but the setting is saved asynchronously;
   // closing the popup first could lose it to the next test

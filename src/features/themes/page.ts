@@ -3,15 +3,13 @@ import { startRecolor, stopRecolor } from './recolor';
 import {
   resolveTheme,
   type Theme,
-  type ThemeSettings,
-  watchThemeSettings,
+  type ThemeChoice,
+  themeChoice,
 } from './storage';
 
-// a copy of the theme settings in the page's localStorage, so it's dark from
-// the first paint (see page-mirror.ts)
+// a copy of the theme chosen in the page's localStorage, so it's dark from the
+// first paint (see page-mirror.ts)
 const MIRROR_KEY = 'canvas++:theme';
-
-const OFF: ThemeSettings = { mode: 'off', oled: false };
 
 // A same-origin frame with no URL of its own was written by Canvas's scripts,
 // like the Rich Content Editor's (TinyMCE): its body is the user's content,
@@ -21,14 +19,14 @@ const writtenByScript = window.frameElement?.hasAttribute('src') === false;
 
 export async function syncThemeToPage(): Promise<void> {
   const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
-  let settings = mirroredSettings();
+  let choice = mirroredChoice();
   const apply = () => {
-    applyTheme(resolveTheme(settings, systemDark.matches));
+    applyTheme(resolveTheme(choice, systemDark.matches));
   };
-  const update = (next: ThemeSettings) => {
-    settings = next;
+  const update = (next: ThemeChoice) => {
+    choice = next;
     apply();
-    writeMirror(MIRROR_KEY, mirrorValue(settings));
+    writeMirror(MIRROR_KEY, next === 'off' ? undefined : next);
   };
 
   systemDark.addEventListener('change', apply);
@@ -36,7 +34,8 @@ export async function syncThemeToPage(): Promise<void> {
   // attribute and all
   new MutationObserver(apply).observe(document, { childList: true });
   apply();
-  await watchThemeSettings(update);
+  update(await themeChoice.getValue());
+  themeChoice.watch(update);
 }
 
 function applyTheme(theme: Theme | undefined): void {
@@ -50,20 +49,11 @@ function applyTheme(theme: Theme | undefined): void {
   }
 }
 
-// The copy is the theme, prefixed `system-` while it follows the system, so
-// the first paint checks the system as it is now.
-function mirrorValue({ mode, oled }: ThemeSettings): string | undefined {
-  if (mode === 'off') return undefined;
-  const theme = oled ? 'oled' : 'dark';
-  return mode === 'system' ? `system-${theme}` : theme;
-}
-
-function mirroredSettings(): ThemeSettings {
+// The copy is the choice, not the theme it gave, so the first paint checks the
+// system as it is now.
+function mirroredChoice(): ThemeChoice {
   const value = readMirror(MIRROR_KEY);
-  if (value === undefined) return OFF;
-  // copies from before OLED say '1', for dark
-  return {
-    mode: value.startsWith('system-') ? 'system' : 'on',
-    oled: value.endsWith('oled'),
-  };
+  return value === 'dark' || value === 'oled' || value === 'system'
+    ? value
+    : 'off';
 }

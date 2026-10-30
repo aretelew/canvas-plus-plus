@@ -8,7 +8,9 @@ import { expect, openPopup, test } from '../extension';
 
 // the extension's storage, read from the popup
 declare const chrome: {
-  storage: { sync: { get(key: string): Promise<Record<string, unknown>> } };
+  storage: {
+    sync: { get(keys: string[]): Promise<Record<string, unknown>> };
+  };
 };
 
 test('a switch that is on opens without sliding', async ({
@@ -27,36 +29,65 @@ test('a switch that is on opens without sliding', async ({
   await setHideFooter(false);
 });
 
-test('the dark theme opens on the option chosen', async ({
-  context,
-  setThemeMode,
-}) => {
-  await setThemeMode('System');
+test('themes open on the one chosen', async ({ context, setTheme }) => {
+  await setTheme('system');
   const popup = await openPopup(context);
   await popup.getByRole('button', { name: 'Appearance' }).click();
-  const theme = popup.getByRole('radiogroup', { name: 'Dark theme' });
-  await expect(theme.getByRole('radio', { name: 'System' })).toBeChecked();
-  await expect(theme.getByRole('radio', { name: 'Off' })).not.toBeChecked();
+  await popup.getByRole('button', { name: 'Themes' }).click();
+  await expect(popup.getByRole('switch', { name: 'System' })).toBeChecked();
+  await expect(
+    popup.getByRole('switch', { name: 'Dark', exact: true }),
+  ).not.toBeChecked();
   await popup.close();
-  await setThemeMode('Off');
+  await setTheme('off');
 });
 
-test('true black can only be switched while the dark theme is on', async ({
+test('turning a theme on turns the others off, and off leaves none', async ({
   context,
   setTheme,
 }) => {
-  await setTheme(false);
+  await setTheme('off');
   const popup = await openPopup(context);
   await popup.getByRole('button', { name: 'Appearance' }).click();
-  const oled = popup.getByRole('switch', { name: 'True black (OLED)' });
-  const theme = popup.getByRole('radiogroup', { name: 'Dark theme' });
-  await expect(oled).toBeDisabled();
-  await theme.getByRole('radio', { name: 'On' }).check();
-  await expect(oled).toBeEnabled();
-  await theme.getByRole('radio', { name: 'System' }).check();
-  await expect(oled).toBeEnabled();
+  await popup.getByRole('button', { name: 'Themes' }).click();
+  const dark = popup.getByRole('switch', { name: 'Dark', exact: true });
+  const oled = popup.getByRole('switch', { name: 'Dark (OLED)' });
+  const system = popup.getByRole('switch', { name: 'System' });
+
+  await dark.check();
+  await oled.check();
+  await expect(dark).not.toBeChecked();
+  await expect(oled).toBeChecked();
+
+  await system.check();
+  await expect(oled).not.toBeChecked();
+
+  await system.uncheck();
+  await expect(dark).not.toBeChecked();
+  await expect(oled).not.toBeChecked();
+  await expect(system).not.toBeChecked();
   await popup.close();
-  await setTheme(false);
+});
+
+test('themes open from the appearance section, and back retraces them', async ({
+  context,
+}) => {
+  const popup = await openPopup(context);
+  const back = popup.getByRole('button', { name: 'Back' });
+  const appearance = popup.getByRole('button', { name: 'Appearance' });
+  const themes = popup.getByRole('button', { name: 'Themes' });
+  await expect(themes).toBeHidden();
+  await appearance.click();
+  await themes.click();
+  await expect(themes).toBeHidden();
+  await expect(popup.getByRole('switch', { name: 'System' })).toBeVisible();
+
+  await back.click();
+  await expect(themes).toBeFocused();
+  await expect(popup.getByRole('switch', { name: 'System' })).toBeHidden();
+  await back.click();
+  await expect(appearance).toBeFocused();
+  await popup.close();
 });
 
 test('the back arrow returns to the sections, focused where it left', async ({
@@ -89,6 +120,9 @@ test('the popup keeps its height from page to page', async ({ context }) => {
     expect(await main.evaluate((el) => el.clientHeight)).toBe(height);
     await popup.getByRole('button', { name: 'Back' }).click();
   }
+  await popup.getByRole('button', { name: 'Appearance' }).click();
+  await popup.getByRole('button', { name: 'Themes' }).click();
+  expect(await main.evaluate((el) => el.clientHeight)).toBe(height);
   await popup.close();
 });
 
@@ -118,23 +152,23 @@ test('the gear opens the settings, which open the sites, and back retraces them'
 test('reset asks once more, then turns every feature back', async ({
   context,
   setHideFooter,
+  setTheme,
 }) => {
   await setHideFooter(true);
+  await setTheme('dark');
   const popup = await openPopup(context);
-  const hideFooter = () =>
-    popup.evaluate(
-      async () => (await chrome.storage.sync.get('hideFooter')).hideFooter,
-    );
+  const stored = () =>
+    popup.evaluate(() => chrome.storage.sync.get(['hideFooter', 'theme']));
   await popup.getByRole('button', { name: 'Settings', exact: true }).click();
 
   await popup.getByRole('button', { name: 'Reset', exact: true }).click();
   const confirm = popup.getByRole('button', { name: 'Confirm' });
   await expect(confirm).toBeVisible();
-  expect(await hideFooter()).toBe(true);
+  expect(await stored()).toEqual({ hideFooter: true, theme: 'dark' });
 
   await confirm.click();
   await expect(popup.getByRole('button', { name: 'Done' })).toBeVisible();
-  expect(await hideFooter()).toBeUndefined();
+  expect(await stored()).toEqual({});
   await popup.close();
 });
 
