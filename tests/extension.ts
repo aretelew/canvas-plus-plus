@@ -44,6 +44,7 @@ export const test = base.extend<
     setCardAssignments: (on: boolean) => Promise<void>;
     setHideLogo: (on: boolean) => Promise<void>;
     setHideFooter: (on: boolean) => Promise<void>;
+    setHideSensus: (on: boolean) => Promise<void>;
     setTidySidebar: (on: boolean) => Promise<void>;
   },
   { sharedContext: () => Promise<BrowserContext> }
@@ -105,6 +106,12 @@ export const test = base.extend<
   setHideFooter: async ({ context }, use) => {
     await use((on) =>
       setSwitch(context, 'Dashboard', 'Hide footer', 'hideFooter', on),
+    );
+  },
+
+  setHideSensus: async ({ context }, use) => {
+    await use((on) =>
+      setSwitch(context, 'Courses', 'Hide SensusAccess', 'hideSensus', on),
     );
   },
 

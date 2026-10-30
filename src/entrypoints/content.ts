@@ -7,6 +7,8 @@ import { syncCardGrades } from '@/features/grades/cards';
 import '@/features/grades/grades.css';
 import '@/features/logo/logo.css';
 import { hideLogo } from '@/features/logo/storage';
+import '@/features/sensus/sensus.css';
+import { hideSensus } from '@/features/sensus/storage';
 import { syncSidebar } from '@/features/sidebar/page';
 import '@/features/sidebar/sidebar.css';
 import { syncThemeToPage } from '@/features/themes/page';
@@ -26,6 +28,7 @@ export default defineContentScript({
     void syncThemeToPage();
     void syncPageFlag(hideLogo, 'hide-logo');
     void syncPageFlag(hideFooter, 'hide-footer');
+    void syncPageFlag(hideSensus, 'hide-sensus');
     void syncCardGrades();
     void syncCardAssignments();
     void syncSidebar();

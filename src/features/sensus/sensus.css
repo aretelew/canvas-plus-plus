@@ -1,0 +1,13 @@
+/* The "S" buttons a school's SensusAccess Inside tool adds to course pages, to
+   convert a file or page into another format. Every one has the first class,
+   on a list's row or a page's heading. On the Pages list each is a table cell,
+   with an empty header cell added to match, so that goes too and the columns
+   stay lined up. The link is its enable/disable button in Course Settings. */
+html[data-cpp-hide-sensus] .sensus-access-button-item,
+html[data-cpp-hide-sensus]
+  .collectionView:has(.sensus-access-button-item)
+  tr.header-row
+  > th:last-child:empty,
+html[data-cpp-hide-sensus] .sensus-enable-disable {
+  display: none;
+}

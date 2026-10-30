@@ -115,7 +115,7 @@ test('the popup keeps its height from page to page', async ({ context }) => {
   const popup = await openPopup(context);
   const main = popup.locator('main');
   const height = await main.evaluate((el) => el.clientHeight);
-  for (const title of ['Appearance', 'Dashboard', 'Sidebar']) {
+  for (const title of ['Appearance', 'Dashboard', 'Sidebar', 'Courses']) {
     await popup.getByRole('button', { name: title }).click();
     expect(await main.evaluate((el) => el.clientHeight)).toBe(height);
     await popup.getByRole('button', { name: 'Back' }).click();

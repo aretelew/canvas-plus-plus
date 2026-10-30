@@ -3,6 +3,7 @@ import { cardAssignments } from '@/features/assignments/storage';
 import { hideFooter } from '@/features/footer/storage';
 import { cardGrades } from '@/features/grades/storage';
 import { hideLogo } from '@/features/logo/storage';
+import { hideSensus } from '@/features/sensus/storage';
 import { tidySidebar } from '@/features/sidebar/storage';
 import { type ThemeChoice, themeChoice } from '@/features/themes/storage';
 
@@ -62,6 +63,10 @@ export const sections: Section[] = [
   {
     title: 'Sidebar',
     rows: [switchRow('Tidy To Do list', tidySidebar)],
+  },
+  {
+    title: 'Courses',
+    rows: [switchRow('Hide SensusAccess', hideSensus)],
   },
 ];
 
