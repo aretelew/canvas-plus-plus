@@ -4,7 +4,7 @@
 // their color; and turning the theme off gives back the colors as written.
 
 import type { Page } from '@playwright/test';
-import { expect, test } from '../extension';
+import { expect, test, THEMES } from '../extension';
 
 const URL = 'https://fixture.instructure.com/courses/1/pages/colors';
 
@@ -169,37 +169,42 @@ function measure(page: Page): Promise<Record<string, Measured>> {
   });
 }
 
-test('course content reads in every editor color', async ({
-  page,
-  setTheme,
-}) => {
-  await page.route(URL, (route) =>
-    route.fulfill({ contentType: 'text/html', body: PAGE }),
-  );
-  await setTheme('off');
-  await page.goto(URL);
-  const off = await measure(page);
+for (const theme of THEMES) {
+  test(`course content reads in every editor color in ${theme}`, async ({
+    page,
+    setTheme,
+  }) => {
+    await page.route(URL, (route) =>
+      route.fulfill({ contentType: 'text/html', body: PAGE }),
+    );
+    await setTheme('off');
+    await page.goto(URL);
+    const off = await measure(page);
 
-  await setTheme('dark');
-  // tagged in the frame after the theme comes on
-  await expect(
-    page.locator('p[data-sample] span[data-cpp-fg]').first(),
-  ).toBeAttached();
-  await page.evaluate(() => new Promise(requestAnimationFrame));
-  const on = await measure(page);
-  const pageColor = on['plain text']?.background;
+    await setTheme(theme);
+    // tagged in the frame after the theme comes on
+    await expect(
+      page.locator('p[data-sample] span[data-cpp-fg]').first(),
+    ).toBeAttached();
+    await page.evaluate(() => new Promise(requestAnimationFrame));
+    const on = await measure(page);
+    const pageColor = on['plain text']?.background;
 
-  for (const [label, { ratio }] of Object.entries(on)) {
-    expect
-      .soft(ratio, `${label}: ${String(off[label]?.ratio)} with the theme off`)
-      .toBeGreaterThanOrEqual(Math.min(4.5, off[label]?.ratio ?? 0));
-  }
-  // a highlight stays visible as a highlight: dark, but not the page's color
-  for (const label of ['Light Yellow highlight', 'Red highlight']) {
-    expect.soft(on[label]?.background, label).not.toBe(pageColor);
-  }
+    for (const [label, { ratio }] of Object.entries(on)) {
+      expect
+        .soft(
+          ratio,
+          `${label}: ${String(off[label]?.ratio)} with the theme off`,
+        )
+        .toBeGreaterThanOrEqual(Math.min(4.5, off[label]?.ratio ?? 0));
+    }
+    // a highlight stays visible as a highlight: dark, but not the page's color
+    for (const label of ['Light Yellow highlight', 'Red highlight']) {
+      expect.soft(on[label]?.background, label).not.toBe(pageColor);
+    }
 
-  await setTheme('off');
-  await expect(page.locator('html')).not.toHaveAttribute('data-cpp-theme');
-  expect(await measure(page)).toEqual(off);
-});
+    await setTheme('off');
+    await expect(page.locator('html')).not.toHaveAttribute('data-cpp-theme');
+    expect(await measure(page)).toEqual(off);
+  });
+}

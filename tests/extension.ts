@@ -26,10 +26,14 @@ declare const chrome: {
 
 const launch = () => launchWithExtension(EXTENSION);
 
+export const THEMES = ['dark', 'oled', 'ember', 'nord'] as const;
+
 // each theme's value in storage, and its switch in the popup
 const THEME_SWITCHES = {
   dark: 'Dark',
   oled: 'Dark (OLED)',
+  ember: 'Ember',
+  nord: 'Nord',
   system: 'System',
 };
 type ThemeValue = 'off' | keyof typeof THEME_SWITCHES;

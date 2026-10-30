@@ -35,6 +35,25 @@ describe('syncThemeToPage', () => {
     expect(localStorage.getItem(MIRROR_KEY)).toBeNull();
   });
 
+  it.each(['oled', 'ember', 'nord'] as const)(
+    'trusts a cached copy of %s',
+    (choice) => {
+      localStorage.setItem(MIRROR_KEY, choice);
+
+      void syncThemeToPage();
+
+      expect(theme()).toBe(choice);
+    },
+  );
+
+  it("ignores a cached copy it doesn't know", () => {
+    localStorage.setItem(MIRROR_KEY, 'sepia');
+
+    void syncThemeToPage();
+
+    expect(theme()).toBeUndefined();
+  });
+
   it('applies the stored theme and caches it for the next load', async () => {
     await themeChoice.setValue('oled');
 

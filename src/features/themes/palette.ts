@@ -5,6 +5,8 @@
 // they use) while leaving meaningful colors (course colors, status red and
 // green, brand) alone: anything saturated has no role, except dark saturated
 // text, which keeps its hue but is lifted to stay readable on dark surfaces.
+// Mid-toned saturated text reads on the darkest themes as it is, so only a theme
+// with lighter surfaces lifts that too.
 
 // For backgrounds the color only says "light neutral" ('surface'); whether it
 // becomes page, card or control color depends on the element (recolor.ts).
@@ -14,6 +16,7 @@ export type Role =
   | 'muted'
   | 'link'
   | 'lift'
+  | 'lift-mid'
   | 'border'
   | 'border-strong'
   | 'hidden'
@@ -75,7 +78,10 @@ export function roleOf(
   if (!color || color.a < 0.5) return null;
   if (channel === 'fg' && brand && css === brand) return 'link';
   const l = luminance(color);
-  if (!isNeutral(color)) return channel === 'fg' && l < 0.2 ? 'lift' : null;
+  if (!isNeutral(color)) {
+    if (channel !== 'fg') return null;
+    return l < 0.2 ? 'lift' : l < 0.45 ? 'lift-mid' : null;
+  }
 
   switch (channel) {
     case 'bg':
@@ -111,7 +117,8 @@ export function tints(background: string): boolean {
   return luminance(color) > TINT_ABOVE && roleOf('bg', background) === null;
 }
 
-// The theme's text (#e3e5e8) reads at 4.5:1 on backgrounds up to about 0.13
+// Every theme's text (#e3e5e8 and alike) reads at 4.5:1 on backgrounds up to
+// about 0.13
 const TINT_ABOVE = 0.12;
 
 /**

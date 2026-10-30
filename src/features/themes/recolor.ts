@@ -251,9 +251,9 @@ function classify(el: Element): Tags {
     vars['--cpp-tint'] = style.backgroundColor;
   }
   const fg = roleOf('fg', style.color, brand);
-  if (fg === 'lift') {
+  if (fg === 'lift' || fg === 'lift-mid') {
     if (onDarkenedBackdrop(el)) {
-      attrs['data-cpp-fg'] = 'lift';
+      attrs['data-cpp-fg'] = fg;
       vars['--cpp-fg'] = style.color;
     }
   } else if (fg) {

@@ -1,6 +1,7 @@
 import { readMirror, writeMirror } from '@/core/page-mirror';
 import { startRecolor, stopRecolor } from './recolor';
 import {
+  isThemeChoice,
   resolveTheme,
   type Theme,
   type ThemeChoice,
@@ -53,7 +54,5 @@ function applyTheme(theme: Theme | undefined): void {
 // system as it is now.
 function mirroredChoice(): ThemeChoice {
   const value = readMirror(MIRROR_KEY);
-  return value === 'dark' || value === 'oled' || value === 'system'
-    ? value
-    : 'off';
+  return isThemeChoice(value) ? value : 'off';
 }

@@ -2,20 +2,21 @@
    html[data-cpp-theme], so none of it applies until a theme is turned on. */
 
 /* Tokens: the only place a theme's colors live. */
-html[data-cpp-theme='dark'],
-html[data-cpp-theme='oled'] {
+html[data-cpp-theme] {
   color-scheme: dark;
   --cpp-bg: #15171c;
   --cpp-elevated: #1e2127;
   --cpp-control: #262a31;
   --cpp-control-hover: #30353d;
   /* a tint, so it reads on the page and on cards alike */
-  --cpp-hover: rgb(138 180 255 / 0.08);
+  --cpp-hover: oklch(from var(--cpp-link) l c h / 0.08);
   --cpp-border: #2f343c;
   --cpp-border-strong: #4b525d;
   --cpp-text: #e3e5e8;
   --cpp-muted: #a0a7b1;
   --cpp-link: #8ab4ff;
+  /* the global nav: its own color, so it stands apart from page and cards */
+  --cpp-nav: #232b3d;
   /* Canvas's black marks (selected radio, black borders): the strongest
      contrast on the page, so the lightest color here */
   --cpp-emphasis: var(--cpp-text);
@@ -23,6 +24,8 @@ html[data-cpp-theme='oled'] {
      at most this much color, so the theme's text reads on them */
   --cpp-tint-l: 0.32;
   --cpp-tint-c: 0.07;
+  /* the least lightness colored text is lifted to */
+  --cpp-lift-l: 0.75;
 }
 /* Dark on a true black page, for OLED screens (black pixels are off). Cards
    and controls stay a step above black so they don't melt into the page;
@@ -37,10 +40,42 @@ html[data-cpp-theme='oled'] {
   --cpp-border-strong: #464b53;
   --cpp-text: #d9dce0;
   --cpp-muted: #989fa9;
+  --cpp-nav: #181b22;
+}
+/* Warm brown-black with amber links, for reading at night. */
+html[data-cpp-theme='ember'] {
+  --cpp-bg: #1b1714;
+  --cpp-elevated: #241f1a;
+  --cpp-control: #2e2822;
+  --cpp-control-hover: #3a332c;
+  --cpp-border: #383029;
+  --cpp-border-strong: #5a4f44;
+  --cpp-text: #e8e0d4;
+  --cpp-muted: #b3a899;
+  --cpp-link: #f4a84e;
+  --cpp-nav: #38291d;
+}
+/* The Nord palette (nordtheme.com), softer than the others: nord0-3 for the
+   surfaces, nord5 for text, and nord8 a touch lighter for links, so they read
+   on controls. Its surfaces are lighter, so colored text goes lighter too, and
+   so do teachers' highlights. */
+html[data-cpp-theme='nord'] {
+  --cpp-bg: #2e3440;
+  --cpp-elevated: #3b4252;
+  --cpp-control: #434c5e;
+  --cpp-control-hover: #4c566a;
+  --cpp-border: #4c566a;
+  --cpp-border-strong: #616e88;
+  --cpp-text: #e5e9f0;
+  --cpp-muted: #c2cad8;
+  --cpp-link: #8fc7d6;
+  --cpp-nav: #242933;
+  --cpp-tint-l: 0.37;
+  --cpp-lift-l: 0.86;
 }
 
-/* Canvas's own color variables (theme editor + font colors). Brand colors
-   stay: the global nav and primary buttons keep the school's identity. */
+/* Canvas's own color variables (theme editor + font colors). The global nav
+   takes the theme's colors; primary buttons keep the school's. */
 html[data-cpp-theme] {
   --ic-link-color: var(--cpp-link);
   --ic-link-color-darkened-10: var(--cpp-link);
@@ -50,12 +85,43 @@ html[data-cpp-theme] {
   --ic-brand-button--secondary-text: var(--cpp-text);
   /* the active nav item's icon is dark navy, made for a white highlight */
   --ic-brand-global-nav-ic-icon-svg-fill--active: var(--cpp-link);
+  --ic-brand-global-nav-bgd: var(--cpp-nav);
+  --ic-brand-global-nav-ic-icon-svg-fill: var(--cpp-text);
+  --ic-brand-global-nav-menu-item__text-color: var(--cpp-text);
+  --ic-brand-global-nav-avatar-border: var(--cpp-text);
+  --ic-brand-global-nav-menu-item__badge-bgd: var(--cpp-link);
+  --ic-brand-global-nav-menu-item__badge-bgd--active: var(--cpp-link);
 }
 
 /* The page itself, styled statically so the first frame is already dark. */
 html[data-cpp-theme] body {
   background-color: var(--cpp-bg);
   color: var(--cpp-text);
+}
+
+/* Canvas darkens a nav item on hover, which a dark nav wouldn't show. The
+   active item is tagged, and stays the page's color. */
+html[data-cpp-theme]
+  .ic-app-header__menu-list-link:not([data-cpp-bg]):is(
+    :hover,
+    :focus,
+    :active
+  ) {
+  background-color: color-mix(in oklab, var(--cpp-nav), var(--cpp-text) 12%);
+}
+/* a count on the nav's accent color; the tag would make its text light */
+html[data-cpp-theme] .ic-app-header .menu-item__badge,
+html[data-cpp-theme] .ic-app-header .menu-item__badge * {
+  color: var(--cpp-bg) !important;
+}
+/* A logo is made for the school's color. A dark one means a light logo, which
+   reads on the nav, so the tile goes; a light one may mean a dark logo, so the
+   tile stays, past the role a white one would be tagged with. */
+html[data-cpp-theme] .ic-app-header .ic-app-header__logomark-container {
+  background-color: oklch(
+    from var(--ic-brand-global-nav-logo-bgd) l c h /
+      clamp(0, (l - 0.6) * 100, 1)
+  ) !important;
 }
 
 /* Palette roles, tagged at runtime by recolor.ts. !important because the tag
@@ -118,8 +184,9 @@ html[data-cpp-theme] [data-cpp-fg='link'] {
 }
 /* colored text (course colors, status) keeps its hue, made light enough to
    read on dark; recolor.ts stores the original in --cpp-fg */
-html[data-cpp-theme] [data-cpp-fg='lift'] {
-  color: oklch(from var(--cpp-fg) max(l, 0.75) c h) !important;
+html[data-cpp-theme] [data-cpp-fg='lift'],
+html[data-cpp-theme='nord'] [data-cpp-fg='lift-mid'] {
+  color: oklch(from var(--cpp-fg) max(l, var(--cpp-lift-l)) c h) !important;
 }
 html[data-cpp-theme] [data-cpp-border='hidden'] {
   border-color: transparent !important;

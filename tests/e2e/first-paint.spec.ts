@@ -6,7 +6,8 @@
 // itself is covered by src/features/themes/page.test.ts instead.
 
 import type { Page } from '@playwright/test';
-import { expect, test } from '../extension';
+import { expect, test, THEMES } from '../extension';
+import { tokenColor } from '../tokens';
 
 const URL = 'https://fixture.instructure.com/first-paint';
 
@@ -38,15 +39,6 @@ test('stays out of the way while off', async ({ page }) => {
   await expect(page.locator('html')).not.toHaveAttribute('data-cpp-theme');
 });
 
-test('is dark from the first frame on reload', async ({ page, setTheme }) => {
-  await setTheme('dark');
-  await page.goto(URL);
-  await expect(page.locator('html')).toHaveAttribute('data-cpp-theme', 'dark');
-
-  await page.reload();
-  expect(await firstFrameBg(page)).toBe('rgb(21, 23, 28)');
-});
-
 test('follows the switch without a reload', async ({ page, setTheme }) => {
   await page.goto(URL);
   await setTheme('dark');
@@ -55,17 +47,19 @@ test('follows the switch without a reload', async ({ page, setTheme }) => {
   await expect(page.locator('html')).not.toHaveAttribute('data-cpp-theme');
 });
 
-test('is true black from the first frame with OLED on', async ({
-  page,
-  setTheme,
-}) => {
-  await setTheme('oled');
-  await page.goto(URL);
-  await expect(page.locator('html')).toHaveAttribute('data-cpp-theme', 'oled');
+for (const theme of THEMES) {
+  test(`has ${theme}'s page color from the first frame on reload`, async ({
+    page,
+    setTheme,
+  }) => {
+    await setTheme(theme);
+    await page.goto(URL);
+    await expect(page.locator('html')).toHaveAttribute('data-cpp-theme', theme);
 
-  await page.reload();
-  expect(await firstFrameBg(page)).toBe('rgb(0, 0, 0)');
-});
+    await page.reload();
+    expect(await firstFrameBg(page)).toBe(await tokenColor(page, '--cpp-bg'));
+  });
+}
 
 test('follows the system when set to match it', async ({ page, setTheme }) => {
   await page.emulateMedia({ colorScheme: 'dark' });

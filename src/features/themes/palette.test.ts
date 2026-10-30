@@ -69,6 +69,14 @@ describe('roleOf', () => {
   });
 
   it.each([
+    ['rgb(255, 0, 0)'], // the old font tag's red
+    ['rgb(22, 145, 121)'], // the editor's Dark Turquoise
+    ['rgb(230, 126, 35)'], // the editor's Orange
+  ])('marks mid-toned colored text %s for lighter surfaces', (css) => {
+    expect(roleOf('fg', css)).toBe('lift-mid');
+  });
+
+  it.each([
     ['bg', 'rgb(0, 48, 113)'], // brand navy (nav, primary buttons)
     ['bg', 'rgb(0, 132, 0)'], // course card green
     ['bg', 'rgb(212, 30, 0)'], // course card red

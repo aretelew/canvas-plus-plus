@@ -1,5 +1,5 @@
-// Replays every recorded Canvas page offline from its HAR with the theme off,
-// dark and OLED: each time a full-page screenshot against its baseline and a
+// Replays every recorded Canvas page offline from its HAR with the theme off
+// and in each theme: each time a full-page screenshot against its baseline and a
 // contrast count; the theme may not add contrast problems Canvas doesn't have.
 // Fixtures and baselines are personal data and live in the gitignored
 // tests/fixtures/; record them with `npm run fixtures:record`.
@@ -14,7 +14,7 @@ import {
 import { basename, join } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
-import { expect, test } from '../extension';
+import { expect, test, THEMES } from '../extension';
 import { interactions } from '../record/interactions';
 
 const PAGES = 'tests/fixtures/pages';
@@ -105,7 +105,7 @@ async function contrastViolations(page: Page): Promise<number> {
 for (const fixture of fixtures) {
   test(fixture.name, async ({ context, setTheme }) => {
     let canvasProblems = 0;
-    for (const mode of ['off', 'dark', 'oled'] as const) {
+    for (const mode of ['off', ...THEMES] as const) {
       await test.step(`theme ${mode}`, async () => {
         await setTheme(mode);
         // a fresh tab per load: the clock and HAR routes are per page

@@ -46,6 +46,8 @@ export const sections: Section[] = [
         rows: [
           themeRow('Dark', 'dark'),
           themeRow('Dark (OLED)', 'oled'),
+          themeRow('Ember', 'ember'),
+          themeRow('Nord', 'nord'),
           themeRow('System', 'system'),
         ],
       },
