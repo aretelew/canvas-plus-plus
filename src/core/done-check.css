@@ -12,6 +12,11 @@ input[type='checkbox'].cpp-check {
   background: center / 10px no-repeat;
   cursor: pointer;
 }
+/* The recolor pass gives this border a divider's color, too faint on a theme's
+   cards for something to click. */
+html[data-cpp-theme] input[type='checkbox'].cpp-check:not(:checked) {
+  border-color: var(--cpp-muted) !important;
+}
 input[type='checkbox'].cpp-check:checked {
   border-color: var(--ic-brand-primary, #0374b5);
   background-color: var(--ic-brand-primary, #0374b5);

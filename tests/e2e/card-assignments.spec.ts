@@ -5,6 +5,7 @@
 
 import type { Page } from '@playwright/test';
 import { expect, test } from '../extension';
+import { tokenColor } from '../tokens';
 
 const ORIGIN = 'https://fixture.instructure.com';
 const DAY = 24 * 60 * 60 * 1000;
@@ -168,6 +169,29 @@ test('the circle marks work done in Canvas', async ({
   await circle.uncheck();
   await expect(circle).toBeEnabled();
   expect(updated).toEqual({ marked_complete: false, dismissed: false });
+});
+
+test("a theme's circles show on its cards, and done ones stay filled", async ({
+  page,
+  setCardAssignments,
+  setTheme,
+}) => {
+  await setTheme('dark');
+  await setCardAssignments(true);
+  await page.goto(`${ORIGIN}/`);
+  await drawCards(page);
+
+  const circle = (name: string) =>
+    page.getByRole('checkbox', { name: `Mark ${name} as done` });
+  await expect(circle('Assignment - Shell')).toHaveCSS(
+    'border-top-color',
+    await tokenColor(page, '--cpp-muted'),
+  );
+  await expect(circle('Lab 4')).not.toHaveCSS(
+    'border-top-color',
+    await tokenColor(page, '--cpp-muted'),
+  );
+  await setTheme('off');
 });
 
 test('a save Canvas refuses is taken back', async ({
