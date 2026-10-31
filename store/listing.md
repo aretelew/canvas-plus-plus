@@ -75,7 +75,10 @@ The content script runs on *.instructure.com, where Canvas is hosted, to restyle
 
 - Icon: `public/icon/128.png`, uploaded with the zip.
 - Small promo tile (required): `store/promo-tile.png`, 440×280.
-- Screenshots: the five 1280×800 images in `store/screenshots/`, in file order. `npm run store-images` renders them from the recorded dashboard with made-up courses, grades and assignments; look each one over for real data before uploading.
+- Marquee (optional): `store/marquee.png`, 1400×560.
+- Screenshots: the five 1280×800 images in `store/screenshots/`, in file order.
+
+`npm run store-images` renders all of them from the recorded dashboard with made-up courses, grades and assignments; look each one over for real data before uploading.
 
 ## Distribution
 
