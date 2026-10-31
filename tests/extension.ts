@@ -67,6 +67,7 @@ export const test = base.extend<
     setHideFooter: (on: boolean) => Promise<void>;
     setHideSensus: (on: boolean) => Promise<void>;
     setTidySidebar: (on: boolean) => Promise<void>;
+    setCourseNav: (on: boolean) => Promise<void>;
   },
   { sharedContext: () => Promise<BrowserContext> }
 >({
@@ -139,6 +140,11 @@ export const test = base.extend<
   setTidySidebar: async ({ context }, use) => {
     await use((on) =>
       setSwitch(context, 'Sidebar', 'Tidy To Do list', 'tidySidebar', on),
+    );
+  },
+  setCourseNav: async ({ context }, use) => {
+    await use((on) =>
+      setSwitch(context, 'Sidebar', 'Courses in left sidebar', 'courseNav', on),
     );
   },
 });

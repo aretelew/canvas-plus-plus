@@ -1,4 +1,4 @@
-import { canvasFetch, canvasJson } from './canvas-api';
+import { canvasFetch, canvasJson, nextPage } from './canvas-api';
 
 // Course work from Canvas's planner API, shared by everything that lists it
 // (the dashboard cards, the sidebar's To Do), so a page asks for it once and
@@ -169,12 +169,6 @@ async function fetchItems(): Promise<PlannerItem[] | undefined> {
     return undefined;
   }
   return items;
-}
-
-function nextPage(link: string | null): string | undefined {
-  const url = /<([^>]+)>;\s*rel="next"/.exec(link ?? '')?.[1];
-  // only ever Canvas's own pages
-  return url && new URL(url).origin === location.origin ? url : undefined;
 }
 
 // An override is created the first time and updated after that. Canvas resets

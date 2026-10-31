@@ -47,6 +47,13 @@ export async function canvasJson<T>(
   }
 }
 
+/** The next page of a list, from a response's Link header. */
+export function nextPage(link: string | null): string | undefined {
+  const url = /<([^>]+)>;\s*rel="next"/.exec(link ?? '')?.[1];
+  // only ever Canvas's own pages
+  return url && new URL(url).origin === location.origin ? url : undefined;
+}
+
 function csrfToken(): string {
   const token = /(?:^|;\s*)_csrf_token=([^;]*)/.exec(document.cookie)?.[1];
   return token ? decodeURIComponent(token) : '';

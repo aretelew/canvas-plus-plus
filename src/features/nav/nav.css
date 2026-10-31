@@ -1,0 +1,403 @@
+/* Scoped to a signed-in page with Canvas's classic nav: schools on its new
+   InstUI nav (the instui_nav flag) have no #global_nav_profile_link and are left
+   alone. Below 768px Canvas has its mobile header instead. */
+@media (min-width: 768px) {
+  html[data-cpp-course-nav]:has(#global_nav_profile_link) {
+    /* The sidebar's rows, in the nav's colors, which each school and theme set. */
+    .cpp-nav {
+      color: var(--ic-brand-global-nav-menu-item__text-color);
+      font-size: 0.875rem;
+      line-height: 1.3;
+
+      & ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      & a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      & a:hover {
+        background-color: color-mix(in srgb, currentColor 14%, transparent);
+      }
+
+      & a:focus-visible {
+        outline: 2px solid currentColor;
+        outline-offset: -2px;
+      }
+    }
+
+    .cpp-nav-heading {
+      display: block;
+      padding: 12px 14px 4px;
+      font-size: 0.75rem;
+      opacity: 0.75;
+    }
+
+    .cpp-nav-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+    }
+
+    .cpp-nav-here {
+      background-color: color-mix(in srgb, currentColor 18%, transparent);
+    }
+
+    .cpp-nav-dot {
+      flex: none;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      /* a course's color can be the nav's */
+      box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 45%, transparent);
+    }
+
+    /* A course with no color. Drawn on ::before because a theme's recolor pass
+       takes a small light element for a background and darkens it. */
+    .cpp-nav-dot:not([style])::before {
+      display: block;
+      height: 100%;
+      border-radius: 50%;
+      background-color: currentColor;
+      content: '';
+    }
+
+    .cpp-nav-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .cpp-nav-page {
+      display: flex;
+      gap: 8px;
+      padding: 4px 14px;
+
+      /* level with the page's name */
+      & .cpp-nav-dot {
+        margin-top: 5px;
+      }
+
+      & .cpp-nav-name {
+        display: block;
+      }
+    }
+
+    .cpp-nav-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .cpp-nav-where {
+      display: block;
+      overflow: hidden;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      opacity: 0.75;
+    }
+
+    .cpp-nav-short {
+      display: none;
+    }
+
+    .cpp-nav-count {
+      flex: none;
+      font-size: 0.75rem;
+    }
+
+    /* Mixed with the nav's text, so it reads on a dark nav and a light one. A
+       theme sets the color of all text in the nav. */
+    .cpp-nav-late {
+      color: color-mix(in srgb, #ff4d4d 80%, currentColor) !important;
+      font-weight: 700;
+    }
+
+    /* Canvas's active button is white, to join the page, but as a row this wide
+       it runs into it, so it's marked like the current course instead. A
+       theme has its own mark. */
+    &:not([data-cpp-theme]) {
+      .ic-app-header {
+        --ic-brand-global-nav-ic-icon-svg-fill--active: var(
+          --ic-brand-global-nav-ic-icon-svg-fill
+        );
+        --ic-brand-global-nav-menu-item__text-color--active: var(
+          --ic-brand-global-nav-menu-item__text-color
+        );
+        --ic-brand-global-nav-menu-item__badge-bgd--active: var(
+          --ic-brand-global-nav-menu-item__badge-bgd
+        );
+        --ic-brand-global-nav-menu-item__badge-text--active: var(
+          --ic-brand-global-nav-menu-item__badge-text
+        );
+      }
+
+      .ic-app-header__menu-list-item--active .ic-app-header__menu-list-link {
+        background-color: color-mix(
+          in srgb,
+          var(--ic-brand-global-nav-menu-item__text-color) 18%,
+          transparent
+        );
+      }
+    }
+
+    /* Listed now, so their buttons have nothing left to do. */
+    #menu:has(.cpp-nav-courses) > li:has(> #global_nav_courses_link),
+    #menu:has(.cpp-nav-groups) > li:has(> #global_nav_groups_link) {
+      display: none;
+    }
+
+    /* Canvas animates each of these as the nav collapses, and turns its
+       button's arrow over in 3D. */
+    .ic-app-header,
+    .ic-app-header * {
+      transition: none;
+    }
+
+    /* Its trays slide in and out. The slide's rules say !important. */
+    #nav-tray-portal [data-cid='Tray'] > span {
+      transition: none !important;
+    }
+
+    /* A tray starts off to the side, even one taking another's place, which
+       shows the page for a frame. In place, only its content changes. */
+    #nav-tray-portal [data-cid='Tray'] > [class*='-exited'] {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    /* The everyday buttons, then the lists, then the rest. */
+    #menu {
+      display: flex;
+      flex-direction: column;
+
+      & > li {
+        order: 3;
+      }
+
+      &
+        > li:has(
+          > :is(
+            #global_nav_dashboard_link,
+            #global_nav_calendar_link,
+            #global_nav_conversations_link
+          )
+        ) {
+        order: 1;
+      }
+
+      & > .cpp-nav {
+        order: 2;
+      }
+    }
+
+    body.primary-nav-expanded {
+      /* 184px keeps the dashboard's three cards at a 1440px window. */
+      .ic-app-header {
+        width: 184px;
+      }
+
+      &:not(.no-headers, .content-only, .hide-global-nav) .ic-Layout-wrapper {
+        margin-left: 184px;
+      }
+
+      &:not(.hide-global-nav) .tray-with-space-for-global-nav {
+        margin-left: 184px;
+      }
+
+      /* Trays open under the nav, so they grow by as much as it did. */
+      #nav-tray-portal [data-cid='Tray'] > span {
+        width: calc(28rem + 100px);
+      }
+
+      .ic-app-header__main-navigation {
+        padding-bottom: 48px;
+      }
+
+      /* Canvas's buttons, as rows. */
+      #menu .ic-app-header__menu-list-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 12px;
+        text-align: left;
+      }
+
+      #menu .menu-item-icon-container {
+        position: static;
+        flex: none;
+        width: 22px;
+        margin: 0;
+        transform: none;
+      }
+
+      #menu .ic-icon-svg {
+        width: 18px;
+      }
+
+      #menu .ic-avatar {
+        width: 22px;
+        height: 22px;
+      }
+
+      #menu .menu-item__text {
+        margin: 0;
+        font-size: 0.875rem;
+        text-align: left;
+      }
+
+      /* at the end of the row, like a course's count */
+      #menu .menu-item__badge {
+        top: 50%;
+        right: 12px;
+        left: auto;
+        transform: translateY(-50%);
+      }
+
+      /* Always in reach, however long the lists get: four cells along the
+         bottom, Canvas's collapse button in the last. */
+      .ic-app-header__secondary-navigation {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        z-index: 1;
+        width: 184px;
+        height: 48px;
+        background-color: var(--ic-brand-global-nav-bgd);
+
+        & ul {
+          display: flex;
+          justify-content: flex-end;
+        }
+
+        & .ic-app-header__menu-list-link {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 46px;
+          height: 48px;
+          padding: 0;
+        }
+      }
+
+      #menu
+        > li:has(
+          > :is(
+            #global_nav_profile_link,
+            #global_nav_history_link,
+            #global_nav_help_link
+          )
+        ) {
+        position: fixed;
+        bottom: 0;
+        z-index: 2;
+        width: 46px;
+
+        & .ic-app-header__menu-list-link {
+          justify-content: center;
+          height: 48px;
+          padding: 0;
+        }
+
+        /* for screen readers; the icons say what they are */
+        & .menu-item__text {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip-path: inset(50%);
+        }
+
+        & .menu-item__badge {
+          top: 2px;
+          right: 2px;
+          transform: none;
+        }
+
+        /* inline, it sits on a line of text and falls out of its circle */
+        & .ic-avatar img {
+          display: block;
+          width: 100%;
+          height: 100%;
+        }
+      }
+
+      :is(
+        .ic-app-header__secondary-navigation,
+        #menu
+          > li:has(
+            > :is(
+              #global_nav_profile_link,
+              #global_nav_history_link,
+              #global_nav_help_link
+            )
+          )
+      ) {
+        & .menu-item-icon-container {
+          position: static;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: auto;
+          margin: 0;
+          transform: none;
+        }
+
+        & svg {
+          width: 22px;
+          height: 22px;
+        }
+      }
+
+      #menu > li:has(> #global_nav_profile_link) {
+        left: 0;
+      }
+
+      #menu > li:has(> #global_nav_history_link) {
+        left: 46px;
+      }
+
+      #menu > li:has(> #global_nav_help_link) {
+        left: 92px;
+      }
+    }
+
+    /* Collapsed: Canvas's rail of icons, with each course's dot and number. */
+    body:not(.primary-nav-expanded) {
+      .ic-app-header {
+        overflow-y: auto;
+        scrollbar-width: none;
+      }
+
+      .ic-app-header__main-navigation {
+        padding-bottom: 48px;
+      }
+
+      .cpp-nav-heading,
+      .cpp-nav-groups,
+      .cpp-nav-recent,
+      .cpp-nav-name,
+      .cpp-nav-count {
+        display: none;
+      }
+
+      .cpp-nav-row {
+        flex-direction: column;
+        gap: 3px;
+        padding: 6px 2px;
+        font-size: 0.6875rem;
+      }
+
+      .cpp-nav-short {
+        display: block;
+      }
+    }
+  }
+}

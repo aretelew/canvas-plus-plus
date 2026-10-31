@@ -8,6 +8,8 @@ import '@/features/grades/grades.css';
 import '@/features/logo/logo.css';
 import { hideLogo } from '@/features/logo/storage';
 import '@/features/sensus/sensus.css';
+import { syncCourseNav } from '@/features/nav/page';
+import '@/features/nav/nav.css';
 import { hideSensus } from '@/features/sensus/storage';
 import { syncSidebar } from '@/features/sidebar/page';
 import '@/features/sidebar/sidebar.css';
@@ -32,5 +34,6 @@ export default defineContentScript({
     void syncCardGrades();
     void syncCardAssignments();
     void syncSidebar();
+    void syncCourseNav();
   },
 });
