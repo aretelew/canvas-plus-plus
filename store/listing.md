@@ -18,6 +18,7 @@ canvas++ restyles Canvas and adds a few things it's missing, with more on the wa
 • More themes: warm Ember, slate blue Nord, purple Rosé Pine, vivid Dracula, grey-green Everforest and dark teal Deep Sea.
 • Grades on cards: each dashboard card shows your current grade in that course.
 • Assignments on cards: each card lists what's due. Check something off there and Canvas marks it done in your To Do list too.
+• Courses in the left sidebar: your courses and groups one click away, with what's due in each and the pages you opened last.
 
 It works right away on any Canvas at *.instructure.com. If your school uses its own address, like canvas.yourschool.edu, open Canvas, click the canvas++ button and choose Enable.
 
@@ -33,7 +34,7 @@ canvas++ is an independent project and isn't affiliated with or endorsed by Inst
 **Single purpose:**
 
 ```
-canvas++ improves the Canvas LMS website. It restyles Canvas pages with a dark theme and adds each course's grade and assignments to the Canvas dashboard.
+canvas++ improves the Canvas LMS website. It restyles Canvas pages with themes, adds each course's grade and assignments to the Canvas dashboard, and lists the user's courses in Canvas's left sidebar.
 ```
 
 **Permission justifications:**
@@ -59,12 +60,12 @@ When the user opens the popup, checks whether the current tab is a Canvas page, 
 Host permissions (content script on `https://*.instructure.com/*`, optional `https://*/*`)
 
 ```
-The content script runs on *.instructure.com, where Canvas is hosted, to restyle pages and add the dashboard features. Some schools host Canvas on their own domain, so https://*/* is optional. canvas++ requests it for one site at a time (for example https://canvas.yourschool.edu/*) when the user clicks Enable in the popup, and the user can remove a site from the settings in the popup.
+The content script runs on *.instructure.com, where Canvas is hosted, to restyle pages and add the dashboard and sidebar features. Some schools host Canvas on their own domain, so https://*/* is optional. canvas++ requests it for one site at a time (for example https://canvas.yourschool.edu/*) when the user clicks Enable in the popup, and the user can remove a site from the settings in the popup.
 ```
 
 **Remote code:** No, I am not using remote code.
 
-**Data usage:** check "Website content" only. Google counts data handled on the device, not just data sent off it, and canvas++ reads course names, grades and assignments from Canvas to show them on the dashboard (see [PRIVACY.md](../PRIVACY.md)). It reads no names, emails or other personal details, and nothing leaves the device.
+**Data usage:** check "Website content", "Web history" and "Personally identifiable information". Google counts data handled on the device, not just data sent off it. canvas++ reads course names, grades and assignments from Canvas to show them on the dashboard, and with the left sidebar on it also reads the user's page history in Canvas and keeps their name with its saved list, so people sharing a computer don't see each other's (see [PRIVACY.md](../PRIVACY.md)). It reads no emails, and nothing leaves the device.
 
 **Certifications:** check all three (no selling data, no use unrelated to the single purpose, no use for creditworthiness or lending).
 
