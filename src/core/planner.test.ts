@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { toWork, type PlannerItem, type Work } from './planner';
+import {
+  toWork,
+  unreadAnnouncements,
+  type PlannerItem,
+  type Work,
+} from './planner';
 
 function item(over: Partial<PlannerItem> = {}): PlannerItem {
   return {
@@ -105,5 +110,42 @@ describe('toWork', () => {
     }).target;
     expect(quiz).toEqual({ plannable_type: 'assignment', plannable_id: '12' });
     expect(page).toEqual({ plannable_type: 'wiki_page', plannable_id: '8' });
+  });
+});
+
+describe('unreadAnnouncements', () => {
+  const announcement = (
+    read_state: string,
+    over: Partial<PlannerItem> = {},
+  ): PlannerItem =>
+    item({
+      plannable_type: 'announcement',
+      plannable: { title: 'Office hours moved', read_state },
+      submissions: false,
+      ...over,
+    });
+  const override = { id: '5', marked_complete: false, dismissed: false };
+
+  it("counts only the course's unread announcements", () => {
+    expect(
+      unreadAnnouncements(
+        [
+          announcement('unread'),
+          announcement('unread'),
+          announcement('read'),
+          announcement('unread', { course_id: '2' }),
+          item(),
+        ],
+        '1',
+      ),
+    ).toBe(2);
+  });
+
+  it("leaves out what the user cleared from Canvas's To Do", () => {
+    const count = (planner_override: PlannerItem['planner_override']) =>
+      unreadAnnouncements([announcement('unread', { planner_override })], '1');
+    expect(count(override)).toBe(1);
+    expect(count({ ...override, dismissed: true })).toBe(0);
+    expect(count({ ...override, marked_complete: true })).toBe(0);
   });
 });

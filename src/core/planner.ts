@@ -19,6 +19,8 @@ export interface PlannerItem {
     assignment_id?: string;
     // peer reviews (assessment_request) only
     workflow_state?: string;
+    // announcements only
+    read_state?: string;
   };
   html_url?: string;
   submissions:
@@ -104,7 +106,10 @@ function isComplete(item: PlannerItem): boolean {
 export const WINDOW_DAYS = 14;
 const DAY = 24 * 60 * 60 * 1000;
 
+let fetched: Promise<PlannerItem[] | undefined> | undefined;
 let works: Promise<Work[] | undefined> | undefined;
+
+const loadItems = () => (fetched ??= fetchItems());
 
 /**
  * Work due from two weeks ago to two weeks ahead, asked for the first time
@@ -112,10 +117,37 @@ let works: Promise<Work[] | undefined> | undefined;
  * the next page load.
  */
 export function loadWorks(): Promise<Work[] | undefined> {
-  return (works ??= fetchWorks());
+  return (works ??= loadItems().then((items) =>
+    items?.map(toWork).filter((work) => work !== undefined),
+  ));
 }
 
-async function fetchWorks(): Promise<Work[] | undefined> {
+/**
+ * How many of the course's announcements from the last two weeks are unread.
+ * One the user dismissed or marked done in Canvas's To Do doesn't count.
+ */
+export function unreadAnnouncements(
+  items: PlannerItem[],
+  courseId: string,
+): number {
+  return items.filter(
+    ({ plannable_type, course_id, plannable, planner_override }) =>
+      plannable_type === 'announcement' &&
+      course_id === courseId &&
+      plannable.read_state === 'unread' &&
+      !planner_override?.dismissed &&
+      !planner_override?.marked_complete,
+  ).length;
+}
+
+/** As unreadAnnouncements, from the same request as the work; 0 if it failed. */
+export async function loadUnreadAnnouncements(
+  courseId: string,
+): Promise<number> {
+  return unreadAnnouncements((await loadItems()) ?? [], courseId);
+}
+
+async function fetchItems(): Promise<PlannerItem[] | undefined> {
   const now = Date.now();
   const query = new URLSearchParams({
     start_date: new Date(now - WINDOW_DAYS * DAY).toISOString(),
@@ -136,7 +168,7 @@ async function fetchWorks(): Promise<Work[] | undefined> {
   } catch {
     return undefined;
   }
-  return items.map(toWork).filter((work) => work !== undefined);
+  return items;
 }
 
 function nextPage(link: string | null): string | undefined {

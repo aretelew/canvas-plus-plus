@@ -143,7 +143,8 @@ html[data-cpp-sidebar]
   margin-top: 4px;
 }
 .cpp-sidebar .cpp-more,
-.cpp-sidebar .cpp-footer a {
+.cpp-sidebar .cpp-footer a,
+.cpp-sidebar .cpp-announcements {
   margin: 4px 0 0;
   padding: 0;
   border: 0;
@@ -153,6 +154,12 @@ html[data-cpp-sidebar]
   cursor: pointer;
 }
 .cpp-sidebar .cpp-more:hover,
-.cpp-sidebar .cpp-footer a:hover {
+.cpp-sidebar .cpp-footer a:hover,
+.cpp-sidebar .cpp-announcements:hover {
   text-decoration: underline;
+}
+/* under the list and its "Show N more", on a course's page */
+.cpp-sidebar .cpp-announcements {
+  display: block;
+  margin-top: 8px;
 }

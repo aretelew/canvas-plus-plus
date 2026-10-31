@@ -1,17 +1,19 @@
 import { loadCourseColors, loadCourses } from '@/core/courses';
 import { doneCheck } from '@/core/done-check';
 import { readMirror, writeMirror } from '@/core/page-mirror';
-import { loadWorks, type Work } from '@/core/planner';
+import { loadUnreadAnnouncements, loadWorks, type Work } from '@/core/planner';
 import { readFeedback, type Feedback } from './feedback';
 import { tidySidebar } from './storage';
-import { dueLabel, todoGroups, type When } from './todo';
+import { dueLabel, todoGroups, type Group, type When } from './todo';
 
 // Replaces the To Do and Recent Feedback lists in Canvas's right sidebar (the
 // dashboard's and a course home's) with two of our own in one style: each row
 // a title, its course's code and color, and on the right when it's due or its
 // score. To Do lists only work to do, from Canvas's planner API
-// (core/planner.ts); Canvas's own fills up with announcements. Feedback is
-// read from Canvas's list, already in the page.
+// (core/planner.ts); Canvas's own fills up with announcements. A course's
+// page has a line under it for the unread ones instead, since it has no badge
+// for them like the course's dashboard card. Feedback is read from Canvas's
+// list, already in the page.
 //
 // While on, `html[data-cpp-sidebar]` hides Canvas's lists (sidebar.css). A
 // copy of the setting in the page's localStorage sets it before the first
@@ -151,12 +153,35 @@ async function fillTodo(
     course ? undefined : courseLabels(),
   ]);
   if (!works) return false;
-  const groups = todoGroups(works, new Date(), course);
+  addWork(section, todoGroups(works, new Date(), course), labels);
+  const line = course && (await announcementsLine(course));
+  if (line) section.append(line);
+  return true;
+}
+
+// A link to the course's announcements while it has unread ones.
+async function announcementsLine(
+  course: string,
+): Promise<HTMLElement | undefined> {
+  const unread = await loadUnreadAnnouncements(course);
+  if (unread === 0) return undefined;
+  const link = document.createElement('a');
+  link.className = 'cpp-announcements';
+  link.href = `/courses/${course}/announcements`;
+  link.textContent = `${String(unread)} new announcement${unread === 1 ? '' : 's'}`;
+  return link;
+}
+
+function addWork(
+  section: HTMLElement,
+  groups: Group[],
+  labels: Map<string, CourseLabel> | undefined,
+): void {
   if (groups.length === 0) {
     const none = document.createElement('p');
     none.textContent = 'Nothing due in the next two weeks';
     section.append(none);
-    return true;
+    return;
   }
   // work checked off since, here or on its card, stays (struck through, so a
   // slip can be undone) but leaves the count
@@ -194,7 +219,6 @@ async function fillTodo(
   recount();
   const more = showMore(hidden, total - SHOWN_TODO);
   if (more) section.append(more);
-  return true;
 }
 
 function todoRow(

@@ -70,6 +70,7 @@ const ITEMS = [
   item('1', 'Problem set 4', inDays(-3)),
   item('2', 'Class Cancelled Today', inDays(-1), {
     plannable_type: 'announcement',
+    plannable: { title: 'Class Cancelled Today', read_state: 'unread' },
   }),
   item('3', 'Lab 6: semaphores', tomorrow()),
   item('4', 'Handed in', inDays(2), {
@@ -143,6 +144,8 @@ test('To Do lists only work to do, grouped by when it is due', async ({
   await expect(p.getByText('Canvas To Do')).toBeHidden();
   await expect(p.locator('.recent_feedback')).toBeHidden();
   await expect(p.getByRole('link', { name: 'View Grades' })).toBeHidden();
+  // the course's card has a badge for its unread announcement
+  await expect(p.locator('.cpp-announcements')).toHaveCount(0);
 });
 
 test('Recent Feedback shows three, the rest on request, and folds back', async ({
@@ -288,6 +291,45 @@ test("on a course's page, only its work and no course labels", async ({
     feedback(p).getByRole('link', { name: 'All grades' }),
   ).toHaveCount(0);
   expect(askedCourses).toBe(false);
+  await expect(p.locator('.cpp-announcements')).toHaveCount(0);
+});
+
+test("a course's page links to its unread announcements", async ({
+  page: p,
+  setTidySidebar,
+}) => {
+  const announcement = (id: string, course: string, read_state: string) =>
+    item(id, `Notice ${id}`, inDays(-1), {
+      course_id: course,
+      plannable_type: 'announcement',
+      plannable: { title: `Notice ${id}`, read_state },
+      submissions: false,
+    });
+  await p.route(`${ORIGIN}/courses/2`, (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: page('/courses/2', SIDEBAR),
+    }),
+  );
+  await p.route(`${ORIGIN}/api/v1/planner/items?**`, (route) =>
+    route.fulfill({
+      json: [
+        announcement('1', '2', 'unread'),
+        announcement('2', '2', 'unread'),
+        announcement('3', '2', 'read'),
+        announcement('4', '1', 'unread'),
+      ],
+    }),
+  );
+  await setTidySidebar(true);
+  await p.goto(`${ORIGIN}/courses/2`);
+
+  // with no work there's still something to read
+  await expect(todo(p).getByText('Nothing due')).toBeVisible();
+  await expect(todo(p).getByRole('listitem')).toHaveCount(0);
+  await expect(
+    todo(p).getByRole('link', { name: '2 new announcements' }),
+  ).toHaveAttribute('href', '/courses/2/announcements');
 });
 
 test("Canvas's list stays when the work can't be loaded", async ({
