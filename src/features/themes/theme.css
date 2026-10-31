@@ -246,10 +246,15 @@ html[data-cpp-theme]
   [data-cpp-state='control'] {
   background-color: var(--cpp-control-hover) !important;
 }
-/* rows of Canvas's hover tables (grades, for one), which it fades in and out of
-   hover: the tint comes and goes with the pointer instead */
-html[data-cpp-theme] .ic-Table--hover-row tbody tr {
-  transition: none !important;
+/* Canvas fades colors in and out of hover (rows, buttons, cards), and the color
+   comes and goes with the pointer instead. Only what moves or fades away keeps
+   its transition, so trays still slide and modals still fade in. */
+html[data-cpp-theme] *,
+html[data-cpp-theme] ::before,
+html[data-cpp-theme] ::after {
+  transition-property:
+    opacity, visibility, transform, width, height, max-height, margin, padding,
+    top, right, bottom, left !important;
 }
 html[data-cpp-theme] [data-cpp-fg='text'] {
   color: var(--cpp-text) !important;

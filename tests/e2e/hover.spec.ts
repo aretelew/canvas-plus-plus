@@ -11,7 +11,8 @@ const URL = 'https://fixture.instructure.com/hover';
 // back to dark:
 // - a radio button as New Quizzes draws it: a white circle that greys on hover
 // - a table row: transparent, light blue on hover
-// - a row of the grades table: the same, but the theme turns its fade off
+// - a button as Canvas draws it, fading everything it changes
+// The theme turns those fades off; a tray's slide stays.
 const PAGE = `<!doctype html><title>t</title>
 <style>
   label, table { color: #2d3b45; }
@@ -23,13 +24,16 @@ const PAGE = `<!doctype html><title>t</title>
   label:hover .facade { background: #e0e0e0; }
   tr { transition: background-color 0.3s; }
   tr:hover { background: #e0ebf5; }
+  .action { color: #2d3b45; background: #d0d0d0; transition: all 0.3s; }
+  .action:hover { background: #a0a0a0; }
+  .tray { color: #2d3b45; transition: transform 0.3s; }
+  .tray.open { transform: translateX(100px); }
 </style>
 <body>
   <label><span class="facade"></span> An answer</label>
-  <table class="plain"><tr><td>Quiz</td><td>5 / 5</td></tr></table>
-  <table class="ic-Table ic-Table--hover-row">
-    <tr><td>Exam</td><td>9 / 10</td></tr>
-  </table>
+  <table><tr><td>Quiz</td><td>5 / 5</td></tr></table>
+  <button class="action">Submit</button>
+  <div class="tray">A tray</div>
 </body>`;
 
 test.beforeEach(async ({ page, setTheme }) => {
@@ -82,24 +86,49 @@ test('the first hover never paints a light frame', async ({ page }) => {
 });
 
 test('a row that lights up on hover never flashes light', async ({ page }) => {
-  const frames = await framesDuring(page, '.plain tr', () =>
-    page.locator('.plain tr').hover(),
+  const frames = await framesDuring(page, 'tr', () =>
+    page.locator('tr').hover(),
   );
   expect(frames.filter(isLight)).toEqual([]);
 });
 
-test('a grades row lights up and clears at once', async ({ page }) => {
-  const selector = '.ic-Table tr';
-  const cell = page.locator('.ic-Table td').first();
-  await cell.hover(); // the first hover is recolor's look, which never fades
-  const clearing = await framesDuring(page, selector, () =>
-    page.mouse.move(0, 0),
+for (const [name, selector, target] of [
+  ['a row', 'tr', 'td'],
+  ['a button', '.action', '.action'],
+] as const) {
+  test(`${name} changes color and changes back at once`, async ({ page }) => {
+    const hovered = page.locator(target).first();
+    await hovered.hover(); // the first hover is recolor's look, which never fades
+    const clearing = await framesDuring(page, selector, () =>
+      page.mouse.move(0, 0),
+    );
+    const lighting = await framesDuring(page, selector, () => hovered.hover());
+    // the color before and the color after, nothing between
+    expect(new Set(clearing).size).toBeLessThanOrEqual(2);
+    expect(new Set(lighting).size).toBeLessThanOrEqual(2);
+    expect(lighting.at(-1)).not.toBe(clearing.at(-1));
+  });
+}
+
+test('what moves keeps its transition', async ({ page }) => {
+  await expect(page.locator('.tray')).toHaveAttribute('data-cpp-fg');
+  const positions = await page.evaluate(
+    () =>
+      new Promise<string[]>((resolve) => {
+        const tray = document.querySelector<HTMLElement>('.tray');
+        if (!tray) throw new Error('no tray');
+        const seen: string[] = [];
+        const start = performance.now();
+        tray.classList.add('open');
+        const sample = () => {
+          seen.push(getComputedStyle(tray).transform);
+          if (performance.now() - start < 200) requestAnimationFrame(sample);
+          else resolve(seen);
+        };
+        requestAnimationFrame(sample);
+      }),
   );
-  const lighting = await framesDuring(page, selector, () => cell.hover());
-  // the color before and the color after, nothing between
-  expect(new Set(clearing).size).toBeLessThanOrEqual(2);
-  expect(new Set(lighting).size).toBeLessThanOrEqual(2);
-  expect(lighting.at(-1)).not.toBe(clearing.at(-1));
+  expect(new Set(positions).size).toBeGreaterThan(2);
 });
 
 test('an element added later is dark from its first frame', async ({
