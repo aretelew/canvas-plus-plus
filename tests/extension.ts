@@ -26,11 +26,27 @@ declare const chrome: {
 
 const launch = () => launchWithExtension(EXTENSION);
 
-export const THEMES = ['dark', 'oled', 'ember', 'nord'] as const;
+export const THEMES = [
+  'dark',
+  'oled',
+  'ember',
+  'nord',
+  'rose',
+  'dracula',
+  'everforest',
+  'sea',
+] as const;
 
 // each theme's value in storage, and its switch in the popup: on the Themes
 // page, or on the Dark mode page that opens from it
-const THEME_PAGE = { ember: 'Ember', nord: 'Nord' };
+const THEME_PAGE = {
+  ember: 'Ember',
+  nord: 'Nord',
+  rose: 'Rosé Pine',
+  dracula: 'Dracula',
+  everforest: 'Everforest',
+  sea: 'Deep Sea',
+};
 const DARK_MODE_PAGE = {
   dark: 'Dark',
   oled: 'Dark (OLED)',

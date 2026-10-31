@@ -15,7 +15,7 @@ canvas++ restyles Canvas and adds a few things it's missing, with more on the wa
 
 • Dark theme: a dark mode made for Canvas, with no white flash between pages. Course colors, grades and your school's logo keep their meaning.
 • True black: a pure black version of the dark theme for OLED screens.
-• Ember and Nord: a warm brown-black theme with amber links, and a softer slate blue one.
+• More themes: warm Ember, slate blue Nord, purple Rosé Pine, vivid Dracula, grey-green Everforest and dark teal Deep Sea.
 • Grades on cards: each dashboard card shows your current grade in that course.
 • Assignments on cards: each card lists what's due. Check something off there and Canvas marks it done in your To Do list too.
 

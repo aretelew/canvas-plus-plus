@@ -4,7 +4,7 @@
 
 import type { Page } from '@playwright/test';
 import { expect, test, THEMES } from '../extension';
-import { tokenColor } from '../tokens';
+import { contrast, srgb, tokenColor } from '../tokens';
 
 const URL = 'https://fixture.instructure.com/global-nav';
 
@@ -13,7 +13,10 @@ const SCHOOLS = {
   'a white nav': { nav: '#ffffff', text: '#2d3b45' },
 };
 
-const navPage = ({ nav, text }: { nav: string; text: string }) =>
+const navPage = (
+  { nav, text }: { nav: string; text: string },
+  activeLink = '',
+) =>
   `<!doctype html><title>t</title>
 <style>
   :root {
@@ -62,7 +65,7 @@ const navPage = ({ nav, text }: { nav: string; text: string }) =>
         </a>
       </li>
       <li class="ic-app-header__menu-list-item ic-app-header__menu-list-item--active">
-        <a id="active" class="ic-app-header__menu-list-link" href="#">
+        <a id="active" class="ic-app-header__menu-list-link" href="#" ${activeLink}>
           <svg class="ic-icon-svg" width="26" height="26"></svg>
           <div class="menu-item__text">Courses</div>
         </a>
@@ -106,10 +109,6 @@ for (const [school, colors] of Object.entries(SCHOOLS)) {
       expect(await computed(page, '#inbox', 'color')).toBe(text);
       expect(await computed(page, '#inbox .ic-icon-svg', 'fill')).toBe(text);
 
-      // the active item is a tab into the page
-      expect(await computed(page, '#active', 'background-color')).toBe(
-        pageColor,
-      );
       expect(await computed(page, '#active .ic-icon-svg', 'fill')).toBe(link);
 
       expect(
@@ -121,6 +120,43 @@ for (const [school, colors] of Object.entries(SCHOOLS)) {
       await expect
         .poll(() => computed(page, '#inbox', 'background-color'))
         .not.toBe('rgba(0, 0, 0, 0.2)');
+    });
+  }
+}
+
+// Canvas draws Dashboard as a plain link and Courses, which opens a tray, as a
+// button; the highlight must not depend on which.
+for (const theme of THEMES) {
+  for (const [kind, attribute] of [
+    ['a link', ''],
+    ['a tray button', 'role="button"'],
+  ] as const) {
+    test(`${theme} highlights the active item when it's ${kind}`, async ({
+      page,
+      setTheme,
+    }) => {
+      await page.route(URL, (route) =>
+        route.fulfill({
+          contentType: 'text/html',
+          body: navPage(SCHOOLS['a dark nav'], attribute),
+        }),
+      );
+      await setTheme(theme);
+      await page.goto(URL);
+      await expect(page.locator('html')).toHaveAttribute(
+        'data-cpp-theme',
+        theme,
+      );
+
+      const tile = await computed(page, '#active', 'background-color');
+      const [tileRgb, navRgb, linkRgb] = [
+        await srgb(page, tile),
+        await srgb(page, await tokenColor(page, '--cpp-nav')),
+        await srgb(page, await tokenColor(page, '--cpp-link')),
+      ];
+      expect(tile).toBe(await tokenColor(page, '--cpp-nav-active'));
+      expect(contrast(tileRgb, navRgb), 'tile on nav').toBeGreaterThan(1.3);
+      expect(contrast(linkRgb, tileRgb), 'link on tile').toBeGreaterThan(4.5);
     });
   }
 }

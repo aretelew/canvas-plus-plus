@@ -1,6 +1,17 @@
 import { storage } from '#imports';
 
-const CHOICES = ['off', 'system', 'dark', 'oled', 'ember', 'nord'] as const;
+const CHOICES = [
+  'off',
+  'system',
+  'dark',
+  'oled',
+  'ember',
+  'nord',
+  'rose',
+  'dracula',
+  'everforest',
+  'sea',
+] as const;
 
 // 'system' is the dark theme only while the operating system is dark.
 export type ThemeChoice = (typeof CHOICES)[number];

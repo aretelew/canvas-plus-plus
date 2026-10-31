@@ -17,6 +17,7 @@ html[data-cpp-theme] {
   --cpp-link: #8ab4ff;
   /* the global nav: its own color, so it stands apart from page and cards */
   --cpp-nav: #232b3d;
+  --cpp-nav-active: color-mix(in oklab, var(--cpp-nav), var(--cpp-text) 16%);
   /* Canvas's black marks (selected radio, black borders): the strongest
      contrast on the page, so the lightest color here */
   --cpp-emphasis: var(--cpp-text);
@@ -57,8 +58,7 @@ html[data-cpp-theme='ember'] {
 }
 /* The Nord palette (nordtheme.com), softer than the others: nord0-3 for the
    surfaces, nord5 for text, and nord8 a touch lighter for links, so they read
-   on controls. Its surfaces are lighter, so colored text goes lighter too, and
-   so do teachers' highlights. */
+   on controls. */
 html[data-cpp-theme='nord'] {
   --cpp-bg: #2e3440;
   --cpp-elevated: #3b4252;
@@ -70,8 +70,79 @@ html[data-cpp-theme='nord'] {
   --cpp-muted: #c2cad8;
   --cpp-link: #8fc7d6;
   --cpp-nav: #242933;
+}
+/* Rosé Pine's main palette (rosepinetheme.com), a muted purple: base, surface and
+   overlay for the surfaces, text, and iris for links. Muted text is a touch
+   lighter than its subtle, to read on controls. */
+html[data-cpp-theme='rose'] {
+  --cpp-bg: #191724;
+  --cpp-elevated: #1f1d2e;
+  --cpp-control: #26233a;
+  --cpp-control-hover: #312e47;
+  --cpp-border: #312e47;
+  --cpp-border-strong: #524f67;
+  --cpp-text: #e0def4;
+  --cpp-muted: #a39fc0;
+  --cpp-link: #c4a7e7;
+  --cpp-nav: #26233a;
+}
+/* Dracula (draculatheme.com), with its darker background for the nav. Its pink
+   is a touch lighter for links, to read on controls, and muted text is lighter
+   than its comment color, which is too dim to read. */
+html[data-cpp-theme='dracula'] {
+  --cpp-bg: #282a36;
+  --cpp-elevated: #343746;
+  --cpp-control: #3d4052;
+  --cpp-control-hover: #44475a;
+  --cpp-border: #44475a;
+  --cpp-border-strong: #6272a4;
+  --cpp-text: #f8f8f2;
+  --cpp-muted: #c3c8db;
+  --cpp-link: #ff92d0;
+  --cpp-nav: #191a21;
+}
+/* Everforest's dark palette (github.com/sainnhe/everforest), a soft grey-green:
+   bg0-3 for the surfaces and bg_dim for the nav. Text and green are a touch
+   lighter than its own, to read on those surfaces. */
+html[data-cpp-theme='everforest'] {
+  --cpp-bg: #2d353b;
+  --cpp-elevated: #343f44;
+  --cpp-control: #3d484d;
+  --cpp-control-hover: #475258;
+  --cpp-border: #475258;
+  --cpp-border-strong: #6b7872;
+  --cpp-text: #e0d6bf;
+  --cpp-muted: #bcc6bb;
+  --cpp-link: #b4cd8c;
+  --cpp-nav: #232a2e;
+}
+/* Dark teal with aqua links. */
+html[data-cpp-theme='sea'] {
+  --cpp-bg: #0f1f24;
+  --cpp-elevated: #172b31;
+  --cpp-control: #1f363d;
+  --cpp-control-hover: #29444c;
+  --cpp-border: #274047;
+  --cpp-border-strong: #3f5f68;
+  --cpp-text: #dcebea;
+  --cpp-muted: #9dbab9;
+  --cpp-link: #5fd0c5;
+  --cpp-nav: #0f333b;
+}
+/* The themes with lighter surfaces, where colored text has to go further to
+   read, even mid-toned text the darker themes leave alone, and teachers'
+   highlights sit lighter to stand out. */
+html:is(
+  [data-cpp-theme='nord'],
+  [data-cpp-theme='dracula'],
+  [data-cpp-theme='everforest']
+) {
   --cpp-tint-l: 0.37;
   --cpp-lift-l: 0.86;
+
+  & [data-cpp-fg='lift-mid'] {
+    color: oklch(from var(--cpp-fg) max(l, var(--cpp-lift-l)) c h) !important;
+  }
 }
 
 /* Canvas's own color variables (theme editor + font colors). The global nav
@@ -107,7 +178,14 @@ html[data-cpp-theme]
     :focus,
     :active
   ) {
-  background-color: color-mix(in oklab, var(--cpp-nav), var(--cpp-text) 12%);
+  background-color: color-mix(in oklab, var(--cpp-nav), var(--cpp-text) 8%);
+}
+/* Canvas's active item is white, which recolor.ts would make the page's color
+   or a control's, depending on whether Canvas drew a link or a button. */
+html[data-cpp-theme]
+  .ic-app-header__menu-list-item--active
+  .ic-app-header__menu-list-link {
+  background-color: var(--cpp-nav-active) !important;
 }
 /* a count on the nav's accent color; the tag would make its text light */
 html[data-cpp-theme] .ic-app-header .menu-item__badge,
@@ -184,8 +262,7 @@ html[data-cpp-theme] [data-cpp-fg='link'] {
 }
 /* colored text (course colors, status) keeps its hue, made light enough to
    read on dark; recolor.ts stores the original in --cpp-fg */
-html[data-cpp-theme] [data-cpp-fg='lift'],
-html[data-cpp-theme='nord'] [data-cpp-fg='lift-mid'] {
+html[data-cpp-theme] [data-cpp-fg='lift'] {
   color: oklch(from var(--cpp-fg) max(l, var(--cpp-lift-l)) c h) !important;
 }
 html[data-cpp-theme] [data-cpp-border='hidden'] {

@@ -102,10 +102,13 @@ async function contrastViolations(page: Page): Promise<number> {
   return violations.flatMap((v) => v.nodes).length;
 }
 
+const MODES = ['off', ...THEMES] as const;
+
 for (const fixture of fixtures) {
   test(fixture.name, async ({ context, setTheme }) => {
+    test.setTimeout(MODES.length * 15_000);
     let canvasProblems = 0;
-    for (const mode of ['off', ...THEMES] as const) {
+    for (const mode of MODES) {
       await test.step(`theme ${mode}`, async () => {
         await setTheme(mode);
         // a fresh tab per load: the clock and HAR routes are per page
