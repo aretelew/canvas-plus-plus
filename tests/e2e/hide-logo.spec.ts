@@ -1,5 +1,5 @@
 // The school's logo at the top of the global nav hides while the setting is
-// on, and the nav's buttons below it stay where they were.
+// on, and the nav's buttons below it move up into its space.
 
 import type { Page } from '@playwright/test';
 import { expect, test } from '../extension';
@@ -8,6 +8,7 @@ const URL = 'https://fixture.instructure.com/';
 
 // Canvas's global nav, cut down to the logo and one button
 const PAGE = `<!doctype html><title>Dashboard</title>
+<style>body, ul { margin: 0; }</style>
 <header id="header" class="ic-app-header">
   <div class="ic-app-header__main-navigation">
     <div class="ic-app-header__logomark-container" style="height: 85px">
@@ -32,7 +33,7 @@ test.afterEach(async ({ setHideLogo }) => {
   await setHideLogo(false);
 });
 
-test('hides the logo without moving the nav buttons', async ({
+test('hides the logo and moves the nav buttons up into its space', async ({
   page,
   setHideLogo,
 }) => {
@@ -43,10 +44,11 @@ test('hides the logo without moving the nav buttons', async ({
 
   await setHideLogo(true);
   await expect(logo).toBeHidden();
-  expect(await buttonTop(page)).toBe(before);
+  expect(await buttonTop(page)).toBe((before ?? 0) - 85);
 
   await setHideLogo(false);
   await expect(logo).toBeVisible();
+  expect(await buttonTop(page)).toBe(before);
 });
 
 test('stays hidden on the next page load', async ({ page, setHideLogo }) => {

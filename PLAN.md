@@ -112,7 +112,7 @@ Off by default (popup switch). Canvas's right sidebar (the dashboard's, and a co
 
 ### Hiding the school logo
 
-Off by default (popup switch). It hides the school's logo at the top of the global nav with `visibility: hidden` on `.ic-app-header__logomark-container`, which keeps the logo's space so the nav's buttons stay exactly where they were, in the expanded and the collapsed nav alike. It also takes the logo's link out of the tab order and away from screen readers; the Dashboard button goes to the same place. The switch is `html[data-cpp-hide-logo]`, cached in the page's `localStorage` like the theme (`core/page-mirror.ts`) so the logo doesn't show for a moment on every page load. The theme's recolor pass only takes off the tags it sets, so switches like this one survive it.
+Off by default (popup switch). It hides the school's logo at the top of the global nav with `display: none` on `.ic-app-header__logomark-container`, so the nav's buttons move up into the logo's space, in the expanded and the collapsed nav alike. It also takes the logo's link out of the tab order and away from screen readers; the Dashboard button goes to the same place. The switch is `html[data-cpp-hide-logo]`, cached in the page's `localStorage` like the theme (`core/page-mirror.ts`) so the logo doesn't show for a moment on every page load. The theme's recolor pass only takes off the tags it sets, so switches like this one survive it.
 
 ### Hiding the footer
 
