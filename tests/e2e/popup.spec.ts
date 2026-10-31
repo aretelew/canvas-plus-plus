@@ -1,9 +1,10 @@
 // Opening the popup shows each switch as it already is: one that's on shows
 // up on, without sliding over from off while storage answers. Switches sit in
-// sections the main page opens, with a back arrow to return, and the popup
-// keeps one height across them. The gear opens the settings, and they open
-// the sites; both grow on their own.
+// sections the main page opens, with a back arrow to return. The gear opens
+// the settings, and they open the sites. The main page sets the popup's
+// height; every other page keeps to it and scrolls if it needs to.
 
+import type { Locator } from '@playwright/test';
 import { expect, openPopup, test } from '../extension';
 
 // the extension's storage, read from the popup
@@ -12,6 +13,19 @@ declare const chrome: {
     sync: { get(keys: string[]): Promise<Record<string, unknown>> };
   };
 };
+
+// whether a page has more to scroll to than it shows
+const scrolls = (page: Locator) =>
+  page.evaluate((el) => el.scrollHeight > el.clientHeight);
+
+// whether a page's top and bottom edges are fading
+const edges = (page: Locator) =>
+  page.evaluate((el) => {
+    const style = getComputedStyle(el);
+    return ['--fade-top', '--fade-bottom'].map(
+      (fade) => style.getPropertyValue(fade) !== '0px',
+    );
+  });
 
 test('a switch that is on opens without sliding', async ({
   context,
@@ -132,16 +146,53 @@ test('the popup keeps its height from page to page', async ({ context }) => {
   const popup = await openPopup(context);
   const main = popup.locator('main');
   const height = await main.evaluate((el) => el.clientHeight);
+  const keepsHeight = async () => {
+    expect(await main.evaluate((el) => el.clientHeight)).toBe(height);
+  };
   for (const title of ['Appearance', 'Dashboard', 'Sidebar', 'Courses']) {
     await popup.getByRole('button', { name: title }).click();
-    expect(await main.evaluate((el) => el.clientHeight)).toBe(height);
+    await keepsHeight();
     await popup.getByRole('button', { name: 'Back' }).click();
   }
   await popup.getByRole('button', { name: 'Appearance' }).click();
   await popup.getByRole('button', { name: 'Themes' }).click();
-  expect(await main.evaluate((el) => el.clientHeight)).toBe(height);
+  await keepsHeight();
   await popup.getByRole('button', { name: 'Dark mode' }).click();
-  expect(await main.evaluate((el) => el.clientHeight)).toBe(height);
+  await keepsHeight();
+  await popup.getByRole('button', { name: 'Settings', exact: true }).click();
+  await keepsHeight();
+  await popup.getByRole('button', { name: 'Sites' }).click();
+  await keepsHeight();
+  await popup.close();
+});
+
+test('a page that fits stays put, with no fade', async ({ context }) => {
+  const popup = await openPopup(context);
+  await popup.getByRole('button', { name: 'Dashboard' }).click();
+  const page = popup.locator('.scroll-fade:visible');
+  await expect.poll(() => edges(page)).toEqual([false, false]);
+  expect(await scrolls(page)).toBe(false);
+  await popup.close();
+});
+
+test('a page taller than the main one scrolls, fading at an edge with more past it', async ({
+  context,
+}) => {
+  const popup = await openPopup(context);
+  await popup.getByRole('button', { name: 'Settings', exact: true }).click();
+  const page = popup.locator('.scroll-fade:visible');
+  expect(await scrolls(page)).toBe(true);
+  await expect.poll(() => edges(page)).toEqual([false, true]);
+
+  await page.evaluate((el) => {
+    el.scrollBy(0, 20);
+  });
+  await expect.poll(() => edges(page)).toEqual([true, true]);
+
+  const last = popup.getByText(/^Version/);
+  await last.scrollIntoViewIfNeeded();
+  await expect(last).toBeInViewport();
+  await expect.poll(() => edges(page)).toEqual([true, false]);
   await popup.close();
 });
 

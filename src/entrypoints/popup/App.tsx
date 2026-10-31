@@ -64,74 +64,83 @@ function App() {
           </button>
         )}
       </header>
-      {inSettings ? (
-        // on their own, as tall as they need: the list of sites can grow, and
-        // the other pages shouldn't grow with it
-        <div className="grid overflow-hidden">
-          <Page shown>
-            {open === 'sites' ? (
-              <Sites />
-            ) : (
-              <Settings
-                sitesFocused={closed === 'sites'}
-                onOpenSites={() => {
-                  push('sites');
-                }}
-              />
+      {/* the main page alone sets the popup's height, hidden while another
+          shows, so the popup keeps it from page to page; clipped, so the main
+          page's last line falls off the edge */}
+      <div className="relative overflow-hidden">
+        <Page main shown={!open}>
+          {sections.map((section) => (
+            <PageLink
+              key={section.title}
+              label={section.title}
+              focused={!open && section === closed}
+              onOpen={() => {
+                push(section);
+              }}
+            />
+          ))}
+          <SiteAccess />
+        </Page>
+        {pages.map((page) => (
+          <Page key={page.title} shown={page === open}>
+            {page.rows.map((row) =>
+              'rows' in row ? (
+                <PageLink
+                  key={row.title}
+                  label={row.title}
+                  focused={page === open && row === closed}
+                  onOpen={() => {
+                    push(row);
+                  }}
+                />
+              ) : (
+                <Switch key={row.label} {...row} />
+              ),
             )}
           </Page>
-        </div>
-      ) : (
-        // every page sits in the same cell, the ones not showing hidden, so
-        // the popup keeps one height (the tallest page's) as it moves between
-        // them; clipped, so the tallest page's last line falls off the edge
-        <div className="grid overflow-hidden">
-          <Page shown={!open}>
-            {sections.map((section) => (
-              <PageLink
-                key={section.title}
-                label={section.title}
-                focused={!open && section === closed}
-                onOpen={() => {
-                  push(section);
-                }}
-              />
-            ))}
-            <SiteAccess />
+        ))}
+        {open === 'settings' && (
+          <Page shown>
+            <Settings
+              sitesFocused={closed === 'sites'}
+              onOpenSites={() => {
+                push('sites');
+              }}
+            />
           </Page>
-          {pages.map((page) => (
-            <Page key={page.title} shown={page === open}>
-              {page.rows.map((row) =>
-                'rows' in row ? (
-                  <PageLink
-                    key={row.title}
-                    label={row.title}
-                    focused={page === open && row === closed}
-                    onOpen={() => {
-                      push(row);
-                    }}
-                  />
-                ) : (
-                  <Switch key={row.label} {...row} />
-                ),
-              )}
-            </Page>
-          ))}
-        </div>
-      )}
+        )}
+        {open === 'sites' && (
+          <Page shown>
+            <Sites />
+          </Page>
+        )}
+      </div>
     </main>
   );
 }
 
-// One page of the popup, in the cell all of them share. Rows are separated by
-// lines rather than boxed, and padded per row, not here, so the lines and the
-// hover tint run edge to edge. Each row has a line under it, so a page shorter
-// than the popup ends on one; pulling the page up by that line's width keeps
-// it out of the cell's height, so the tallest page's last line is clipped.
-function Page({ shown, children }: { shown: boolean; children: ReactNode }) {
+// One page of the popup. Rows are separated by lines rather than boxed, and
+// padded per row, not here, so the lines and the hover tint run edge to edge.
+// Each row has a line under it, so a page shorter than the popup ends on one.
+// The main page is pulled up by that line's width to keep it out of the
+// popup's height. The others lie over the main page and scroll if they need
+// to; reaching a pixel past it, they clip their last line the same way, and a
+// page with the main page's rows doesn't scroll for that one line.
+function Page({
+  main = false,
+  shown,
+  children,
+}: {
+  main?: boolean;
+  shown: boolean;
+  children: ReactNode;
+}) {
+  const place = main
+    ? '-mb-px'
+    : 'scroll-fade absolute inset-x-0 top-0 -bottom-px overflow-y-auto';
   return (
     <div
-      className={`col-start-1 row-start-1 -mb-px *:border-b *:border-base-300 ${shown ? '' : 'invisible'}`}
+      className={`${place} *:border-b *:border-base-300 ${shown ? '' : 'invisible'}`}
     >
       {children}
     </div>

@@ -62,3 +62,50 @@
 .font-mono {
   font-size-adjust: ex-height 0.53;
 }
+
+/* A page that scrolls fades out at an edge with more past it. Rows can fit the
+   page's height exactly, and a list cut off cleanly between two rows looks
+   complete. Each fade eases away over the last fifth of the scrolling toward
+   its edge; with nothing to scroll, neither shows. A browser without scroll
+   timelines just scrolls: left to run, the animation would stick at its end. */
+@supports (animation-timeline: scroll()) {
+  @property --fade-top {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+  }
+
+  @property --fade-bottom {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+  }
+
+  @keyframes scroll-fade {
+    0% {
+      --fade-top: 0px;
+      --fade-bottom: 2rem;
+    }
+    20% {
+      --fade-top: 2rem;
+    }
+    80% {
+      --fade-bottom: 2rem;
+    }
+    100% {
+      --fade-top: 2rem;
+      --fade-bottom: 0px;
+    }
+  }
+
+  .scroll-fade {
+    mask-image: linear-gradient(
+      transparent,
+      #000 var(--fade-top),
+      #000 calc(100% - var(--fade-bottom)),
+      transparent
+    );
+    animation: scroll-fade linear both;
+    animation-timeline: scroll(self);
+  }
+}
