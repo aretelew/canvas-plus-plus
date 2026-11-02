@@ -1,6 +1,13 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { readFeedback, shortScore } from './feedback';
+import {
+  byTime,
+  feedbackTime,
+  readFeedback,
+  shortScore,
+  type Feedback,
+  type FeedbackSubmission,
+} from './feedback';
 
 // Canvas's Recent Feedback rows as its server renders them
 const row = (href: string, details: string, hidden = false) => `
@@ -52,6 +59,7 @@ describe('readFeedback', () => {
         title: 'Quiz - Secure Coding',
         url: '/courses/53976/assignments/785885/submissions/286033',
         courseId: '53976',
+        assignmentId: '785885',
         course: 'CSDS 344',
         score: '1/1',
         comment: undefined,
@@ -60,6 +68,7 @@ describe('readFeedback', () => {
         title: 'Analytic Essay 2',
         url: '/courses/54559/assignments/776510',
         courseId: '54559',
+        assignmentId: '776510',
         course: undefined,
         score: '95/100',
         comment: '"fantastic"',
@@ -68,6 +77,7 @@ describe('readFeedback', () => {
         title: 'Reading Log',
         url: '/courses/54631/assignments/768783',
         courseId: '54631',
+        assignmentId: '768783',
         course: undefined,
         score: undefined,
         comment: '"very good"',
@@ -86,5 +96,93 @@ describe('shortScore', () => {
     expect(shortScore('4.8 out of 5')).toBe('4.8/5');
     expect(shortScore('A')).toBe('A');
     expect(shortScore('complete')).toBe('complete');
+  });
+});
+
+function submission(
+  over: Partial<FeedbackSubmission> = {},
+): FeedbackSubmission {
+  return {
+    assignment_id: '10',
+    user_id: '7',
+    graded_at: null,
+    posted_at: null,
+    submission_comments: [],
+    ...over,
+  };
+}
+
+describe('feedbackTime', () => {
+  it('is the latest of grading, posting and comments from others', () => {
+    expect(
+      feedbackTime(
+        submission({
+          graded_at: '2026-10-29T17:44:05Z',
+          posted_at: '2026-10-29T17:47:12Z',
+          submission_comments: [
+            { author_id: '3', created_at: '2026-10-28T05:17:00Z' },
+          ],
+        }),
+      ),
+    ).toBe(Date.parse('2026-10-29T17:47:12Z'));
+    expect(
+      feedbackTime(
+        submission({
+          graded_at: '2026-10-16T17:34:00Z',
+          submission_comments: [
+            { author_id: '3', created_at: '2026-10-18T14:38:00Z' },
+          ],
+        }),
+      ),
+    ).toBe(Date.parse('2026-10-18T14:38:00Z'));
+  });
+
+  it("leaves out the student's own comments", () => {
+    expect(
+      feedbackTime(
+        submission({
+          graded_at: '2026-10-16T17:34:00Z',
+          submission_comments: [
+            { author_id: '7', created_at: '2026-10-20T09:00:00Z' },
+          ],
+        }),
+      ),
+    ).toBe(Date.parse('2026-10-16T17:34:00Z'));
+  });
+
+  it('has none without a grade or comment', () => {
+    expect(feedbackTime(submission())).toBeUndefined();
+  });
+});
+
+describe('byTime', () => {
+  const row = (title: string, assignmentId?: string): Feedback => ({
+    title,
+    url: `/courses/1/assignments/${assignmentId ?? 'x'}`,
+    courseId: '1',
+    assignmentId,
+  });
+
+  it('puts the newest feedback first', () => {
+    const rows = [row('Quiz', '1'), row('Essay', '2'), row('Midterm', '3')];
+    const times = new Map([
+      ['1', 300],
+      ['2', 100],
+      ['3', 500],
+    ]);
+    expect(byTime(rows, times).map((r) => r.title)).toEqual([
+      'Midterm',
+      'Quiz',
+      'Essay',
+    ]);
+  });
+
+  it("keeps Canvas's order when a row has no time", () => {
+    const rows = [row('Quiz', '1'), row('Essay', '2'), row('Page')];
+    const times = new Map([
+      ['1', 100],
+      ['2', 300],
+    ]);
+    expect(byTime(rows, times)).toBe(rows);
   });
 });

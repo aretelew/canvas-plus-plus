@@ -2,7 +2,7 @@ import { loadCourseColors, loadCourses } from '@/core/courses';
 import { doneCheck } from '@/core/done-check';
 import { readMirror, writeMirror } from '@/core/page-mirror';
 import { loadUnreadAnnouncements, loadWorks, type Work } from '@/core/planner';
-import { readFeedback, type Feedback } from './feedback';
+import { readFeedback, sortFeedback, type Feedback } from './feedback';
 import { tidySidebar } from './storage';
 import { dueLabel, todoGroups, type Group, type When } from './todo';
 
@@ -13,7 +13,7 @@ import { dueLabel, todoGroups, type Group, type When } from './todo';
 // (core/planner.ts); Canvas's own fills up with announcements. A course's
 // page has a line under it for the unread ones instead, since it has no badge
 // for them like the course's dashboard card. Feedback is read from Canvas's
-// list, already in the page.
+// list, already in the page, and put newest first (feedback.ts).
 //
 // While on, `html[data-cpp-sidebar]` hides Canvas's lists (sidebar.css). A
 // copy of the setting in the page's localStorage sets it before the first
@@ -247,7 +247,8 @@ function todoRow(
   return li;
 }
 
-// Canvas's feedback, restyled; when it has none, its own list says so.
+// Canvas's feedback, restyled and newest first (in Canvas's order if that
+// can't be loaded); when it has none, its own list says so.
 async function fillFeedback(
   section: HTMLElement,
   canvasList: Element,
@@ -255,8 +256,11 @@ async function fillFeedback(
 ): Promise<boolean> {
   const feedback = readFeedback(canvasList);
   if (feedback.length === 0) return false;
-  const labels = course ? undefined : await courseLabels();
-  const rows = feedback.map((row) => feedbackRow(row, labels));
+  const [sorted, labels] = await Promise.all([
+    sortFeedback(feedback),
+    course ? undefined : courseLabels(),
+  ]);
+  const rows = sorted.map((row) => feedbackRow(row, labels));
   const list = document.createElement('ul');
   list.append(...rows);
   const footer = document.createElement('div');
