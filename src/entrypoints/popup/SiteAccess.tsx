@@ -36,42 +36,34 @@ export function SiteAccess() {
 
   // a row of the popup's main page, under the sections
   if (!site) return null;
-  if (site.status === 'on') {
-    return (
-      <div className="px-4 py-2.5">
-        <SiteStatus host={site.host} state="Enabled" />
+  return (
+    <div className="flex items-center justify-between gap-4 px-4 py-2.5 text-sm">
+      <div className="min-w-0">
+        {/* hosts have no spaces to wrap at, and some are long */}
+        <p className="font-mono wrap-anywhere">{site.host}</p>
+        {site.status === 'offer' && (
+          <p className="text-base-content/70">Not enabled</p>
+        )}
       </div>
-    );
-  }
-  return (
-    <div className="flex items-center justify-between gap-4 px-4 py-2.5">
-      <SiteStatus host={site.host} state="Not enabled" />
-      <button
-        type="button"
-        className="btn btn-primary btn-sm shrink-0 rounded-none text-sm transition-none"
-        aria-label={`Enable canvas++ on ${site.host}`}
-        onClick={() => {
-          // first thing in the click: Firefox only allows it from a user action
-          void browser.permissions
-            .request({ origins: [site.pattern] })
-            .then((granted) => {
-              if (granted) setSite({ ...site, status: 'on' });
-            });
-        }}
-      >
-        Enable
-      </button>
-    </div>
-  );
-}
-
-// The site's host, in mono like an address, over what canvas++ does there.
-function SiteStatus({ host, state }: { host: string; state: string }) {
-  return (
-    <div className="min-w-0 text-sm">
-      {/* hosts have no spaces to wrap at, and some are long */}
-      <p className="font-mono wrap-anywhere">{host}</p>
-      <p className="text-base-content/70">{state}</p>
+      {site.status === 'on' ? (
+        <p className="shrink-0 text-base-content/70">Enabled</p>
+      ) : (
+        <button
+          type="button"
+          className="btn btn-primary btn-sm shrink-0 rounded-none text-sm transition-none"
+          aria-label={`Enable canvas++ on ${site.host}`}
+          onClick={() => {
+            // first thing in the click: Firefox only allows it from a user action
+            void browser.permissions
+              .request({ origins: [site.pattern] })
+              .then((granted) => {
+                if (granted) setSite({ ...site, status: 'on' });
+              });
+          }}
+        >
+          Enable
+        </button>
+      )}
     </div>
   );
 }
