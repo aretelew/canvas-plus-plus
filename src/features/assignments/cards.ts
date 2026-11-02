@@ -55,6 +55,8 @@ function row(work: Work, locale: string | undefined): HTMLLIElement {
   // cardLists only lists work with a page
   title.href = work.url ?? '';
   title.textContent = work.title;
+  // the whole title on hover, since the card cuts it off with an ellipsis
+  title.title = work.title;
 
   const date = document.createElement('time');
   date.dateTime = work.due.toISOString();
