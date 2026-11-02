@@ -195,7 +195,7 @@ test('a page taller than the main one scrolls, fading at an edge with more past 
   });
   await expect.poll(() => edges(page)).toEqual([true, true]);
 
-  const last = popup.getByText('Deep Sea');
+  const last = popup.getByText('Poimandres');
   await last.scrollIntoViewIfNeeded();
   await expect(last).toBeInViewport();
   await expect.poll(() => edges(page)).toEqual([true, false]);

@@ -11,6 +11,9 @@ const CHOICES = [
   'dracula',
   'everforest',
   'sea',
+  'tokyo',
+  'oxocarbon',
+  'poimandres',
 ] as const;
 
 // 'system' is the dark theme only while the operating system is dark.

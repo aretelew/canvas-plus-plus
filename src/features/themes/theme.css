@@ -129,6 +129,54 @@ html[data-cpp-theme='sea'] {
   --cpp-link: #5fd0c5;
   --cpp-nav: #0f333b;
 }
+/* Tokyo Night's night palette (github.com/folke/tokyonight.nvim), a deep indigo:
+   bg for the page, bg_dark for the nav, bg_highlight for controls, fg and
+   fg_dark for text, and blue for links. Cards take the storm palette's
+   bg_dark, since night has nothing between bg and bg_highlight. */
+html[data-cpp-theme='tokyo'] {
+  --cpp-bg: #1a1b26;
+  --cpp-elevated: #1f2335;
+  --cpp-control: #292e42;
+  --cpp-control-hover: #343b58;
+  --cpp-border: #3b4261;
+  --cpp-border-strong: #545c7e;
+  --cpp-text: #c0caf5;
+  --cpp-muted: #a9b1d6;
+  --cpp-link: #7aa2f7;
+  --cpp-nav: #16161e;
+}
+/* Oxocarbon's dark palette (github.com/nyoom-engineering/oxocarbon.nvim), a
+   neutral charcoal: base00-03 for the surfaces, its darker blend grey for the
+   nav, base04 for text, and its pink for links. Muted text is our own grey
+   between base03 and base04, which has none. */
+html[data-cpp-theme='oxocarbon'] {
+  --cpp-bg: #161616;
+  --cpp-elevated: #262626;
+  --cpp-control: #393939;
+  --cpp-control-hover: #474747;
+  --cpp-border: #393939;
+  --cpp-border-strong: #525252;
+  --cpp-text: #d0d0d0;
+  --cpp-muted: #a8a8a8;
+  --cpp-link: #ff7eb6;
+  --cpp-nav: #131313;
+}
+/* Poimandres (github.com/drcmda/poimandres-theme), a desaturated blue-grey: its
+   background, code-block and button colors for the surfaces, its bright text
+   for text and its foreground for muted text. Links take its mint rather than
+   its pale blue link color, which Nord's links already look like. */
+html[data-cpp-theme='poimandres'] {
+  --cpp-bg: #1b1e28;
+  --cpp-elevated: #252b37;
+  --cpp-control: #303340;
+  --cpp-control-hover: #3a3e4f;
+  --cpp-border: #303340;
+  --cpp-border-strong: #506477;
+  --cpp-text: #e4f0fb;
+  --cpp-muted: #a6accd;
+  --cpp-link: #5de4c7;
+  --cpp-nav: #303340;
+}
 /* The themes with lighter surfaces, where colored text has to go further to
    read, even mid-toned text the darker themes leave alone, and teachers'
    highlights sit lighter to stand out. */

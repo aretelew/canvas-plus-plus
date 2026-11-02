@@ -35,6 +35,9 @@ export const THEMES = [
   'dracula',
   'everforest',
   'sea',
+  'tokyo',
+  'oxocarbon',
+  'poimandres',
 ] as const;
 
 // each theme's value in storage, and its switch in the popup: on the Themes
@@ -46,6 +49,9 @@ const THEME_PAGE = {
   dracula: 'Dracula',
   everforest: 'Everforest',
   sea: 'Deep Sea',
+  tokyo: 'Tokyo Night',
+  oxocarbon: 'Oxocarbon',
+  poimandres: 'Poimandres',
 };
 const DARK_MODE_PAGE = {
   dark: 'Dark',
