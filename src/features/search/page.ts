@@ -7,8 +7,9 @@ import { isShortcut } from './shortcut';
 import { quickSearch } from './storage';
 
 // Opens the search box with its shortcut, on any Canvas page, while the setting
-// is on. Nothing is asked for until it first opens, and then once a page at
-// most, unless what's saved is recent enough to keep.
+// is on. While nothing is saved, what it lists is asked for once the page has
+// loaded, so it opens full the first time. After that it's asked for when it
+// opens, once a page at most, unless what's saved is recent enough to keep.
 
 // the setting's copy in the page (see page-mirror.ts), so the shortcut works
 // as soon as the page does
@@ -30,6 +31,13 @@ export async function syncSearch(): Promise<void> {
     });
   };
 
+  const prefetch = () => {
+    const who = userName();
+    // signed out, or saved already
+    if (!who || savedEntries.read(who, Date.now())) return;
+    fetched ??= fetchEntries(who);
+  };
+
   const onKey = (event: KeyboardEvent) => {
     if (!isShortcut(event) || event.repeat) return;
     // a field Canvas lets the user write in may have its own ⌘K, like a link
@@ -45,13 +53,18 @@ export async function syncSearch(): Promise<void> {
 
   const apply = (on: boolean) => {
     writeMirror(MIRROR_KEY, on ? '1' : undefined);
-    // capturing, so it's seen before Canvas's own key handlers
     if (on) {
+      // capturing, so it's seen before Canvas's own key handlers
       window.addEventListener('keydown', onKey, true);
+      // after the page's own requests, so it isn't held up by these
+      if (document.readyState === 'complete') prefetch();
+      else window.addEventListener('load', prefetch, { once: true });
       return;
     }
     window.removeEventListener('keydown', onKey, true);
+    window.removeEventListener('load', prefetch);
     box?.close();
+    fetched = undefined;
     // it may have been turned off with no Canvas page open to hear of it
     savedEntries.clear();
   };

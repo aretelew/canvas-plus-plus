@@ -256,6 +256,23 @@ test("it's asked for once and kept for the next page", async ({
   expect(courseRequests).toBe(1);
 });
 
+test("it's loaded in the background before it first opens", async ({
+  page: p,
+  setQuickSearch,
+}) => {
+  await setQuickSearch(true);
+  await p.goto(`${ORIGIN}/`);
+  await expect.poll(() => courseRequests).toBe(1);
+  await expect
+    .poll(() => p.evaluate(() => localStorage.getItem('canvas++:search-saved')))
+    .not.toBeNull();
+  await openBox(p);
+
+  await expect(results(p)).toHaveCount(3);
+  await expect(box(p)).not.toContainText('Loading');
+  expect(courseRequests).toBe(1);
+});
+
 test('the shortcut is left to the browser while it is off', async ({
   page: p,
 }) => {
