@@ -68,6 +68,7 @@ export const test = base.extend<
     setHideSensus: (on: boolean) => Promise<void>;
     setTidySidebar: (on: boolean) => Promise<void>;
     setCourseNav: (on: boolean) => Promise<void>;
+    setQuickSearch: (on: boolean) => Promise<void>;
   },
   { sharedContext: () => Promise<BrowserContext> }
 >({
@@ -139,12 +140,37 @@ export const test = base.extend<
 
   setTidySidebar: async ({ context }, use) => {
     await use((on) =>
-      setSwitch(context, 'Sidebar', 'Tidy To Do list', 'tidySidebar', on),
+      setSwitch(
+        context,
+        'Sidebars & search',
+        'Tidy To Do list',
+        'tidySidebar',
+        on,
+      ),
     );
   },
   setCourseNav: async ({ context }, use) => {
     await use((on) =>
-      setSwitch(context, 'Sidebar', 'Courses in left sidebar', 'courseNav', on),
+      setSwitch(
+        context,
+        'Sidebars & search',
+        'Courses in left sidebar',
+        'courseNav',
+        on,
+      ),
+    );
+  },
+
+  setQuickSearch: async ({ context }, use) => {
+    // its label names the platform's shortcut
+    await use((on) =>
+      setSwitch(
+        context,
+        'Sidebars & search',
+        /^Search with/,
+        'quickSearch',
+        on,
+      ),
     );
   },
 });
@@ -161,7 +187,7 @@ export async function openPopup(context: BrowserContext): Promise<Page> {
 function setSwitch(
   context: BrowserContext,
   section: string,
-  name: string,
+  name: string | RegExp,
   key: string,
   on: boolean,
 ): Promise<void> {

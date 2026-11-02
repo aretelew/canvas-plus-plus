@@ -4,6 +4,8 @@ import { hideFooter } from '@/features/footer/storage';
 import { cardGrades } from '@/features/grades/storage';
 import { hideLogo } from '@/features/logo/storage';
 import { courseNav } from '@/features/nav/storage';
+import { SHORTCUT } from '@/features/search/shortcut';
+import { quickSearch } from '@/features/search/storage';
 import { hideSensus } from '@/features/sensus/storage';
 import { tidySidebar } from '@/features/sidebar/storage';
 import { type ThemeChoice, themeChoice } from '@/features/themes/storage';
@@ -73,10 +75,11 @@ export const sections: Section[] = [
     ],
   },
   {
-    title: 'Sidebar',
+    title: 'Sidebars & search',
     rows: [
       switchRow('Tidy To Do list', tidySidebar),
       switchRow('Courses in left sidebar', courseNav),
+      switchRow(`Search with ${SHORTCUT}`, quickSearch),
     ],
   },
   {

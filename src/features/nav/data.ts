@@ -1,6 +1,7 @@
 import { canvasFetch, canvasJson, nextPage } from '@/core/canvas-api';
 import { loadCourseColors } from '@/core/courses';
-import { readMirror, writeMirror } from '@/core/page-mirror';
+import { currentGroups, loadGroups, type CanvasGroup } from '@/core/groups';
+import { savedForUser } from '@/core/saved';
 import { loadWorks, type Work } from '@/core/planner';
 import { todoGroups, type When } from '../sidebar/todo';
 
@@ -18,15 +19,6 @@ export interface DashboardCard {
   shortName: string;
   originalName: string;
   courseCode: string;
-}
-
-// The parts of GET /api/v1/users/self/groups?include[]=can_access that are used.
-export interface CanvasGroup {
-  id: string;
-  name: string;
-  can_access?: boolean;
-  concluded?: boolean;
-  course_id?: string;
 }
 
 // The parts of GET /api/v1/users/self/history that are used. Each visit is its
@@ -86,12 +78,9 @@ interface NavSources {
   history: HistoryEntry[];
 }
 
-const CACHE_KEY = 'canvas++:course-nav-saved';
-const VISITS_KEY = 'canvas++:course-nav-visits';
 const MAX_AGE = 10 * 60 * 1000;
 const RECENT = 3;
 const CARDS = '/api/v1/dashboard/dashboard_cards';
-const GROUPS = '/api/v1/users/self/groups?include[]=can_access&per_page=100';
 const HISTORY = '/api/v1/users/self/history';
 // how far back to look for enough pages to list
 const HISTORY_BATCHES = 4;
@@ -174,25 +163,6 @@ export function recentPages(history: HistoryEntry[]): NavPage[] {
   return [...pages.values()];
 }
 
-/**
- * Canvas's tray's rule (groups the user can open, whose course hasn't
- * concluded), but only those of the listed courses: courses often stay open
- * after their term, so the tray fills with old project groups. Groups of no
- * course (clubs, say) stay.
- */
-export function currentGroups(
-  groups: CanvasGroup[],
-  courses: { id: string }[],
-): CanvasGroup[] {
-  const listed = new Set(courses.map(({ id }) => id));
-  return groups.filter(
-    ({ can_access, concluded, course_id }) =>
-      can_access === true &&
-      concluded !== true &&
-      (course_id === undefined || listed.has(course_id)),
-  );
-}
-
 /** What fits in the collapsed sidebar: "340" for "CSDS 340". */
 export function shortLabel(label: string): string {
   return /\d+[A-Z]?\b/.exec(label)?.[0] ?? label.slice(0, 3);
@@ -222,27 +192,15 @@ export function recentWith(
   });
 }
 
-// Saved with whose it is, since people share computers.
-interface Saved {
-  who: string;
-}
-
-function readSaved(key: string, who: string): Saved | undefined {
-  try {
-    const saved = JSON.parse(readMirror(key) ?? 'null') as Saved | null;
-    return saved?.who === who ? saved : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-interface Visits extends Saved {
-  pages: NavPage[];
-}
+/** What's listed, as last loaded, and asked for again once it's old. */
+export const savedNav = savedForUser<NavData>(
+  'canvas++:course-nav-saved',
+  MAX_AGE,
+);
+const savedVisits = savedForUser<NavPage[]>('canvas++:course-nav-visits');
 
 export function readVisits(who: string): NavPage[] {
-  const visits = readSaved(VISITS_KEY, who) as Visits | undefined;
-  return visits?.pages ?? [];
+  return savedVisits.read(who, Date.now())?.value ?? [];
 }
 
 /** Notes the page, if it's one Recent lists. */
@@ -254,27 +212,12 @@ export function recordVisit(
   if (!PAGE.test(page.href)) return;
   const others = readVisits(who).filter(({ href }) => href !== page.href);
   const pages = [{ ...page, at: now.toISOString() }, ...others];
-  const visits: Visits = { who, pages: pages.slice(0, RECENT) };
-  writeMirror(VISITS_KEY, JSON.stringify(visits));
-}
-
-interface Cached extends Saved {
-  at: number;
-  data: NavData;
-}
-
-/** What's saved for this user, and whether it's still recent enough to keep. */
-export function readCache(
-  who: string,
-  now: number,
-): { data: NavData; fresh: boolean } | undefined {
-  const cached = readSaved(CACHE_KEY, who) as Cached | undefined;
-  return cached && { data: cached.data, fresh: now - cached.at < MAX_AGE };
+  savedVisits.write(who, pages.slice(0, RECENT), now.getTime());
 }
 
 export function clearCache(): void {
-  writeMirror(CACHE_KEY, undefined);
-  writeMirror(VISITS_KEY, undefined);
+  savedNav.clear();
+  savedVisits.clear();
 }
 
 /**
@@ -304,7 +247,7 @@ async function loadHistory(): Promise<HistoryEntry[]> {
 export async function fetchNav(who: string): Promise<NavData | undefined> {
   const [cards, groups, colors, works, history] = await Promise.all([
     canvasJson<DashboardCard[]>(CARDS),
-    canvasJson<CanvasGroup[]>(GROUPS),
+    loadGroups(),
     loadCourseColors(),
     loadWorks(),
     loadHistory(),
@@ -314,14 +257,13 @@ export async function fetchNav(who: string): Promise<NavData | undefined> {
   const data = navData(
     {
       cards,
-      groups: groups ?? [],
+      groups,
       colors,
       works: works ?? [],
       history,
     },
     now,
   );
-  const cached: Cached = { who, at: now.getTime(), data };
-  writeMirror(CACHE_KEY, JSON.stringify(cached));
+  savedNav.write(who, data, now.getTime());
   return data;
 }

@@ -1,12 +1,13 @@
 import { syncPageFlag } from '@/core/page-flag';
 import { readMirror } from '@/core/page-mirror';
+import { userName } from '@/core/saved';
 import {
   clearCache,
   fetchNav,
-  readCache,
   readVisits,
   recentWith,
   recordVisit,
+  savedNav,
   shortLabel,
   type NavCourse,
   type NavData,
@@ -44,8 +45,8 @@ export async function syncCourseNav(): Promise<void> {
   const start = (menu: Element) => {
     if (!enabled) return;
     const who = userName();
-    const cached = readCache(who, Date.now());
-    let data = cached?.data;
+    const cached = savedNav.read(who, Date.now());
+    let data = cached?.value;
     const show = () => {
       if (!enabled || !data) return;
       paint(menu, { ...data, recent: recentWith(data, readVisits(who)) });
@@ -108,13 +109,6 @@ function whenMenu(run: (menu: Element) => void): void {
   whenParsed(() => {
     observer.disconnect();
   });
-}
-
-function userName(): string {
-  const avatar = document.querySelector<HTMLImageElement>(
-    '#global_nav_profile_link img',
-  );
-  return avatar?.alt ?? '';
 }
 
 // From the breadcrumbs, which run home, course, section, page. A page of their

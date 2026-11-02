@@ -149,7 +149,12 @@ test('the popup keeps its height from page to page', async ({ context }) => {
   const keepsHeight = async () => {
     expect(await main.evaluate((el) => el.clientHeight)).toBe(height);
   };
-  for (const title of ['Appearance', 'Dashboard', 'Sidebar', 'Courses']) {
+  for (const title of [
+    'Appearance',
+    'Dashboard',
+    'Sidebars & search',
+    'Courses',
+  ]) {
     await popup.getByRole('button', { name: title }).click();
     await keepsHeight();
     await popup.getByRole('button', { name: 'Back' }).click();
@@ -179,7 +184,8 @@ test('a page taller than the main one scrolls, fading at an edge with more past 
   context,
 }) => {
   const popup = await openPopup(context);
-  await popup.getByRole('button', { name: 'Settings', exact: true }).click();
+  await popup.getByRole('button', { name: 'Appearance' }).click();
+  await popup.getByRole('button', { name: 'Themes' }).click();
   const page = popup.locator('.scroll-fade:visible');
   expect(await scrolls(page)).toBe(true);
   await expect.poll(() => edges(page)).toEqual([false, true]);
@@ -189,7 +195,7 @@ test('a page taller than the main one scrolls, fading at an edge with more past 
   });
   await expect.poll(() => edges(page)).toEqual([true, true]);
 
-  const last = popup.getByText(/^Version/);
+  const last = popup.getByText('Deep Sea');
   await last.scrollIntoViewIfNeeded();
   await expect(last).toBeInViewport();
   await expect.poll(() => edges(page)).toEqual([true, false]);
