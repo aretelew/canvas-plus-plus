@@ -1,14 +1,20 @@
+import { browser } from '#imports';
 import { readMirror, writeMirror } from './page-mirror';
 
 // What a feature keeps in the page's localStorage for the signed-in user. It's
 // saved with whose it is, since people share computers, and when, so it can be
-// asked for again once it's old.
+// asked for again once it's old. It's also saved with the version that saved
+// it: after an update, what an older version saved may lack what's new, or be
+// in another shape, so it's asked for again at once.
 
 interface Saved<T> {
   who: string;
+  version: string;
   at: number;
   value: T;
 }
+
+const version = () => browser.runtime.getManifest().version;
 
 export interface SavedForUser<T> {
   /** What's saved for this user, and whether it's newer than the max age. */
@@ -25,15 +31,14 @@ export function savedForUser<T>(
     read(who, now) {
       try {
         const saved = JSON.parse(readMirror(key) ?? 'null') as Saved<T> | null;
-        // an older version saved it in another shape, without `value`
-        if (saved?.who !== who || saved.value === undefined) return undefined;
+        if (saved?.who !== who || saved.version !== version()) return undefined;
         return { value: saved.value, fresh: now - saved.at < maxAge };
       } catch {
         return undefined;
       }
     },
     write(who, value, now) {
-      const saved: Saved<T> = { who, at: now, value };
+      const saved: Saved<T> = { who, version: version(), at: now, value };
       writeMirror(key, JSON.stringify(saved));
     },
     clear() {
