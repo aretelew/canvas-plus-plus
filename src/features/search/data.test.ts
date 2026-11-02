@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Work } from '@/core/planner';
 import type { CanvasGroup } from '@/core/groups';
-import type { CourseAssignment } from './assignments';
+import type { CourseAssignment, ModuleItem } from './course-items';
 import { searchEntries, type SearchCourse } from './data';
 
 const NOW = new Date('2026-10-14T12:00:00Z');
@@ -69,17 +69,30 @@ const assignment = (
   due: due?.toISOString(),
 });
 
+const moduleItem = (
+  id: string,
+  over: Partial<ModuleItem> = {},
+): ModuleItem => ({
+  courseId: '1',
+  title: `Item ${id}`,
+  module: 'Week 1',
+  url: `/courses/${over.courseId ?? '1'}/modules/items/${id}`,
+  ...over,
+});
+
 const entries = (
   over: {
     works?: Work[];
     groups?: CanvasGroup[];
     assignments?: CourseAssignment[];
+    moduleItems?: ModuleItem[];
   } = {},
 ) =>
   searchEntries(
     {
       courses: COURSES,
       assignments: over.assignments ?? [],
+      moduleItems: over.moduleItems ?? [],
       groups: over.groups ?? [],
       colors: COLORS,
       works: over.works ?? [],
@@ -220,6 +233,35 @@ describe('searchEntries', () => {
     expect(titles).toContain('Assignment 2');
   });
 
+  it('lists the module items after the assignments, in module order, found by their module too', () => {
+    const found = entries({
+      assignments: [assignment('1')],
+      moduleItems: [
+        moduleItem('5', { title: 'Lecture 5', module: 'Week 3' }),
+        moduleItem('6', { courseId: '2' }),
+      ],
+    });
+    const items = found.filter(({ href }) => href.includes('/modules/items/'));
+    expect(items).toEqual([
+      {
+        title: 'Lecture 5',
+        href: '/courses/1/modules/items/5',
+        also: ['Week 3'],
+        where: 'CSDS 338',
+        color: '#e1185c',
+      },
+      {
+        title: 'Item 6',
+        href: '/courses/2/modules/items/6',
+        also: ['Week 1'],
+        where: 'Robots',
+      },
+    ]);
+    const at = (title: string) => found.findIndex((e) => e.title === title);
+    expect(at('Lecture 5')).toBeGreaterThan(at('Assignment 1'));
+    expect(at('Lecture 5')).toBeLessThan(at('OLD 100'));
+  });
+
   it("ends with Canvas's own pages", () => {
     expect(entries().at(-1)).toEqual({
       title: 'Notifications',
@@ -234,7 +276,9 @@ describe('searchEntries', () => {
         work('Protocol', inDays(1), { url: '//example.com/a' }),
         work('Script', inDays(1), { url: 'javascript:alert(1)' }),
       ],
+      moduleItems: [moduleItem('1', { url: '//example.com/a' })],
     });
     expect(outside.filter(({ due }) => due)).toEqual([]);
+    expect(outside.map(({ title }) => title)).not.toContain('Item 1');
   });
 });

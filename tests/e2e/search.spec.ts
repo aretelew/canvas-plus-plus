@@ -1,6 +1,6 @@
 // "Search with ⌘K" opens a search box over any Canvas page: the user's
-// courses, the pages in each, their work and groups, found by a few letters of
-// each, and opened with Enter.
+// courses, the pages in each, their work, groups and module items, found by a
+// few letters of each, and opened with Enter.
 
 import type { Page } from '@playwright/test';
 import { expect, test } from '../extension';
@@ -69,6 +69,24 @@ const ASSIGNMENTS: Record<string, Record<string, string>> = {
   '2': { '21': 'Robot arm report' },
 };
 
+// each course's modules: its items by id, with what each is
+const MODULES: Record<
+  string,
+  { name: string; items: Record<string, [string, object]> }[]
+> = {
+  '1': [
+    {
+      name: 'Week 3',
+      items: {
+        '30': ['Readings', { __typename: 'SubHeader' }],
+        '31': ['Lecture 5: Kinetics', { __typename: 'File' }],
+        // the assignment, listed once, as an assignment
+        '32': ['Lab 1: Safety', { __typename: 'Assignment', _id: '11' }],
+      },
+    },
+  ],
+};
+
 let courseRequests = 0;
 let graphqlBody: { query: string; variables: Record<string, string> };
 
@@ -91,8 +109,22 @@ test.beforeEach(async ({ page: p }) => {
                 name,
                 dueAt: null,
                 htmlUrl: `${ORIGIN}/courses/${course}/assignments/${id}`,
+                quiz: null,
               }),
             ),
+          },
+          modulesConnection: {
+            nodes: (MODULES[course] ?? []).map(({ name, items }, i) => ({
+              name,
+              position: i + 1,
+              moduleItems: Object.entries(items).map(
+                ([id, [title, content]]) => ({
+                  title,
+                  url: `${ORIGIN}/courses/${course}/modules/items/${id}`,
+                  content,
+                }),
+              ),
+            })),
           },
         },
       ]),
@@ -113,6 +145,7 @@ test.beforeEach(async ({ page: p }) => {
     '/courses/1/grades',
     '/courses/2/grades',
     '/courses/2/modules',
+    '/courses/1/modules/items/31',
   ]) {
     await p.route(`${ORIGIN}${path}`, (route) =>
       route.fulfill({ contentType: 'text/html', body: page(path) }),
@@ -201,6 +234,23 @@ test('every assignment in the courses is found, past or done', async ({
   );
   expect(Object.values(graphqlBody.variables)).toEqual(['1', '2']);
   expect(graphqlBody.query).toContain('gradingPeriodId: null');
+});
+
+test('module items are found by their title or module, and open in it', async ({
+  page: p,
+  setQuickSearch,
+}) => {
+  await setQuickSearch(true);
+  await p.goto(`${ORIGIN}/`);
+  await openBox(p);
+  await field(p).fill('week 3');
+  // the heading isn't listed, and the lab is listed as its assignment
+  await expect(results(p)).toHaveText(['Lecture 5: KineticsCHEM 105']);
+
+  await field(p).fill('lecture 5');
+  await expect(results(p)).toHaveText(['Lecture 5: KineticsCHEM 105']);
+  await p.keyboard.press('Enter');
+  await expect(p).toHaveURL(`${ORIGIN}/courses/1/modules/items/31`);
 });
 
 test('Escape, the shortcut again, or a click beside it closes it', async ({

@@ -3,14 +3,18 @@ import { loadCourseColors } from '@/core/courses';
 import { currentGroups, loadGroups, type CanvasGroup } from '@/core/groups';
 import { loadWorks, type Work } from '@/core/planner';
 import { savedForUser } from '@/core/saved';
-import { loadAssignments, type CourseAssignment } from './assignments';
+import {
+  loadCourseItems,
+  type CourseAssignment,
+  type CourseItems,
+} from './course-items';
 import type { Entry } from './match';
 
 // What the search box lists: the user's courses and the pages in each, their
-// work and every assignment in their current courses, their groups, and
-// Canvas's own pages. It's asked for the first time the box opens, then kept in
-// the page's localStorage so it opens with it at once on the next page, and
-// asked for again once it's old.
+// work, every assignment and module item in their current courses, their
+// groups, and Canvas's own pages. It's asked for the first time the box opens,
+// then kept in the page's localStorage so it opens with it at once on the next
+// page, and asked for again once it's old.
 
 // The parts of GET /api/v1/courses?include[]=tabs&include[]=concluded that are
 // used. `name` is the user's nickname for it when they gave one, and
@@ -34,12 +38,11 @@ interface Tab {
   hidden?: boolean;
 }
 
-interface SearchSources {
+interface SearchSources extends CourseItems {
   courses: SearchCourse[];
   groups: CanvasGroup[];
   colors: Map<string, string>;
   works: Work[];
-  assignments: CourseAssignment[];
 }
 
 const MAX_AGE = 10 * 60 * 1000;
@@ -72,12 +75,12 @@ type InCourse = (id: string | undefined) => Pick<Entry, 'where' | 'color'>;
 
 /**
  * The current courses first, in name order, then the work left to do, soonest
- * first, the groups, each course's pages, the rest of their assignments, the
- * courses whose term is over, and Canvas's own pages. Links only ever go to
- * this site.
+ * first, the groups, each course's pages, the rest of their assignments, their
+ * module items, the courses whose term is over, and Canvas's own pages. Links
+ * only ever go to this site.
  */
 export function searchEntries(
-  { courses, groups, colors, works, assignments }: SearchSources,
+  { courses, groups, colors, works, assignments, moduleItems }: SearchSources,
   now: Date,
 ): Entry[] {
   const entryOf = (course: SearchCourse): Entry => ({
@@ -118,6 +121,13 @@ export function searchEntries(
     })),
     ...current.flatMap(({ course, entry }) => pageEntries(course, entry)),
     ...assignmentEntries(assignments, inToDo, inCourse, now),
+    ...moduleItems.map(({ title, url, module, courseId }) => ({
+      title,
+      href: url,
+      // so "week 3 reading" finds that reading
+      also: [module],
+      ...inCourse(courseId),
+    })),
     ...courses.filter((course) => !isCurrent(course)).map(entryOf),
     ...CANVAS_PAGES,
   ].filter(({ href }) => onThisSite(href));
@@ -208,21 +218,21 @@ function byWhenDue(
 // a path on this site, never another site or a script
 const onThisSite = (href: string) => /^\/(?![/\\])/.test(href);
 
-// The courses, then the assignments in the current ones: they're asked for by
-// course.
-async function loadCoursesAndAssignments(): Promise<
-  Pick<SearchSources, 'courses' | 'assignments'> | undefined
+// The courses, then the assignments and module items in the current ones:
+// they're asked for by course.
+async function loadCoursesAndItems(): Promise<
+  Pick<SearchSources, 'courses' | keyof CourseItems> | undefined
 > {
   const courses = await canvasJson<SearchCourse[]>(COURSES);
   if (!courses) return undefined;
   const current = courses.filter(isCurrent).map(({ id }) => id);
-  return { courses, assignments: await loadAssignments(current) };
+  return { courses, ...(await loadCourseItems(current)) };
 }
 
 /** Undefined when the courses can't be loaded; what's saved stays. */
 export async function fetchEntries(who: string): Promise<Entry[] | undefined> {
   const [courses, groups, colors, works] = await Promise.all([
-    loadCoursesAndAssignments(),
+    loadCoursesAndItems(),
     loadGroups(),
     loadCourseColors(),
     loadWorks(),
