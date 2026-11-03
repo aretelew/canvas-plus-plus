@@ -53,6 +53,9 @@ input {
   padding: 6px;
   overflow-y: auto;
   overscroll-behavior: contain;
+  /* a thin thumb in the theme's border color, with no track behind it */
+  scrollbar-width: thin;
+  scrollbar-color: var(--cpp-border-strong, #c7cdd1) transparent;
   list-style: none;
 
   &:empty {
