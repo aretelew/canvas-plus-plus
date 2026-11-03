@@ -23,6 +23,7 @@ If you check off an item in a dashboard card's list, canvas++ marks it as done i
 - Your settings (which features are on), in the browser's extension storage. If you use your browser's sync, the browser syncs them across your devices like any other extension's settings.
 - On each Canvas site where the theme is on, one value in that site's local storage, so the theme can apply before the page first paints.
 - With the left sidebar on, your name, your courses, groups and how much is due in each, and the names of your last few pages, noted as you open them, in that site's local storage, so the sidebar can show before the page first paints. It stays in your browser, is refreshed after 10 minutes, and is removed when you turn the sidebar off.
+- With the search on, your name, what it lists (your courses, their pages, assignments and module items, your groups and work due), and the addresses of the last 50 Canvas pages you opened, in that site's local storage, so the search opens at once and can list what you opened last. It stays in your browser, the list is refreshed after 10 minutes, and both are removed when you turn the search off.
 - The Canvas sites you've turned canvas++ on for, as the browser's own site permissions, which you can remove from the canvas++ settings (the gear in its popup) or the browser's extension settings.
 
 ## Where data goes
@@ -33,4 +34,4 @@ canvas++ only makes requests to the Canvas site you're on. It has no analytics, 
 
 Questions or concerns: open an issue at https://github.com/aretelew/canvas-plus-plus/issues.
 
-Last updated October 28, 2026.
+Last updated November 3, 2026.

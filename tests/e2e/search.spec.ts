@@ -179,6 +179,35 @@ test('the shortcut opens it on the courses and what is due', async ({
   );
 });
 
+test('before anything is typed, it lists what was opened last', async ({
+  page: p,
+  setQuickSearch,
+}) => {
+  await setQuickSearch(true);
+  await p.goto(`${ORIGIN}/courses/2/grades`);
+  await openBox(p);
+  // the page that's open isn't listed
+  await expect(box(p).getByRole('group')).toHaveCount(0);
+  await field(p).fill('lecture 5');
+  await p.keyboard.press('Enter');
+  await expect(p).toHaveURL(`${ORIGIN}/courses/1/modules/items/31`);
+  await p.goto(`${ORIGIN}/courses/1/grades`);
+  await openBox(p);
+  await field(p).fill('');
+
+  const recent = box(p).getByRole('group', { name: 'Recent' });
+  await expect(recent.getByRole('option')).toHaveText([
+    'Lecture 5: KineticsCHEM 105',
+    'GradesRobots',
+  ]);
+  await expect(
+    box(p)
+      .getByRole('group', { name: 'Courses and work due' })
+      .getByRole('option'),
+  ).toHaveText(['CHEM 105', 'Robots', /^Lab 4: TitrationCHEM 105/]);
+  await expect(results(p).first()).toHaveAttribute('aria-selected', 'true');
+});
+
 test('a few letters of a course and its page find it, and Enter opens it', async ({
   page: p,
   setQuickSearch,
@@ -302,7 +331,8 @@ test("it's asked for once and kept for the next page", async ({
   await p.goto(`${ORIGIN}/courses/2/modules`);
   await openBox(p);
 
-  await expect(results(p)).toHaveCount(3);
+  // and the Dashboard, opened last
+  await expect(results(p)).toHaveCount(4);
   expect(courseRequests).toBe(1);
 });
 

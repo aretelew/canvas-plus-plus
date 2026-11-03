@@ -47,7 +47,7 @@ input {
   }
 }
 
-ul {
+[role='listbox'] {
   max-height: min(400px, 56vh);
   margin: 0;
   padding: 6px;
@@ -58,6 +58,25 @@ ul {
   &:empty {
     display: none;
   }
+}
+
+[role='group'] {
+  & + & {
+    margin-top: 6px;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+}
+
+.heading {
+  display: block;
+  padding: 6px 10px 4px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 a {
@@ -93,6 +112,7 @@ a {
   text-overflow: ellipsis;
 }
 
+.heading,
 .where,
 .due,
 .status {

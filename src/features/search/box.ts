@@ -5,14 +5,29 @@ import css from './search.css?inline';
 // Arrow keys pick a result and Enter opens it (in a new tab with ⌘ or Ctrl).
 // It's a modal <dialog>, so it's over everything Canvas has open, the page
 // behind it is inert, Escape closes it and the focus goes back where it was.
-// It keeps what was typed, so opening it again picks up where it was.
+// It keeps what was typed, so opening it again picks up where it was. Before
+// anything is typed, it lists what was opened last above what it starts with.
+
+/** What the box lists. */
+export interface Listing {
+  entries: Entry[];
+  // opened last, newest first
+  recent: Entry[];
+  loading: boolean;
+}
 
 export interface SearchBox {
   readonly isOpen: boolean;
-  open(entries: Entry[], loading: boolean): void;
-  // new entries for a box that may be open
-  update(entries: Entry[], loading: boolean): void;
+  open(listing: Listing): void;
+  // a new listing for a box that may be open
+  update(listing: Listing): void;
   close(): void;
+}
+
+// a run of results, under its title when it has one
+interface Section {
+  title?: string;
+  entries: Entry[];
 }
 
 // enough to scroll through; past that, more letters narrow it down
@@ -22,24 +37,36 @@ export function createSearchBox(): SearchBox {
   const { host, root, dialog, input, list, status } = build();
   document.body.append(host);
 
-  let entries: Entry[] = [];
-  let loading = false;
+  let listing: Listing = { entries: [], recent: [], loading: false };
   let results: Entry[] = [];
+  let options: HTMLElement[] = [];
   let selected = 0;
 
   const render = () => {
-    results = search(entries, input.value).slice(0, MAX_RESULTS);
-    list.replaceChildren(...results.map(option));
-    status.textContent = statusText(results.length, input.value, loading);
+    results = [];
+    options = [];
+    const items: HTMLElement[] = [];
+    for (const { title, entries } of sections(listing, input.value)) {
+      const part = entries.map((entry, i) => option(entry, results.length + i));
+      results.push(...entries);
+      options.push(...part);
+      items.push(...(title ? [group(title, part)] : part));
+    }
+    list.replaceChildren(...items);
+    status.textContent = statusText(
+      results.length,
+      input.value,
+      listing.loading,
+    );
     select(Math.min(selected, Math.max(results.length - 1, 0)));
   };
 
   const select = (index: number) => {
     selected = index;
-    for (const [i, item] of [...list.children].entries()) {
+    for (const [i, item] of options.entries()) {
       item.setAttribute('aria-selected', String(i === index));
     }
-    const item = list.children[index];
+    const item = options[index];
     if (item) {
       input.setAttribute('aria-activedescendant', item.id);
       item.scrollIntoView({ block: 'nearest' });
@@ -81,8 +108,8 @@ export function createSearchBox(): SearchBox {
     });
   }
   list.addEventListener('mousemove', (event) => {
-    const item = (event.target as Element).closest('li');
-    if (item) select([...list.children].indexOf(item));
+    const item = (event.target as Element).closest('[role="option"]');
+    if (item) select(options.indexOf(item as HTMLElement));
   });
   // a link opens as links do (a new tab with a middle click, say)
   list.addEventListener('click', (event) => {
@@ -97,17 +124,15 @@ export function createSearchBox(): SearchBox {
     get isOpen() {
       return dialog.open;
     },
-    open(next, nextLoading) {
-      entries = next;
-      loading = nextLoading;
+    open(next) {
+      listing = next;
       selected = 0;
       dialog.showModal();
       render();
       input.select();
     },
-    update(next, nextLoading) {
-      entries = next;
-      loading = nextLoading;
+    update(next) {
+      listing = next;
       if (dialog.open) render();
     },
     close,
@@ -159,6 +184,37 @@ function option(entry: Entry, index: number): HTMLElement {
   if (entry.where) link.append(span('where', entry.where));
   if (entry.due) link.append(span('due', dueText(new Date(entry.due))));
   item.append(link);
+  return item;
+}
+
+// What's typed found, or with nothing typed, what was opened last and then
+// what's listed to start with, without what's already above. They're titled
+// only when there's something recent, to tell the two apart.
+function sections({ entries, recent }: Listing, typed: string): Section[] {
+  const found = search(entries, typed).slice(0, MAX_RESULTS);
+  if (typed.trim() || recent.length === 0) return [{ entries: found }];
+  const opened = new Set(recent.map(({ href }) => href));
+  return [
+    { title: 'Recent', entries: recent },
+    {
+      title: 'Courses and work due',
+      entries: found.filter(({ href }) => !opened.has(href)),
+    },
+  ].filter((section) => section.entries.length > 0);
+}
+
+// A titled run of options. Screen readers hear the title as the group's name,
+// so they don't read it as text too.
+function group(title: string, options: HTMLElement[]): HTMLElement {
+  const item = document.createElement('li');
+  item.setAttribute('role', 'group');
+  item.setAttribute('aria-label', title);
+  const heading = span('heading', title);
+  heading.setAttribute('aria-hidden', 'true');
+  const list = document.createElement('ul');
+  list.setAttribute('role', 'none');
+  list.append(...options);
+  item.append(heading, list);
   return item;
 }
 
