@@ -2,6 +2,7 @@ import { loadCourseColors, loadCourses } from '@/core/courses';
 import { doneCheck } from '@/core/done-check';
 import { readMirror, writeMirror } from '@/core/page-mirror';
 import { loadUnreadAnnouncements, loadWorks, type Work } from '@/core/planner';
+import { whenParsed } from '@/core/when-parsed';
 import { readFeedback, sortFeedback, type Feedback } from './feedback';
 import { tidySidebar } from './storage';
 import { dueLabel, todoGroups, type Group, type When } from './todo';
@@ -103,12 +104,6 @@ function showAttribute(on: boolean): void {
   if (on) root.dataset.cppSidebar = '';
   else delete root.dataset.cppSidebar;
   writeMirror(MIRROR_KEY, on ? '1' : undefined);
-}
-
-function whenParsed(run: () => void): void {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', run, { once: true });
-  } else run();
 }
 
 function decorate(sidebar: HTMLElement): void {

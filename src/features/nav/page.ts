@@ -1,6 +1,7 @@
 import { syncPageFlag } from '@/core/page-flag';
 import { readMirror } from '@/core/page-mirror';
 import { userName } from '@/core/saved';
+import { whenParsed } from '@/core/when-parsed';
 import {
   clearCache,
   fetchNav,
@@ -81,12 +82,6 @@ export async function syncCourseNav(): Promise<void> {
   apply(readMirror(`canvas++:${FLAG}`) !== undefined);
   apply(await courseNav.getValue());
   courseNav.watch(apply);
-}
-
-function whenParsed(run: () => void): void {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', run, { once: true });
-  } else run();
 }
 
 // The nav comes early in the document, so it's filled before the first paint

@@ -1,3 +1,4 @@
+import { daysUntil } from '@/core/days';
 import type { Work } from '@/core/planner';
 
 // What the sidebar's To Do lists and how: unfinished work, grouped by when
@@ -42,20 +43,11 @@ export function todoGroups(
 
 function whenDue(due: Date, now: Date): When {
   if (due < now) return 'Overdue';
-  const days = Math.round(
-    (startOfDay(due).getTime() - startOfDay(now).getTime()) / 86_400_000,
-  );
+  const days = daysUntil(due, now);
   if (days === 0) return 'Today';
   if (days === 1) return 'Tomorrow';
   if (days < 7) return 'This week';
   return 'Later';
-}
-
-// local midnight; rounding the days between two absorbs a DST hour
-function startOfDay(date: Date): Date {
-  const day = new Date(date);
-  day.setHours(0, 0, 0, 0);
-  return day;
 }
 
 /** The part of the due date its group doesn't already say. */
