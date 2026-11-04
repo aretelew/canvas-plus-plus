@@ -1,5 +1,6 @@
 import type { WxtStorageItem } from '#imports';
 import { cardAssignments } from '@/features/assignments/storage';
+import { timeUntilDue } from '@/features/due/storage';
 import { hideFooter } from '@/features/footer/storage';
 import { cardGrades } from '@/features/grades/storage';
 import { hideLogo } from '@/features/logo/storage';
@@ -87,7 +88,10 @@ export const sections: Section[] = [
   },
   {
     title: 'Courses',
-    rows: [switchRow('Hide SensusAccess', hideSensus)],
+    rows: [
+      switchRow('Time until due', timeUntilDue),
+      switchRow('Hide SensusAccess', hideSensus),
+    ],
   },
 ];
 

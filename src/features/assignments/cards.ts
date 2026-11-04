@@ -64,10 +64,14 @@ function row(work: Work, locale: string | undefined): HTMLLIElement {
     dateStyle: 'medium',
     timeStyle: 'short',
   });
-  date.textContent = work.due.toLocaleDateString(locale, {
+  // its own element, so the time left can take its place (features/due)
+  const day = document.createElement('span');
+  day.className = 'cpp-day';
+  day.textContent = work.due.toLocaleDateString(locale, {
     month: 'short',
     day: 'numeric',
   });
+  date.append(day);
   // read out only while the row is marked overdue (assignments.css)
   const late = document.createElement('span');
   late.className = 'cpp-late screenreader-only';

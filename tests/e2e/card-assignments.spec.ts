@@ -45,7 +45,7 @@ const PAGE = `<!doctype html><title>Dashboard</title>
   }
   .ic-DashboardCard__action { display: flex; height: 36px; }
 </style>
-<body><div id="DashboardCard_Container"></div></body>`;
+<body><div id="content"><div id="DashboardCard_Container"></div></div></body>`;
 
 const item = (id: string, title: string, date: string, submitted = false) => ({
   course_id: '1',
@@ -89,8 +89,9 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
-test.afterEach(async ({ setCardAssignments }) => {
+test.afterEach(async ({ setCardAssignments, setTimeUntilDue }) => {
   await setCardAssignments(false);
+  await setTimeUntilDue(false);
 });
 
 test('cards list their work, overdue first and done struck through', async ({
@@ -117,6 +118,36 @@ test('cards list their work, overdue first and done struck through', async ({
     '/courses/1/assignments/1',
   );
   await expect(list(page, 'Experience Portfolio')).toHaveText(/Nothing due/);
+});
+
+test("with time until due on, the time left takes the day's place", async ({
+  page,
+  setCardAssignments,
+  setTimeUntilDue,
+}) => {
+  await setCardAssignments(true);
+  await setTimeUntilDue(true);
+  await page.goto(`${ORIGIN}/`);
+  await drawCards(page);
+
+  const rows = list(page, 'Intro to Operating Systems').getByRole('listitem');
+  const timeLeft = (row: number) => rows.nth(row).locator('.cpp-time-left');
+  const day = (row: number) => rows.nth(row).locator('.cpp-day');
+  // overdue work keeps its day, in red
+  await expect(timeLeft(0)).toBeHidden();
+  await expect(day(0)).toBeVisible();
+  // set a day ahead when this file loaded: just under a day by now, but done,
+  // so not red
+  await expect(timeLeft(1)).toHaveText('in 23 hours');
+  await expect(timeLeft(1)).not.toHaveCSS('color', 'rgb(199, 31, 35)');
+  await expect(day(1)).toBeHidden();
+  await expect(timeLeft(2)).toHaveText('in 2 days');
+  // the whole date on hover, as before
+  await expect(rows.nth(2).locator('time')).toHaveAttribute('title', /\d/);
+
+  await setTimeUntilDue(false);
+  await expect(page.locator('.cpp-time-left')).toHaveCount(0);
+  await expect(day(2)).toBeVisible();
 });
 
 test('the circle marks work done in Canvas', async ({

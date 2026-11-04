@@ -72,6 +72,7 @@ export const test = base.extend<
     setHideLogo: (on: boolean) => Promise<void>;
     setHideFooter: (on: boolean) => Promise<void>;
     setHideSensus: (on: boolean) => Promise<void>;
+    setTimeUntilDue: (on: boolean) => Promise<void>;
     setTidySidebar: (on: boolean) => Promise<void>;
     setCourseNav: (on: boolean) => Promise<void>;
     setQuickSearch: (on: boolean) => Promise<void>;
@@ -141,6 +142,12 @@ export const test = base.extend<
   setHideSensus: async ({ context }, use) => {
     await use((on) =>
       setSwitch(context, 'Courses', 'Hide SensusAccess', 'hideSensus', on),
+    );
+  },
+
+  setTimeUntilDue: async ({ context }, use) => {
+    await use((on) =>
+      setSwitch(context, 'Courses', 'Time until due', 'timeUntilDue', on),
     );
   },
 

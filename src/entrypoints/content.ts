@@ -1,6 +1,8 @@
 import { syncPageFlag } from '@/core/page-flag';
 import { syncCardAssignments } from '@/features/assignments/cards';
 import '@/features/assignments/assignments.css';
+import { syncTimeUntilDue } from '@/features/due/page';
+import '@/features/due/due.css';
 import { hideFooter } from '@/features/footer/storage';
 import '@/features/footer/footer.css';
 import { syncCardGrades } from '@/features/grades/cards';
@@ -34,6 +36,7 @@ export default defineContentScript({
     void syncPageFlag(hideSensus, 'hide-sensus');
     void syncCardGrades();
     void syncCardAssignments();
+    void syncTimeUntilDue();
     void syncSidebar();
     void syncCourseNav();
     void syncSearch();
