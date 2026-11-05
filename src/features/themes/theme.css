@@ -250,6 +250,18 @@ html[data-cpp-theme] .ic-app-header .ic-app-header__logomark-container {
   ) !important;
 }
 
+/* The calendar marks today by shading its cell a light grey (#f2f4f4) on the
+   white month, which recolor.ts would flatten to the page color like any light
+   surface, leaving today unmarked. Making the cell a card-colored surface
+   shades it one step lighter instead (its page tag paints --cpp-surface),
+   under the same selector Canvas uses. */
+html[data-cpp-theme]
+  :is(#calendar-app, #calendar-drag-and-drop-container)
+  .fc-month-view
+  .fc-today {
+  --cpp-surface: var(--cpp-elevated);
+}
+
 /* The calendar's small month (#minical) boxes days with events and circles
    today. Neither takes a role: the box is a pseudo-element in dark ink, and
    the circle is the school's button color, both near-invisible on a dark
