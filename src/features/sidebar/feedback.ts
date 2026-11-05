@@ -1,4 +1,5 @@
 import { canvasJson } from '@/core/canvas-api';
+import { textOf } from '@/core/text';
 
 // Canvas's Recent Feedback, read from the list its server already sent with
 // the page (each row a graded or commented assignment), then put newest
@@ -24,30 +25,28 @@ export function readFeedback(list: Element): Feedback[] {
     'li.event > a.recent_feedback_icon',
   )) {
     const url = link.getAttribute('href');
-    const title = text(link.querySelector('.recent_feedback_title'));
+    const title = textOf(link.querySelector('.recent_feedback_title'));
     if (!url || !title) continue;
     let score: string | undefined;
     let comment: string | undefined;
     for (const p of link.querySelectorAll('.event-details > p')) {
       if (p.classList.contains('event-details__context')) continue;
-      if (p.querySelector('strong')) score = shortScore(text(p));
-      else comment = text(p) || undefined;
+      if (p.querySelector('strong')) score = shortScore(textOf(p));
+      else comment = textOf(p) || undefined;
     }
     rows.push({
       title,
       url,
       courseId: /\/courses\/(\d+)/.exec(url)?.[1],
       assignmentId: /\/assignments\/(\d+)/.exec(url)?.[1],
-      course: text(link.querySelector('.event-details__context')) || undefined,
+      course:
+        textOf(link.querySelector('.event-details__context')) || undefined,
       score,
       comment,
     });
   }
   return rows;
 }
-
-const text = (element: Element | null) =>
-  element?.textContent.replace(/\s+/g, ' ').trim() ?? '';
 
 /** "95 out of 100" as "95/100"; a letter or word grade as it is. */
 export function shortScore(score: string): string {

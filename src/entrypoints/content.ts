@@ -7,6 +7,8 @@ import { hideFooter } from '@/features/footer/storage';
 import '@/features/footer/footer.css';
 import { syncCardGrades } from '@/features/grades/cards';
 import '@/features/grades/grades.css';
+import { syncGradeBreakdown } from '@/features/grades/sidebar';
+import '@/features/grades/sidebar.css';
 import '@/features/logo/logo.css';
 import { hideLogo } from '@/features/logo/storage';
 import '@/features/sensus/sensus.css';
@@ -37,6 +39,7 @@ export default defineContentScript({
     void syncCardGrades();
     void syncCardAssignments();
     void syncTimeUntilDue();
+    void syncGradeBreakdown();
     void syncSidebar();
     void syncCourseNav();
     void syncSearch();

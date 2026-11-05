@@ -1,0 +1,201 @@
+/* The grade breakdown in a course's Grades sidebar (sidebar.ts). While it's
+   there, Canvas's sidebar under it is hidden: its total line, its table of
+   weights and long What-If paragraph give way to ours, and its buttons and
+   checkbox to our ⋯ menu (menu.ts), which clicks them. Its Revert button
+   gives way to ours beside the actual total, so it stays while there's no
+   total to put ours by. If ours can't be drawn, Canvas's sidebar is left as
+   it was. */
+#student-grades-right-content:has(> .cpp-grades) > .final_grade,
+#student-grades-right-content:has(> .cpp-grades) > #student-grades-whatif,
+#student-grades-right-content:has(> .cpp-grades) > #student-grades-show-all,
+#student-grades-right-content:has(> .cpp-grades) > #assignments-not-weighted,
+#student-grades-right-content:has(> .cpp-grades) > #whatif-score-description,
+#student-grades-right-content:has(> .cpp-grades .cpp-grades-score)
+  > #student-grades-revert {
+  /* over the inline display Canvas's scripts show them with */
+  display: none !important;
+}
+
+/* Canvas's text colors, or the theme's tokens, so it reads in either; the
+   bar's track is the text color, faint, which works on any background, and
+   its fill the link color, which the theme remaps. Prefixed with #right-side
+   to beat Canvas's rules for the sidebar's headings and paragraphs. */
+#right-side .cpp-grades {
+  margin: 0 0 18px;
+  font-size: 0.875rem;
+  line-height: 1.125rem;
+  color: var(--ic-brand-font-color-dark, #2d3b45);
+}
+#right-side .cpp-grades p {
+  margin: 0;
+}
+#right-side .cpp-grades .cpp-grades-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+#right-side .cpp-grades .cpp-grades-label {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.5rem;
+  color: var(--cpp-muted, #474747);
+}
+#right-side .cpp-grades .cpp-grades-score {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 2.25rem;
+  font-variant-numeric: tabular-nums;
+}
+#right-side .cpp-grades .cpp-grades-letter {
+  padding: 0 8px;
+  border: 1px solid var(--cpp-border, #c7cdd1);
+  border-radius: 999px;
+  font-size: 0.875rem;
+  line-height: 1.5rem;
+}
+#right-side .cpp-grades .cpp-grades-note {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--cpp-muted, #474747);
+}
+#right-side .cpp-grades .cpp-grades-revert {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ic-link-color, #0374b5);
+  font: inherit;
+  cursor: pointer;
+}
+#right-side .cpp-grades .cpp-grades-revert:hover {
+  text-decoration: underline;
+}
+
+/* the groups, close under the total */
+#right-side .cpp-grades ul {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+#right-side .cpp-grades li {
+  padding: 5px 0;
+}
+#right-side .cpp-grades .cpp-grades-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+#right-side .cpp-grades .cpp-grades-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+#right-side .cpp-grades .cpp-grades-value {
+  flex: none;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+#right-side .cpp-grades .cpp-grades-bar {
+  height: 4px;
+  margin: 4px 0 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  overflow: hidden;
+}
+#right-side .cpp-grades .cpp-grades-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ic-link-color, #0374b5);
+}
+#right-side .cpp-grades .cpp-grades-meta {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--cpp-muted, #474747);
+}
+#right-side .cpp-grades .cpp-ungraded .cpp-grades-value {
+  font-weight: 400;
+  color: var(--cpp-muted, #474747);
+}
+
+/* the ⋯ menu of Canvas's controls, opening under its button */
+#right-side .cpp-grades .cpp-grades-more {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-right: -6px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--cpp-muted, #474747);
+  cursor: pointer;
+}
+#right-side .cpp-grades .cpp-grades-more:hover,
+#right-side .cpp-grades .cpp-grades-more[aria-expanded='true'] {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+#right-side .cpp-grades .cpp-grades-more svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+#right-side .cpp-grades .cpp-grades-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: -6px;
+  z-index: 10;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 260px;
+  padding: 4px;
+  border: 1px solid var(--cpp-border, #c7cdd1);
+  border-radius: 8px;
+  background: var(--cpp-elevated, #fff);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.15);
+}
+#right-side .cpp-grades .cpp-grades-panel[hidden],
+#right-side .cpp-grades .cpp-grades-item[hidden],
+#right-side .cpp-grades .cpp-grades-menu[hidden] {
+  display: none;
+}
+#right-side .cpp-grades .cpp-grades-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+#right-side .cpp-grades .cpp-grades-item:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+#right-side .cpp-grades .cpp-grades-item input {
+  flex: none;
+  margin: 2px 0 0;
+}
+#right-side .cpp-grades .cpp-grades-tip {
+  margin: 4px 0 0;
+  padding: 6px 8px 4px;
+  border-top: 1px solid var(--cpp-border, #e8eaec);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--cpp-muted, #474747);
+}

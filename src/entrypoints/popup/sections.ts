@@ -2,7 +2,7 @@ import type { WxtStorageItem } from '#imports';
 import { cardAssignments } from '@/features/assignments/storage';
 import { timeUntilDue } from '@/features/due/storage';
 import { hideFooter } from '@/features/footer/storage';
-import { cardGrades } from '@/features/grades/storage';
+import { cardGrades, gradeBreakdown } from '@/features/grades/storage';
 import { hideLogo } from '@/features/logo/storage';
 import { courseNav } from '@/features/nav/storage';
 import { SHORTCUT } from '@/features/search/shortcut';
@@ -90,6 +90,7 @@ export const sections: Section[] = [
     title: 'Courses',
     rows: [
       switchRow('Time until due', timeUntilDue),
+      switchRow('Grade breakdown', gradeBreakdown),
       switchRow('Hide SensusAccess', hideSensus),
     ],
   },
