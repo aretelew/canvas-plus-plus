@@ -250,6 +250,31 @@ html[data-cpp-theme] .ic-app-header .ic-app-header__logomark-container {
   ) !important;
 }
 
+/* The calendar's small month (#minical) boxes days with events and circles
+   today. Neither takes a role: the box is a pseudo-element in dark ink, and
+   the circle is the school's button color, both near-invisible on a dark
+   page. The box is also sized to its cell, wider and shorter than the 24px
+   number at the cell's top left, so the number sits low in it. Days with
+   events get a ring on the number in the border color instead, and today a
+   circle in the link color. */
+html[data-cpp-theme] #minical .event::after {
+  /* the number's middle is 11px down and 11.5px across from the cell's
+     padding box (inside its 1px border); a 26px ring, room for two digits,
+     goes 13px out from there */
+  top: -2px;
+  left: -1.5px;
+  right: auto;
+  box-sizing: border-box;
+  width: 26px;
+  height: 26px;
+  border-color: var(--cpp-border-strong);
+  border-radius: 50%;
+}
+html[data-cpp-theme] #minical .fc-today .day-number-text {
+  background: var(--cpp-link) !important;
+  color: var(--cpp-bg) !important;
+}
+
 /* Palette roles, tagged at runtime by recolor.ts. !important because the tag
    records what the element's color *is*, whatever rule or inline style set it. */
 /* Canvas is white on white, so containers are invisible; flat ones take the
