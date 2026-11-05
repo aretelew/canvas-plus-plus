@@ -15,6 +15,7 @@ import {
   type NavGroup,
   type NavPage,
 } from './data';
+import { resizeHandle, syncNavWidth } from './resize';
 import { courseNav } from './storage';
 
 // Widens Canvas's global nav into a sidebar: the courses and groups a click
@@ -41,10 +42,12 @@ export async function syncCourseNav(): Promise<void> {
   // the nav is never in a frame
   if (window.top !== window) return;
   void syncPageFlag(courseNav, FLAG);
+  void syncNavWidth();
   let enabled = false;
 
   const start = (menu: Element) => {
     if (!enabled) return;
+    menu.closest('.ic-app-header')?.append(resizeHandle(ADDED));
     const who = userName();
     const cached = savedNav.read(who, Date.now());
     let data = cached?.value;

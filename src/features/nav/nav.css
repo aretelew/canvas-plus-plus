@@ -199,22 +199,57 @@
     }
 
     body.primary-nav-expanded {
-      /* 184px keeps the dashboard's three cards at a 1440px window. */
+      /* As wide as the user dragged it (resize.ts), 184px at first. */
+      --cpp-nav-width: var(--cpp-nav-dragged-width, 184px);
+
       .ic-app-header {
-        width: 184px;
+        width: var(--cpp-nav-width);
       }
 
       &:not(.no-headers, .content-only, .hide-global-nav) .ic-Layout-wrapper {
-        margin-left: 184px;
+        margin-left: var(--cpp-nav-width);
       }
 
       &:not(.hide-global-nav) .tray-with-space-for-global-nav {
-        margin-left: 184px;
+        margin-left: var(--cpp-nav-width);
       }
 
-      /* Trays open under the nav, so they grow by as much as it did. */
+      /* Trays open under the nav, so they grow by as much as it did from
+         Canvas's 84px. */
       #nav-tray-portal [data-cid='Tray'] > span {
-        width: calc(28rem + 100px);
+        width: calc(28rem + var(--cpp-nav-width) - 84px);
+      }
+
+      /* Its right edge, to drag. A line shows on hover and while dragging. */
+      .cpp-nav-resize {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: calc(var(--cpp-nav-width) - 3px);
+        z-index: 3;
+        width: 6px;
+        cursor: col-resize;
+        touch-action: none;
+
+        &::after {
+          display: block;
+          width: 2px;
+          height: 100%;
+          margin-inline: auto;
+          background-color: var(--ic-brand-global-nav-menu-item__text-color);
+          opacity: 0;
+          transition: opacity 0.15s;
+          content: '';
+        }
+
+        &:hover::after,
+        &:focus-visible::after {
+          opacity: 0.5;
+        }
+
+        &:focus-visible {
+          outline: none;
+        }
       }
 
       /* Without the room the nav took, the grades table runs under the grade
@@ -291,7 +326,7 @@
         bottom: 0;
         left: 0;
         z-index: 1;
-        width: 184px;
+        width: var(--cpp-nav-width);
         height: 48px;
         background-color: var(--ic-brand-global-nav-bgd);
 
@@ -392,6 +427,18 @@
       }
     }
 
+    /* While its edge is dragged: the line stays, and the page's text isn't
+       selected along the way. */
+    &[data-cpp-nav-resizing] {
+      cursor: col-resize;
+      user-select: none;
+
+      & .cpp-nav-resize::after {
+        opacity: 0.5;
+        transition: none;
+      }
+    }
+
     /* Collapsed: Canvas's rail of icons, with each course's dot and number. */
     body:not(.primary-nav-expanded) {
       .ic-app-header {
@@ -404,6 +451,7 @@
       }
 
       .cpp-nav-heading,
+      .cpp-nav-resize,
       .cpp-nav-groups,
       .cpp-nav-recent,
       .cpp-nav-name,

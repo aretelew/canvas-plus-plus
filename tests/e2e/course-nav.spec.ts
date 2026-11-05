@@ -477,6 +477,81 @@ test('turning it off puts the nav back, without a reload', async ({
   expect((await nav(p).boundingBox())?.width).toBe(84);
 });
 
+test('its edge drags to a width that stays, and a double-click resets it', async ({
+  page: p,
+  setCourseNav,
+}) => {
+  await setCourseNav(true);
+  await p.goto(`${ORIGIN}/`);
+  await expect(courses(p)).toBeVisible();
+  const edge = p.getByRole('separator', { name: 'Resize sidebar' });
+  const width = async () => (await nav(p).boundingBox())?.width;
+
+  const box = await edge.boundingBox();
+  if (!box) throw new Error('no edge');
+  await p.mouse.move(box.x + box.width / 2, 300);
+  await p.mouse.down();
+  await p.mouse.move(260, 300, { steps: 4 });
+  await p.mouse.up();
+  expect(await width()).toBe(260);
+  expect((await p.locator('.ic-Layout-wrapper').boundingBox())?.x).toBe(260);
+
+  // no narrower than its bottom bar, and kept on the next page
+  await edge.focus();
+  await p.keyboard.press('ArrowLeft');
+  expect(await width()).toBe(244);
+  await p.reload();
+  await expect(courses(p)).toBeVisible();
+  expect(await width()).toBe(244);
+  await p.mouse.move(244, 300);
+  await p.mouse.down();
+  await p.mouse.move(100, 300, { steps: 4 });
+  await p.mouse.up();
+  expect(await width()).toBe(184);
+
+  await edge.focus();
+  await p.keyboard.press('ArrowRight');
+  expect(await width()).toBe(200);
+  await edge.dblclick();
+  expect(await width()).toBe(184);
+  await p.reload();
+  await expect(courses(p)).toBeVisible();
+  expect(await width()).toBe(184);
+});
+
+// a theme's recolor pass clears the custom properties in <html>'s inline style
+test('the width it was dragged to stays with a theme on', async ({
+  page: p,
+  setCourseNav,
+  setTheme,
+}) => {
+  await setCourseNav(true);
+  await setTheme('sea');
+  await p.goto(`${ORIGIN}/`);
+  await expect(courses(p)).toBeVisible();
+  const edge = p.getByRole('separator', { name: 'Resize sidebar' });
+
+  await edge.focus();
+  await p.keyboard.press('ArrowRight');
+  await p.reload();
+  await expect(courses(p)).toBeVisible();
+  // Canvas changes <html>'s classes as it loads, which has it recolored again;
+  // the probe is recolored in the same pass
+  await p.evaluate(() => {
+    document.documentElement.classList.add('touched');
+    const probe = document.createElement('p');
+    probe.id = 'probe';
+    probe.style.color = '#2d3b45';
+    probe.textContent = 'probe';
+    document.body.append(probe);
+  });
+  await expect(p.locator('#probe')).toHaveAttribute('data-cpp-fg');
+  expect((await nav(p).boundingBox())?.width).toBe(200);
+
+  await edge.dblclick();
+  await setTheme('off');
+});
+
 test('collapsed, it keeps a dot and number for each course', async ({
   page: p,
   setCourseNav,
