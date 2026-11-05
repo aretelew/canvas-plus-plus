@@ -547,3 +547,74 @@ test('a signed-out page and a narrow window are left alone', async ({
   expect((await nav(p).boundingBox())?.width).toBe(84);
   await p.setViewportSize({ width: 1280, height: 800 });
 });
+
+// Canvas's grades page: its table won't shrink past its dates and buttons,
+// and its column won't push the grade sidebar aside.
+const GUTTER = 48;
+const GRADES = `
+  <style>
+    #not_right_side { display: flex; margin-left: 192px; }
+    #content-wrapper { flex: 1 1 0%; min-width: 1px; }
+    #content { padding: 0 ${String(GUTTER)}px; }
+    #right-side-wrapper { width: 288px; }
+    #grades_summary { width: 100%; }
+    #grades_summary :is(th, td) { padding: 14px; }
+    #grades_summary td.due { white-space: nowrap; }
+    #grades_summary td.details { white-space: nowrap; }
+  </style>
+  <div id="not_right_side">
+    <div id="content-wrapper">
+      <div id="content">
+        <table id="grades_summary">
+          <tr>
+            <th style="min-width: 150px">Homework 2</th>
+            <td class="due">Sep 21 by 11:59pm</td>
+            <td>Sep 21 at 10:55pm</td>
+            <td>late</td>
+            <td>20 / 20</td>
+            <td class="details"><span style="display: inline-block; width: 162px"></span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <div id="right-side-wrapper">Total: 70%</div>
+  </div>`;
+
+test('the grades table fits beside the grade sidebar, or the sidebar goes under it', async ({
+  page: p,
+  setCourseNav,
+}) => {
+  await serve(p, '/courses/1/grades', canvas('context-course_1', GRADES));
+  await setCourseNav(true);
+  const box = async (selector: string) => {
+    const found = await p.locator(selector).boundingBox();
+    if (!found) throw new Error(`no ${selector}`);
+    return found;
+  };
+  const measure = () =>
+    Promise.all([
+      box('#content'),
+      box('#grades_summary'),
+      box('#right-side-wrapper'),
+    ]);
+
+  await p.setViewportSize({ width: 1440, height: 800 });
+  await p.goto(`${ORIGIN}/courses/1/grades`);
+  await expect(courses(p)).toBeVisible();
+  const [column, table, sidebar] = await measure();
+  // within the column's padding, which keeps it off the sidebar's text
+  expect(table.x + table.width).toBeLessThanOrEqual(
+    column.x + column.width - GUTTER,
+  );
+  expect(sidebar.x).toBeGreaterThanOrEqual(column.x + column.width);
+  expect(sidebar.y).toBeLessThan(table.y + table.height);
+
+  await p.setViewportSize({ width: 1200, height: 800 });
+  const [, narrowTable, narrowSidebar] = await measure();
+  expect(narrowSidebar.y).toBeGreaterThanOrEqual(
+    narrowTable.y + narrowTable.height,
+  );
+  expect(await p.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    1200,
+  );
+});

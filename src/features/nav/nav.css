@@ -217,6 +217,29 @@
         width: calc(28rem + 100px);
       }
 
+      /* Without the room the nav took, the grades table runs under the grade
+         sidebar: Canvas keeps its dates and buttons on one line, and pads its
+         cells twice as wide as its other tables'. Here its dates wrap, as
+         Submitted's do, at the usual padding; should it still not fit, the
+         sidebar goes under it, as Canvas puts it on a narrow screen. */
+      #grades_summary {
+        & :is(th, td) {
+          padding-inline: 7px;
+        }
+
+        & td.due {
+          white-space: normal;
+        }
+      }
+
+      #not_right_side:has(#grades_summary) {
+        flex-wrap: wrap;
+
+        & > #content-wrapper {
+          min-width: min-content;
+        }
+      }
+
       .ic-app-header__main-navigation {
         padding-bottom: 48px;
       }
