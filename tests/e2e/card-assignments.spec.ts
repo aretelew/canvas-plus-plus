@@ -68,13 +68,14 @@ const ITEMS = [
   },
 ];
 
-async function drawCards(page: Page): Promise<void> {
-  await page.locator('#DashboardCard_Container').evaluate(
-    (container, html) => {
-      container.innerHTML = `<div class="ic-DashboardCard__box__container">${html}</div>`;
-    },
-    card('1', 'Intro to Operating Systems') + card('2', 'Experience Portfolio'),
-  );
+async function drawCards(
+  page: Page,
+  html = card('1', 'Intro to Operating Systems') +
+    card('2', 'Experience Portfolio'),
+): Promise<void> {
+  await page.locator('#DashboardCard_Container').evaluate((container, html) => {
+    container.innerHTML = `<div class="ic-DashboardCard__box__container">${html}</div>`;
+  }, html);
 }
 
 const list = (page: Page, course: string) =>
@@ -278,21 +279,37 @@ test("the card's links move onto its color while it lists work", async ({
   await expect.poll(bottom).toBe(false);
 });
 
-test('every card is as tall as the tallest', async ({
+test("a row's cards are as tall as its tallest, and fill its width", async ({
   page,
   setCardAssignments,
 }) => {
+  // a full list (longer than the first card's) on the fourth card, which
+  // wraps to a row of its own
+  const long = Array.from({ length: 4 }, (_, i) => ({
+    ...item(`4${String(i)}`, `Reading ${String(i)}`, inDays(i + 1)),
+    course_id: '4',
+  }));
+  await page.route(`${ORIGIN}/api/v1/planner/items?**`, (route) =>
+    route.fulfill({ json: [...ITEMS, ...long] }),
+  );
   await setCardAssignments(true);
+  // under the 3 × (36px + 262px) Canvas's own cards need for three columns
+  await page.setViewportSize({ width: 840, height: 800 });
   await page.goto(`${ORIGIN}/`);
-  await drawCards(page);
-  // a list of three and "Nothing due"
-  await expect(page.locator('.cpp-card-due')).toHaveCount(2);
-  // where the two cards are, and the width they're laid out in
-  const layout = async () => {
-    const {
-      cards: [first, second],
-      width,
-    } = await page.evaluate(() => {
+  await drawCards(
+    page,
+    card('1', 'Intro to Operating Systems') +
+      card('2', 'Experience Portfolio') +
+      card('3', 'Linear Algebra') +
+      card('4', 'Modern Fiction'),
+  );
+  await expect(page.locator('.cpp-card-due')).toHaveCount(4);
+  await expect(list(page, 'Modern Fiction').getByRole('listitem')).toHaveCount(
+    4,
+  );
+  // where the cards are, and the width they're laid out in
+  const layout = () =>
+    page.evaluate(() => {
       // DOMRect's fields are getters, which don't survive leaving the page
       const rect = (e: Element) => {
         const { x, y, width, height } = e.getBoundingClientRect();
@@ -303,24 +320,31 @@ test('every card is as tall as the tallest', async ({
       );
       return {
         cards: [...document.querySelectorAll('.ic-DashboardCard')].map(rect),
+        right: container ? container.getBoundingClientRect().right : NaN,
         width: container ? rect(container).width : NaN,
       };
     });
-    if (!first || !second) throw new Error('expected two cards');
-    return { first, second, width };
-  };
 
-  // side by side, in Canvas's own columns
+  // three side by side, sharing the width to the container's edge
   const wide = await layout();
-  expect(wide.second.height).toBe(wide.first.height);
-  expect([wide.first.width, wide.second.x - wide.first.x]).toEqual([262, 298]);
+  const [first, second, third, fourth] = wide.cards;
+  if (!first || !second || !third || !fourth) {
+    throw new Error('expected four cards');
+  }
+  expect([second.y, third.y]).toEqual([first.y, first.y]);
+  expect([second.height, third.height]).toEqual([first.height, first.height]);
+  expect(third.x + third.width).toBeCloseTo(wide.right, 0);
+  // the long list's row is taller, and the first row doesn't grow to match
+  expect(fourth.y).toBeGreaterThan(first.y);
+  expect(fourth.height).toBeGreaterThan(first.height);
 
   // one above the other, full width, as Canvas lays them out on a phone
   await page.setViewportSize({ width: 400, height: 800 });
   const narrow = await layout();
-  expect(narrow.second.y).toBeGreaterThan(narrow.first.y);
-  expect(narrow.second.height).toBe(narrow.first.height);
-  expect(narrow.first.width).toBe(narrow.width);
+  const [top, below] = narrow.cards;
+  if (!top || !below) throw new Error('expected cards');
+  expect(below.y).toBeGreaterThan(top.y);
+  expect(top.width).toBe(narrow.width);
 });
 
 test('cards drawn again get their list again', async ({

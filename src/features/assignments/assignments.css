@@ -60,14 +60,21 @@
   text-decoration: line-through;
 }
 
-/* Lists differ in length, so every card is made as tall as the tallest.
-   Canvas wraps fixed-width inline blocks, each only as tall as its contents;
-   a grid keeps its columns (a 36px gap, then a 262px card) and makes every
-   row as tall as the tallest. Below 620px Canvas stacks full-width cards. */
+/* Lists differ in length, so the cards in a row are made as tall as its
+   tallest: Canvas wraps 262px inline blocks, each only as tall as its
+   contents, and a grid stretches each card to its row (rows size apart, so one
+   long list doesn't stretch them all). Its columns, a 36px gap then a card,
+   share the width, cards no narrower than 240px: the wide nav and To Do
+   sidebar leave less room than Canvas planned for, and its 262px cards drop to
+   two columns with most of a third's room empty. Below 620px Canvas stacks
+   full-width cards. */
 .ic-DashboardCard__box__container:has(> .ic-DashboardCard > .cpp-card-due) {
   display: grid;
-  grid-template-columns: repeat(auto-fill, calc(36px + 262px));
-  grid-auto-rows: 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(calc(36px + 240px), 1fr));
+}
+.ic-DashboardCard__box__container:has(> .ic-DashboardCard > .cpp-card-due)
+  > .ic-DashboardCard {
+  width: auto;
 }
 @media only screen and (max-width: 620px) {
   .ic-DashboardCard__box__container:has(> .ic-DashboardCard > .cpp-card-due) {
