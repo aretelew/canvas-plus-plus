@@ -1,19 +1,18 @@
 /* The time left after a due date (page.ts), in the date's own text. In a row
    of details it's a detail of its own, between Canvas's separators; after
    the assignment page's date, which has none, it brings its own; on a
-   dashboard card it stands in for the day. Within a day it's red, like an
-   overdue row on a card. */
+   dashboard card it stands in for the day. Within a day its text is red,
+   like an overdue row on a card; only the text, so the separators either
+   side of it keep the date's color. */
 .cpp-time-left[hidden] {
   display: none;
 }
-.cpp-time-left.cpp-soon {
+.cpp-time-left.cpp-soon > span {
   color: #c71f23;
 }
 span.cpp-time-left::before {
   content: '|';
   margin-inline: 0.5em;
-  /* the date's color, not red */
-  color: var(--cpp-text, var(--ic-brand-font-color-dark, #2d3b45));
 }
 /* On a dashboard card it takes the day's place, in the day's style. */
 .cpp-card-due time:has(> .cpp-time-left:not([hidden])) > .cpp-day {
@@ -28,6 +27,6 @@ span.cpp-time-left::before {
   display: none;
 }
 /* done work isn't pressing however soon it was due */
-.cpp-card-due .cpp-done .cpp-time-left {
+.cpp-card-due .cpp-done .cpp-time-left > span {
   color: inherit;
 }

@@ -4,7 +4,7 @@
 // are only days. In a row of details it's a detail of its own, between
 // Canvas's separators. Past dates get none.
 
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '../extension';
 
 const ORIGIN = 'https://fixture.instructure.com';
@@ -25,7 +25,7 @@ const friendly = (iso: string, attrs = '') => `
 const ASSIGNMENT = `<!doctype html><title>Homework 3</title>
 <div id="content">
   <h1>Homework 3</h1>
-  <span data-testid="assignment-sub-header">${friendly(fromNow(5 * HOUR), 'data-testid="due-date"')}</span>
+  <span data-testid="assignment-sub-header" style="color: rgb(45, 59, 69)">${friendly(fromNow(5 * HOUR), 'data-testid="due-date"')}</span>
 </div>`;
 
 const row = (title: string, iso: string) => `
@@ -36,9 +36,15 @@ const row = (title: string, iso: string) => `
     </div>
   </li>`;
 
+// Canvas's separators between details, which take the row's color
 const ASSIGNMENTS = `<!doctype html><title>Assignments</title>
+<style>
+  .ig-details { color: rgb(107, 119, 128); }
+  .ig-details__item:after { content: "  |  "; }
+</style>
 <div id="content"><ul>
   ${row('Lab 4', fromNow(3 * DAY))}
+  ${row('Quiz 5', fromNow(5 * HOUR))}
   ${row('Midterm 2', fromNow(-2 * DAY))}
 </ul></div>`;
 
@@ -54,6 +60,13 @@ const MODULES = `<!doctype html><title>Modules</title>
 </div>`;
 
 const timeLeft = (page: Page) => page.locator('.cpp-time-left');
+
+// a label's separator, drawn before it or after it
+const separator = (label: Locator, side: '::before' | '::after') =>
+  label.evaluate((element, side) => {
+    const style = getComputedStyle(element, side);
+    return { content: style.content, color: style.color };
+  }, side);
 
 async function fillModuleDates(page: Page): Promise<void> {
   await page.evaluate(() => {
@@ -98,14 +111,16 @@ test("an assignment's due date says how long is left, red within a day", async (
   await page.goto(`${ORIGIN}/courses/1/assignments/3`);
   await expect(timeLeft(page)).toHaveText('in 5 hours');
   await expect(timeLeft(page)).toHaveClass(/cpp-soon/);
-  await expect(timeLeft(page)).toHaveCSS('color', 'rgb(199, 31, 35)');
+  await expect(timeLeft(page).locator('span')).toHaveCSS(
+    'color',
+    'rgb(199, 31, 35)',
+  );
   // nothing follows the date here, so it brings its own separator, in the
   // date's color
-  const separator = await timeLeft(page).evaluate((label) => {
-    const before = getComputedStyle(label, '::before');
-    return { content: before.content, color: before.color };
+  expect(await separator(timeLeft(page), '::before')).toEqual({
+    content: '"|"',
+    color: 'rgb(45, 59, 69)',
   });
-  expect(separator).toEqual({ content: '"|"', color: 'rgb(45, 59, 69)' });
 });
 
 test('the assignments list labels upcoming work and not past work', async ({
@@ -125,6 +140,17 @@ test('the assignments list labels upcoming work and not past work', async ({
     '-/9 pts',
   ]);
   await expect(lab.locator('.cpp-time-left')).not.toHaveClass(/cpp-soon/);
+  // within a day its text is red, and Canvas's separator after it isn't
+  const quiz = page
+    .getByRole('listitem')
+    .filter({ hasText: 'Quiz 5' })
+    .locator('.cpp-time-left');
+  await expect(quiz).toHaveText('in 5 hours');
+  await expect(quiz.locator('span')).toHaveCSS('color', 'rgb(199, 31, 35)');
+  expect(await separator(quiz, '::after')).toEqual({
+    content: '"  |  "',
+    color: 'rgb(107, 119, 128)',
+  });
   const midterm = page.getByRole('listitem').filter({ hasText: 'Midterm 2' });
   await expect(midterm.locator('.cpp-time-left')).toBeHidden();
 });

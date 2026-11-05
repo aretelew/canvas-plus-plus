@@ -48,7 +48,7 @@ export async function syncTimeUntilDue(): Promise<void> {
       locale,
     );
     label.hidden = !left;
-    label.textContent = left?.text ?? '';
+    label.firstElementChild?.replaceChildren(left?.text ?? '');
     label.classList.toggle('cpp-soon', left?.soon ?? false);
   };
 
@@ -64,6 +64,9 @@ export async function syncTimeUntilDue(): Promise<void> {
     label.classList.add(LABEL);
     if (detail) label.classList.add(DETAIL);
     label.dataset.due = due.toISOString();
+    // the text has an element of its own, so it can go red without the
+    // separators around it (due.css)
+    label.append(document.createElement('span'));
     render(label);
     after.after(label);
   };

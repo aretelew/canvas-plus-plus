@@ -139,7 +139,10 @@ test("with time until due on, the time left takes the day's place", async ({
   // set a day ahead when this file loaded: just under a day by now, but done,
   // so not red
   await expect(timeLeft(1)).toHaveText('in 23 hours');
-  await expect(timeLeft(1)).not.toHaveCSS('color', 'rgb(199, 31, 35)');
+  await expect(timeLeft(1).locator('span')).not.toHaveCSS(
+    'color',
+    'rgb(199, 31, 35)',
+  );
   await expect(day(1)).toBeHidden();
   await expect(timeLeft(2)).toHaveText('in 2 days');
   // the whole date on hover, as before
