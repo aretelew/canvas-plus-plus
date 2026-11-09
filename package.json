@@ -1,6 +1,6 @@
 {
   "name": "canvas-plus-plus",
-  "description": "A cleaner, calmer Canvas. Lightweight, fast, and private.",
+  "description": "A better Canvas LMS: themes and dark mode, search across your courses, due dates on your dashboard, and courses in the sidebar.",
   "private": true,
   "version": "0.6.1",
   "type": "module",

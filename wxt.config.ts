@@ -28,8 +28,11 @@ export default defineConfig({
   // ESLint 10 reads the same flat-config format as 9; WXT only knows to ask for "9"
   imports: { eslintrc: { enabled: 9 } },
   manifest: ({ browser }) => ({
-    // package.json "name" must be npm-safe, so the display name lives here
-    name: 'canvas++',
+    // package.json "name" must be npm-safe, so the display name lives here.
+    // It carries search words (see store/listing.md); short_name keeps the
+    // bare brand where Chrome has little room
+    name: 'canvas++: Themes & Tools for Canvas LMS',
+    short_name: 'canvas++',
     // scripting + activeTab: check whether the open tab is Canvas, and run the
     // theme on schools' own domains once the user grants one (optional hosts)
     permissions: ['storage', 'scripting', 'activeTab'],

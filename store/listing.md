@@ -1,6 +1,8 @@
 # Chrome Web Store listing
 
-Text for the developer dashboard, kept here so it changes with the code. The name ("canvas++") and summary come from the manifest, which takes them from `wxt.config.ts` and `package.json`'s `description`. The store shows the summary right above the description, so the description doesn't repeat it.
+Text for the developer dashboard, kept here so it changes with the code. The name ("canvas++: Themes & Tools for Canvas LMS") and summary come from the manifest, which takes them from `wxt.config.ts` and `package.json`'s `description`. The store shows the summary right above the description, so the description doesn't repeat it.
+
+Store search matches the name and summary but apparently not the description: in November 2026, searching for "Everforest" (a theme named only in the description) didn't find canvas++ among five results, while a word from the summary did. So the words people search for ("Canvas LMS", "themes", "dark mode", "search") go in the name and summary. The summary can't be over 132 characters. Keep them natural: Google's policy treats lists of keywords, or one keyword repeated more than five times, as spam.
 
 ## Store listing tab
 
