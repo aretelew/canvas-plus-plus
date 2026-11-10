@@ -1,10 +1,15 @@
-import { syncRegistration, themeOpenTabs } from '@/features/domains/domains';
+import {
+  startOnOpenTabs,
+  syncRegistration,
+  themeOpenTabs,
+} from '@/features/domains/domains';
 
 export default defineBackground(() => {
   // Both browsers drop runtime registrations when the extension updates, and
   // checking on startup costs next to nothing.
-  browser.runtime.onInstalled.addListener(() => {
+  browser.runtime.onInstalled.addListener(({ reason }) => {
     void syncRegistration();
+    if (reason === 'install') void startOnOpenTabs();
   });
   browser.runtime.onStartup.addListener(() => {
     void syncRegistration();

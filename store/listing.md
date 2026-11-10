@@ -13,7 +13,7 @@ Store search matches the name and summary but apparently not the description: in
 **Description:**
 
 ```
-canvas++ restyles Canvas and adds a few things it's missing, with more on the way. Everything starts off, and you turn on what you want from the toolbar button.
+canvas++ restyles Canvas and adds a few things it's missing, with more on the way. Search is on from the start. Everything else starts off, and you turn on what you want from the toolbar button.
 
 • Dark theme: a dark mode made for Canvas, with no white flash between pages. Course colors, grades and your school's logo still look the way they should.
 • True black: a pure black version of the dark theme for OLED screens.

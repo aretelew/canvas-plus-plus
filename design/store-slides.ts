@@ -235,8 +235,8 @@ export function slides({ looks, regions, search, popups }: Shots): Image[] {
       left: 72,
       top: 268,
       width: 390,
-      headline: 'Only what you turn on',
-      text: 'Everything starts off, and every feature has its own switch.',
+      headline: 'A switch for every feature',
+      text: 'Search is on from the start. Everything else waits for you to turn it on.',
       art:
         popup(popups.features, 370, 484, 200) +
         popup(popups.themes, 370, 874, 300),

@@ -17,6 +17,9 @@ export function sitePattern(url: string): string {
   return `${new URL(url).origin}/*`;
 }
 
+// the manifest content script's sites
+const BUILT_IN = 'https://*.instructure.com/*';
+
 /** Whether the manifest's content script already runs on this page. */
 export function isBuiltIn(url: string): boolean {
   const { protocol, hostname } = new URL(url);
@@ -88,20 +91,42 @@ export async function themeOpenTabs(origins: string[]): Promise<void> {
   const domains = origins.filter(isCustomDomain);
   if (!domains.length) return;
   const tabs = await browser.tabs.query({ url: domains });
-  await Promise.all(
-    tabs.map(async ({ id }) => {
-      if (id === undefined) return;
-      const target = { tabId: id, allFrames: true };
-      try {
-        await browser.scripting.insertCSS({ target, files: SCRIPT.css });
-        // executeScript takes its own path form, from the extension's root
-        await browser.scripting.executeScript({
-          target,
-          files: ['/content-scripts/content.js'],
-        });
-      } catch {
-        // the tab navigated away or closed meanwhile; nothing to theme
-      }
-    }),
+  await Promise.all(tabs.map(({ id }) => runIn(id, true)));
+}
+
+/** Whether a tab on the manifest's sites is a Canvas page, not DocViewer's. */
+export function isCanvasTab(url: string): boolean {
+  return isBuiltIn(url) && !new URL(url).hostname.startsWith('canvadocs');
+}
+
+/**
+ * Starts the extension on the Canvas tabs open as it's installed, which the
+ * manifest's script only reaches once they're reloaded, so the search lists
+ * what's there before it's first opened. Only their top frames: with nothing
+ * turned on yet but the search, which runs only there, the frames have nothing
+ * to do. On an update the old script may still be running in them, so it's
+ * for a first install only.
+ */
+export async function startOnOpenTabs(): Promise<void> {
+  const tabs = await browser.tabs.query({ url: BUILT_IN });
+  const canvas = tabs.filter(
+    ({ url }) => url !== undefined && isCanvasTab(url),
   );
+  await Promise.all(canvas.map(({ id }) => runIn(id, false)));
+}
+
+// The content script and its styles, in a page that's already loaded.
+async function runIn(tabId: number | undefined, allFrames: boolean) {
+  if (tabId === undefined) return;
+  const target = { tabId, allFrames };
+  try {
+    await browser.scripting.insertCSS({ target, files: SCRIPT.css });
+    // executeScript takes its own path form, from the extension's root
+    await browser.scripting.executeScript({
+      target,
+      files: ['/content-scripts/content.js'],
+    });
+  } catch {
+    // the tab navigated away or closed meanwhile, or can't be reached
+  }
 }

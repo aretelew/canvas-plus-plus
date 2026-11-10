@@ -190,6 +190,7 @@ export const test = base.extend<
         /^Search with/,
         'quickSearch',
         on,
+        true,
       ),
     );
   },
@@ -204,14 +205,16 @@ export async function openPopup(context: BrowserContext): Promise<Page> {
 
 // Flips one of the popup's switches, in its section, and waits until the
 // setting is saved.
+// `fallback` is the switch's default, which an unset setting stands for
 function setSwitch(
   context: BrowserContext,
   section: string,
   name: string | RegExp,
   key: string,
   on: boolean,
+  fallback = false,
 ): Promise<void> {
-  return setInPopup(context, [section], key, on, false, (popup) =>
+  return setInPopup(context, [section], key, on, fallback, (popup) =>
     popup.getByRole('switch', { name }).setChecked(on),
   );
 }

@@ -88,6 +88,7 @@ const MODULES: Record<
 };
 
 let courseRequests = 0;
+// the request for the assignments and module items; the posts have their own
 let graphqlBody: { query: string; variables: Record<string, string> };
 
 test.beforeEach(async ({ page: p }) => {
@@ -97,9 +98,10 @@ test.beforeEach(async ({ page: p }) => {
     return route.fulfill({ json: COURSES });
   });
   await p.route(`${ORIGIN}/api/graphql`, (route) => {
-    graphqlBody = route.request().postDataJSON() as typeof graphqlBody;
+    const body = route.request().postDataJSON() as typeof graphqlBody;
+    if (body.query.startsWith('query SearchItems')) graphqlBody = body;
     const data = Object.fromEntries(
-      Object.entries(graphqlBody.variables).map(([alias, course]) => [
+      Object.entries(body.variables).map(([alias, course]) => [
         alias,
         {
           assignmentsConnection: {
