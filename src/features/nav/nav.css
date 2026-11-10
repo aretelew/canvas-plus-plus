@@ -37,11 +37,11 @@
       }
     }
 
-    /* A field to type in, as it looks, in the nav's colors. */
+    /* A band across the top of the sidebar to type in, as it looks, in the
+       nav's colors, with a line under it. */
     #menu > .cpp-search-entry {
       display: block;
       order: 0;
-      padding: 10px 8px 6px;
     }
 
     .cpp-search-button {
@@ -52,14 +52,15 @@
       width: 100%;
       margin: 0;
       /* its icon in line with the buttons' below */
-      padding: 6px 10px 6px 3px;
-      border: 1px solid
+      padding: 15px 12px;
+      border: 0;
+      border-bottom: 1px solid
         color-mix(
           in srgb,
-          var(--ic-brand-global-nav-menu-item__text-color) 30%,
+          var(--ic-brand-global-nav-menu-item__text-color) 20%,
           transparent
         );
-      border-radius: 8px;
+      border-radius: 0;
       background-color: color-mix(
         in srgb,
         var(--ic-brand-global-nav-menu-item__text-color) 8%,
@@ -82,7 +83,7 @@
 
       &:focus-visible {
         outline: 2px solid var(--ic-brand-global-nav-menu-item__text-color);
-        outline-offset: 1px;
+        outline-offset: -2px;
       }
     }
 
@@ -563,7 +564,7 @@
       /* just its icon */
       .cpp-search-button {
         justify-content: center;
-        padding: 6px 0;
+        padding-inline: 0;
       }
 
       .cpp-search-label,
