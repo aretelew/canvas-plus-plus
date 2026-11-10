@@ -13,9 +13,11 @@ input[type='checkbox'].cpp-check {
   cursor: pointer;
 }
 /* The recolor pass gives this border a divider's color, too faint on a theme's
-   cards for something to click. */
-html[data-cpp-theme] input[type='checkbox'].cpp-check:not(:checked) {
-  border-color: var(--cpp-muted) !important;
+   cards for something to click. Screen only, like the theme. */
+@media screen {
+  html[data-cpp-theme] input[type='checkbox'].cpp-check:not(:checked) {
+    border-color: var(--cpp-muted) !important;
+  }
 }
 input[type='checkbox'].cpp-check:checked {
   border-color: var(--ic-brand-primary, #0374b5);
