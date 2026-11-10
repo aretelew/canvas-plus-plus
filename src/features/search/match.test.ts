@@ -71,6 +71,24 @@ describe('search', () => {
     expect(search(ENTRIES, 'chem physics')).toEqual([]);
   });
 
+  it('finds a post by what it says, after everything found otherwise', () => {
+    const room = entry('Room change', {
+      where: 'CHEM 105',
+      text: 'The titration lab is in Room 12',
+    });
+    expect(titles(search([room, ...ENTRIES], 'titration'))).toEqual([
+      'Lab 4: Titration (CHEM 105)',
+      'Room change (CHEM 105)',
+    ]);
+    expect(search([room], 'chem room 12')).toEqual([room]);
+  });
+
+  it('needs a word found only in what a post says to start one of its words', () => {
+    const post = entry('Office hours', { text: 'Available on Tuesdays' });
+    expect(search([post], 'tues')).toEqual([post]);
+    expect(search([post], 'lab')).toEqual([]);
+  });
+
   it('ignores case and accents', () => {
     const resume = entry('Résumé workshop');
     expect(search([resume], 'RESUME')).toEqual([resume]);

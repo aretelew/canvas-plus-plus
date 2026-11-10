@@ -1,7 +1,9 @@
 // How the search box finds things: every word typed has to start a word of
 // what's listed, or else appear in it somewhere, so "chem gr" finds CHEM 105's
 // Grades. What's named by the words comes first, then what's in a course they
-// name, then what only contains them.
+// name, then what only contains them. Last comes what's found only by what it
+// says, like an announcement that mentions the words: there, a word typed has
+// to start one of its words, so "lab" doesn't find "available".
 
 /** Something the search box lists. */
 export interface Entry {
@@ -14,6 +16,10 @@ export interface Entry {
   color?: string;
   // work only: when it's due (ISO), so how it reads stays current
   due?: string;
+  // posts only: what it is, and when it was posted (ISO)
+  post?: { kind: 'announcement' | 'discussion'; at?: string };
+  // what it says, searched after the rest
+  text?: string;
   // listed before anything is typed
   start?: boolean;
 }
@@ -35,44 +41,85 @@ export function search(entries: Entry[], query: string): Entry[] {
   if (!typed) return entries.filter((entry) => entry.start);
   const words = typed.split(/\s+/);
   return entries
-    .map((entry, index) => ({
-      entry,
-      index,
-      score: score(entry, typed, words),
-    }))
-    .filter(({ score }) => score > 0)
-    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .flatMap((entry, index) => {
+      const match = score(entry, typed, words);
+      return match ? { entry, index, ...match } : [];
+    })
+    .sort(
+      (a, b) =>
+        Number(a.byText) - Number(b.byText) ||
+        b.score - a.score ||
+        a.index - b.index,
+    )
     .map(({ entry }) => entry);
 }
 
-// 0 when a word typed isn't in it at all
-function score(entry: Entry, typed: string, words: string[]): number {
-  const title = normalize(entry.title);
-  const others = [entry.where, ...(entry.also ?? [])]
-    .filter((field) => field !== undefined)
-    .map(normalize);
-  let total = title.startsWith(typed) ? TITLE_START : 0;
+// An entry's fields, lowercased and split into words once, not again for
+// every letter typed: there's a lot of text to go through.
+interface Field {
+  text: string;
+  words: string[];
+}
+
+interface Prepared {
+  title: Field;
+  others: Field[];
+  // what it says needs only its words, each once
+  said: string[];
+}
+
+const prepared = new WeakMap<Entry, Prepared>();
+
+function prepare(entry: Entry): Prepared {
+  let ready = prepared.get(entry);
+  if (!ready) {
+    ready = {
+      title: field(entry.title),
+      others: [entry.where, ...(entry.also ?? [])]
+        .filter((other) => other !== undefined)
+        .map(field),
+      said: [...new Set(field(entry.text ?? '').words)],
+    };
+    prepared.set(entry, ready);
+  }
+  return ready;
+}
+
+function field(raw: string): Field {
+  const text = normalize(raw);
+  return { text, words: text.split(/[^\p{L}\p{N}]+/u) };
+}
+
+// Undefined when a word typed isn't in it at all. A word found only in what it
+// says scores nothing, and the match is marked to go after the rest.
+function score(
+  entry: Entry,
+  typed: string,
+  words: string[],
+): { score: number; byText: boolean } | undefined {
+  const { title, others, said } = prepare(entry);
+  let total = title.text.startsWith(typed) ? TITLE_START : 0;
+  let byText = false;
   for (const word of words) {
     const best = Math.max(
       found(title, word, TITLE_WORD, TITLE_PART),
-      ...others.map((field) => found(field, word, WORD, PART)),
+      ...others.map((other) => found(other, word, WORD, PART)),
     );
-    if (best === 0) return 0;
-    total += best;
+    if (best > 0) total += best;
+    else if (said.some((part) => part.startsWith(word))) byText = true;
+    else return undefined;
   }
-  return total;
+  return { score: total, byText };
 }
 
 function found(
-  field: string,
+  { text, words }: Field,
   word: string,
   starting: number,
   inside: number,
 ): number {
-  if (field.split(/[^\p{L}\p{N}]+/u).some((part) => part.startsWith(word))) {
-    return starting;
-  }
-  return field.includes(word) ? inside : 0;
+  if (words.some((part) => part.startsWith(word))) return starting;
+  return text.includes(word) ? inside : 0;
 }
 
 // lowercase, without accents, so "resume" finds "Résumé"
