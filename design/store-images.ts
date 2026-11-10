@@ -16,6 +16,7 @@ import {
   type Theme,
   THEMES,
   type Shots,
+  SEARCH_THEME,
   slides,
   VIEWPORT,
 } from './store-slides.ts';
@@ -49,6 +50,7 @@ const FEATURES = {
   cardAssignments: true,
   courseNav: true,
   tidySidebar: true,
+  quickSearch: true,
 };
 
 async function dashboard(context: BrowserContext, theme: Theme) {
@@ -62,8 +64,6 @@ async function dashboard(context: BrowserContext, theme: Theme) {
   const cards = page.locator('.ic-DashboardCard');
   const regions = {
     cards: await Promise.all((await cards.all()).map(box)),
-    todo: await box(page.locator('.cpp-todo')),
-    feedback: await box(page.locator('.cpp-feedback')),
   };
   const palette = await page.evaluate(() => {
     const css = getComputedStyle(document.documentElement);
@@ -79,6 +79,23 @@ async function dashboard(context: BrowserContext, theme: Theme) {
   const shot = await page.screenshot();
   await page.close();
   return { look: { shot, palette }, regions };
+}
+
+// The search box over the dashboard, with "midterm" typed and its results in.
+async function searchShot(context: BrowserContext, theme: Theme) {
+  await settings(context, { ...FEATURES, theme });
+  const page = await context.newPage();
+  await page.setViewportSize(VIEWPORT);
+  await openDashboard(page);
+  await page.keyboard.press('ControlOrMeta+k');
+  await page.keyboard.type('midterm');
+  // the last result is the announcement found by what it says
+  await page.getByRole('option', { name: /Exam 2 Study Guide/ }).waitFor();
+  // off the results, so none is highlighted but the first
+  await page.mouse.move(0, 0);
+  const shot = await page.locator('dialog').screenshot();
+  await page.close();
+  return shot;
 }
 
 async function popupShots(context: BrowserContext): Promise<Shots['popups']> {
@@ -127,6 +144,7 @@ if (!regions) throw new Error('no themes to capture');
 const shots: Shots = {
   looks,
   regions,
+  search: await searchShot(context, SEARCH_THEME),
   popups: await popupShots(context),
 };
 

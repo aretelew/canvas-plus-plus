@@ -12,6 +12,9 @@ export const THEMES = ['dark', 'oled', 'ember', 'rose', 'sea'] as const;
 
 export type Theme = (typeof THEMES)[number];
 
+// the theme the search's slide wears
+export const SEARCH_THEME: Theme = 'rose';
+
 // the size of the dashboard in the shots
 export const VIEWPORT = { width: 1440, height: 900 };
 
@@ -33,7 +36,9 @@ export interface Palette {
 
 export interface Shots {
   looks: Record<Theme, { shot: Buffer; palette: Palette }>;
-  regions: { cards: Box[]; todo: Box; feedback: Box };
+  regions: { cards: Box[] };
+  // the search box, open with its results
+  search: Buffer;
   popups: { features: Buffer; themes: Buffer };
 }
 
@@ -124,7 +129,7 @@ const BRANDED = `:root {
 
 const px = (value: number) => `${String(value)}px`;
 
-export function slides({ looks, regions, popups }: Shots): Image[] {
+export function slides({ looks, regions, search, popups }: Shots): Image[] {
   const [first, second, third] = regions.cards;
   if (!first || !second || !third) throw new Error('needs three cards');
 
@@ -218,15 +223,13 @@ export function slides({ looks, regions, popups }: Shots): Image[] {
         )
         .join(''),
     }),
-    themed('screenshots/4-todo.png', 'rose', {
+    themed('screenshots/4-search.png', SEARCH_THEME, {
       left: 72,
-      top: 260,
+      top: 250,
       width: 390,
-      headline: 'A tidier<br>To Do list',
-      text: "Just your work, grouped by when it's due, with recent scores and feedback below.",
-      art:
-        float(crop('rose', regions.todo, 1.36), 490, 130, 24) +
-        float(crop('rose', regions.feedback, 1.36), 884, 216, 24),
+      headline: 'Search all<br>your courses',
+      text: 'Press ⌘K and type to jump to a course, assignment, page or announcement.',
+      art: popup(search, 740, 492, 222),
     }),
     themed('screenshots/5-control.png', 'sea', {
       left: 72,
