@@ -38,7 +38,7 @@
     }
 
     /* A band across the top of the sidebar to type in, as it looks, in the
-       nav's colors, outlined. */
+       nav's colors, with a line under it. */
     #menu > .cpp-search-entry {
       display: block;
       order: 0;
@@ -53,7 +53,8 @@
       margin: 0;
       /* its icon in line with the buttons' below */
       padding: 15px 12px;
-      border: 1px solid
+      border: 0;
+      border-bottom: 1px solid
         color-mix(
           in srgb,
           var(--ic-brand-global-nav-menu-item__text-color) 20%,
