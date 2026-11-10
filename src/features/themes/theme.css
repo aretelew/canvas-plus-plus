@@ -287,6 +287,19 @@ html[data-cpp-theme] #minical .fc-today .day-number-text {
   color: var(--cpp-bg) !important;
 }
 
+/* InstUI fills a checked checkbox (New Quizzes' multiple answer) with Canvas's
+   dark text grey behind a white check. That grey has no background role, so
+   on dark the box turns black. It takes the theme's strongest mark instead,
+   like a checked radio's ring, with the check in the page color. */
+html[data-cpp-theme]
+  input:is(:checked, :indeterminate)
+  + label
+  [class*='-checkboxFacade__facade'] {
+  background-color: var(--cpp-emphasis) !important;
+  border-color: var(--cpp-emphasis) !important;
+  color: var(--cpp-bg) !important;
+}
+
 /* Palette roles, tagged at runtime by recolor.ts. !important because the tag
    records what the element's color *is*, whatever rule or inline style set it. */
 /* Canvas is white on white, so containers are invisible; flat ones take the
