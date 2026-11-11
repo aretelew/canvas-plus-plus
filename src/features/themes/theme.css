@@ -293,14 +293,21 @@
   /* InstUI fills a checked checkbox (New Quizzes' multiple answer) with Canvas's
    dark text grey behind a white check. That grey has no background role, so
    on dark the box turns black. It takes the theme's strongest mark instead,
-   like a checked radio's ring, with the check in the page color. */
+   like a checked radio's ring, with the check in the page color.
+   The check inside is colored directly, not left to inherit: recolor.ts reads
+   it while this rule is on, mistakes the inherited page color for Canvas's
+   dark text, and tags it light, the box's own color. */
   html[data-cpp-theme]
     input:is(:checked, :indeterminate)
     + label
     [class*='-checkboxFacade__facade'] {
     background-color: var(--cpp-emphasis) !important;
     border-color: var(--cpp-emphasis) !important;
-    color: var(--cpp-bg) !important;
+
+    &,
+    & * {
+      color: var(--cpp-bg) !important;
+    }
   }
 
   /* Palette roles, tagged at runtime by recolor.ts. !important because the tag
