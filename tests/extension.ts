@@ -204,8 +204,8 @@ export async function openPopup(context: BrowserContext): Promise<Page> {
 }
 
 // Flips one of the popup's switches, in its section, and waits until the
-// setting is saved.
-// `fallback` is the switch's default, which an unset setting stands for
+// setting is saved. `fallback` is the switch's default, which an unset setting
+// stands for.
 function setSwitch(
   context: BrowserContext,
   section: string,

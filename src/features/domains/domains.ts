@@ -1,4 +1,4 @@
-import { browser } from '#imports';
+import { browser, type Browser } from '#imports';
 
 // Canvas on a school's own domain (canvas.case.edu). The manifest's content
 // script only covers *.instructure.com, so the same script is registered at
@@ -91,7 +91,7 @@ export async function themeOpenTabs(origins: string[]): Promise<void> {
   const domains = origins.filter(isCustomDomain);
   if (!domains.length) return;
   const tabs = await browser.tabs.query({ url: domains });
-  await Promise.all(tabs.map(({ id }) => runIn(id, true)));
+  await Promise.all(tabs.map((tab) => runIn(tab, { allFrames: true })));
 }
 
 /** Whether a tab on the manifest's sites is a Canvas page, not DocViewer's. */
@@ -112,11 +112,14 @@ export async function startOnOpenTabs(): Promise<void> {
   const canvas = tabs.filter(
     ({ url }) => url !== undefined && isCanvasTab(url),
   );
-  await Promise.all(canvas.map(({ id }) => runIn(id, false)));
+  await Promise.all(canvas.map((tab) => runIn(tab, { allFrames: false })));
 }
 
 // The content script and its styles, in a page that's already loaded.
-async function runIn(tabId: number | undefined, allFrames: boolean) {
+async function runIn(
+  { id: tabId }: Browser.tabs.Tab,
+  { allFrames }: { allFrames: boolean },
+) {
   if (tabId === undefined) return;
   const target = { tabId, allFrames };
   try {
