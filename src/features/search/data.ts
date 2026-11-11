@@ -7,14 +7,16 @@ import {
   loadCourseItems,
   type CourseAssignment,
   type CourseItems,
+  type CoursePost,
 } from './course-items';
 import type { Entry } from './match';
 
 // What the search box lists: the user's courses and the pages in each, their
-// work, every assignment and module item in their current courses, their
-// groups, and Canvas's own pages. It's asked for the first time the box opens,
-// then kept in the page's localStorage so it opens with it at once on the next
-// page, and asked for again once it's old.
+// work, every assignment and module item in their current courses and their
+// latest announcements and discussions, their groups, and Canvas's own pages.
+// It's asked for the first time the box opens, then kept in the page's
+// localStorage so it opens with it at once on the next page, and asked for
+// again once it's old.
 
 // The parts of GET /api/v1/courses?include[]=tabs&include[]=concluded that are
 // used. `name` is the user's nickname for it when they gave one, and
@@ -76,11 +78,19 @@ type InCourse = (id: string | undefined) => Pick<Entry, 'where' | 'color'>;
 /**
  * The current courses first, in name order, then the work left to do, soonest
  * first, the groups, each course's pages, the rest of their assignments, their
- * module items, the courses whose term is over, and Canvas's own pages. Links
- * only ever go to this site.
+ * module items, their posts, newest first, the courses whose term is over, and
+ * Canvas's own pages. Links only ever go to this site.
  */
 export function searchEntries(
-  { courses, groups, colors, works, assignments, moduleItems }: SearchSources,
+  {
+    courses,
+    groups,
+    colors,
+    works,
+    assignments,
+    moduleItems,
+    posts,
+  }: SearchSources,
   now: Date,
 ): Entry[] {
   const entryOf = (course: SearchCourse): Entry => ({
@@ -107,10 +117,14 @@ export function searchEntries(
       target.plannable_type === 'assignment' ? [target.plannable_id] : [],
     ),
   );
+  // the To Do's work is found by its assignment's description
+  const descriptions = new Map(
+    assignments.flatMap(({ id, text }) => (text ? [[id, text]] : [])),
+  );
 
   return [
     ...current.map(({ entry }) => ({ ...entry, start: true })),
-    ...workEntries(todo, inCourse, now),
+    ...workEntries(todo, inCourse, descriptions, now),
     ...currentGroups(
       groups,
       current.map(({ course }) => course),
@@ -121,13 +135,15 @@ export function searchEntries(
     })),
     ...current.flatMap(({ course, entry }) => pageEntries(course, entry)),
     ...assignmentEntries(assignments, inToDo, inCourse, now),
-    ...moduleItems.map(({ title, url, module, courseId }) => ({
+    ...moduleItems.map(({ title, url, module, courseId, text }) => ({
       title,
       href: url,
       // so "week 3 reading" finds that reading
       also: [module],
+      text,
       ...inCourse(courseId),
     })),
+    ...posts.map((post) => postEntry(post, inCourse)),
     ...courses.filter((course) => !isCurrent(course)).map(entryOf),
     ...CANVAS_PAGES,
   ].filter(({ href }) => onThisSite(href));
@@ -147,10 +163,15 @@ function courseLabel({
 
 // Work left to do, soonest first, named by the course's label where it's
 // listed and Canvas's name for it where it isn't.
-function workEntries(todo: Work[], inCourse: InCourse, now: Date): Entry[] {
+function workEntries(
+  todo: Work[],
+  inCourse: InCourse,
+  descriptions: Map<string, string>,
+  now: Date,
+): Entry[] {
   return todo
     .toSorted((a, b) => a.due.getTime() - b.due.getTime())
-    .flatMap(({ title, url, due, courseId, courseName }) => {
+    .flatMap(({ title, url, due, courseId, courseName, target }) => {
       // the user's own notes have no page
       if (url === undefined) return [];
       const { where, color } = inCourse(courseId);
@@ -161,6 +182,10 @@ function workEntries(todo: Work[], inCourse: InCourse, now: Date): Entry[] {
         color,
         due: due.toISOString(),
         start: due.getTime() - now.getTime() < SOON,
+        text:
+          target.plannable_type === 'assignment'
+            ? descriptions.get(target.plannable_id)
+            : undefined,
       };
     });
 }
@@ -189,12 +214,29 @@ function assignmentEntries(
   return byWhenDue(
     assignments.filter(({ id }) => !inToDo.has(id)),
     now.getTime(),
-  ).map(({ name, url, due, courseId }) => ({
+  ).map(({ name, url, due, courseId, text }) => ({
     title: name,
     href: url,
     due,
+    text,
     ...inCourse(courseId),
   }));
+}
+
+// Found by what it says too, and by what it is: plural, so "announcement" and
+// "announcements" both list them.
+function postEntry(
+  { kind, title, url, posted, text, courseId }: CoursePost,
+  inCourse: InCourse,
+): Entry {
+  return {
+    title,
+    href: url,
+    also: [`${kind}s`],
+    post: { kind, at: posted },
+    text,
+    ...inCourse(courseId),
+  };
 }
 
 // What's coming up, soonest first, then what's past, latest first, then what
@@ -219,20 +261,20 @@ function byWhenDue(
 const onThisSite = (href: string) => /^\/(?![/\\])/.test(href);
 
 // The courses, then the assignments and module items in the current ones:
-// they're asked for by course.
-async function loadCoursesAndItems(): Promise<
-  Pick<SearchSources, 'courses' | keyof CourseItems> | undefined
-> {
+// they're asked for by course. The pages' text is saved for `who`.
+async function loadCoursesAndItems(
+  who: string,
+): Promise<Pick<SearchSources, 'courses' | keyof CourseItems> | undefined> {
   const courses = await canvasJson<SearchCourse[]>(COURSES);
   if (!courses) return undefined;
   const current = courses.filter(isCurrent).map(({ id }) => id);
-  return { courses, ...(await loadCourseItems(current)) };
+  return { courses, ...(await loadCourseItems(who, current)) };
 }
 
 /** Undefined when the courses can't be loaded; what's saved stays. */
 export async function fetchEntries(who: string): Promise<Entry[] | undefined> {
   const [courses, groups, colors, works] = await Promise.all([
-    loadCoursesAndItems(),
+    loadCoursesAndItems(who),
     loadGroups(),
     loadCourseColors(),
     loadWorks(),

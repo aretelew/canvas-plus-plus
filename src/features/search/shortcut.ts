@@ -6,6 +6,9 @@ const apple = /Mac|iPhone|iPad/.test(navigator.userAgent);
 
 export const SHORTCUT = apple ? '⌘K' : 'Ctrl+K';
 
+/** The same, as ARIA names its keys, for `aria-keyshortcuts`. */
+export const SHORTCUT_KEYS = apple ? 'Meta+K' : 'Control+K';
+
 export function isShortcut(event: KeyboardEvent): boolean {
   const held = apple ? event.metaKey : event.ctrlKey;
   const others = apple ? event.ctrlKey : event.metaKey;

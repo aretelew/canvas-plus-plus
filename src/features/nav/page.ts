@@ -1,3 +1,4 @@
+import { whenNavMenu } from '@/core/nav-menu';
 import { syncPageFlag } from '@/core/page-flag';
 import { readMirror } from '@/core/page-mirror';
 import { userName } from '@/core/saved';
@@ -76,7 +77,7 @@ export async function syncCourseNav(): Promise<void> {
     if (on === enabled) return;
     enabled = on;
     if (on) {
-      whenMenu(start);
+      whenNavMenu(start);
       return;
     }
     for (const added of document.querySelectorAll(`.${ADDED}`)) added.remove();
@@ -85,28 +86,6 @@ export async function syncCourseNav(): Promise<void> {
   apply(readMirror(`canvas++:${FLAG}`) !== undefined);
   apply(await courseNav.getValue());
   courseNav.watch(apply);
-}
-
-// The nav comes early in the document, so it's filled before the first paint
-// instead of at the end of parsing. It has no Account button when signed out.
-function whenMenu(run: (menu: Element) => void): void {
-  const find = () =>
-    document.getElementById('global_nav_profile_link')?.closest('ul');
-  const menu = find();
-  if (menu) {
-    run(menu);
-    return;
-  }
-  const observer = new MutationObserver(() => {
-    const found = find();
-    if (!found) return;
-    observer.disconnect();
-    run(found);
-  });
-  observer.observe(document, { childList: true, subtree: true });
-  whenParsed(() => {
-    observer.disconnect();
-  });
 }
 
 // From the breadcrumbs, which run home, course, section, page. A page of their

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isBuiltIn, isCustomDomain, sitePattern } from './domains';
+import { isBuiltIn, isCanvasTab, isCustomDomain, sitePattern } from './domains';
 
 describe('sitePattern', () => {
   it('matches the whole site', () => {
@@ -30,5 +30,16 @@ describe('isCustomDomain', () => {
     ['http://canvas.case.edu/*', false],
   ])('%s -> %s', (pattern, custom) => {
     expect(isCustomDomain(pattern)).toBe(custom);
+  });
+});
+
+describe('isCanvasTab', () => {
+  it("is a page on Canvas's own sites, but not DocViewer", () => {
+    expect(isCanvasTab('https://school.instructure.com/courses/1')).toBe(true);
+    expect(isCanvasTab('https://canvadocs.instructure.com/1/view')).toBe(false);
+    expect(
+      isCanvasTab('https://canvadocs-iad-prod.instructure.com/1/view'),
+    ).toBe(false);
+    expect(isCanvasTab('https://canvas.case.edu/')).toBe(false);
   });
 });

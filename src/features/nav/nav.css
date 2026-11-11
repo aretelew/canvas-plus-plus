@@ -1,3 +1,10 @@
+/* The search's field at the top of the sidebar (search/nav-button.ts) is in
+   Canvas's nav list whenever the search is on, but shows only in the
+   sidebar. */
+#menu > .cpp-search-entry {
+  display: none;
+}
+
 /* Scoped to a signed-in page with Canvas's classic nav: schools on its new
    InstUI nav (the instui_nav flag) have no #global_nav_profile_link and are left
    alone. Below 768px Canvas has its mobile header instead. */
@@ -28,6 +35,90 @@
         outline: 2px solid currentColor;
         outline-offset: -2px;
       }
+    }
+
+    /* A band across the top of the sidebar to type in, as it looks, in the
+       nav's colors, with a line under it. */
+    #menu > .cpp-search-entry {
+      display: block;
+      order: 0;
+    }
+
+    .cpp-search-button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-sizing: border-box;
+      width: 100%;
+      margin: 0;
+      /* its icon in line with the buttons' below */
+      padding: 15px 12px;
+      border: 0;
+      border-bottom: 1px solid
+        color-mix(
+          in srgb,
+          var(--ic-brand-global-nav-menu-item__text-color) 20%,
+          transparent
+        );
+      border-radius: 0;
+      background-color: color-mix(
+        in srgb,
+        var(--ic-brand-global-nav-menu-item__text-color) 8%,
+        transparent
+      );
+      color: var(--ic-brand-global-nav-menu-item__text-color);
+      font: inherit;
+      font-size: 0.875rem;
+      line-height: 1.3;
+      text-align: left;
+      cursor: text;
+
+      &:hover {
+        background-color: color-mix(
+          in srgb,
+          var(--ic-brand-global-nav-menu-item__text-color) 14%,
+          transparent
+        );
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--ic-brand-global-nav-menu-item__text-color);
+        outline-offset: -2px;
+      }
+    }
+
+    /* A line magnifier in the text color, cut from a mask on ::before: a
+       theme's recolor pass takes a light line in an SVG for one drawn for a
+       white page, and darkens it. */
+    .cpp-search-icon {
+      display: flex;
+      flex: none;
+      justify-content: center;
+      width: 22px;
+
+      &::before {
+        width: 18px;
+        height: 18px;
+        background-color: currentColor;
+        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E")
+          center / contain no-repeat;
+        content: '';
+      }
+    }
+
+    .cpp-search-label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      opacity: 0.8;
+    }
+
+    .cpp-search-key {
+      flex: none;
+      font-size: 0.75rem;
+      opacity: 0.7;
     }
 
     .cpp-nav-heading {
@@ -468,6 +559,17 @@
 
       .cpp-nav-short {
         display: block;
+      }
+
+      /* just its icon */
+      .cpp-search-button {
+        justify-content: center;
+        padding-inline: 0;
+      }
+
+      .cpp-search-label,
+      .cpp-search-key {
+        display: none;
       }
     }
   }

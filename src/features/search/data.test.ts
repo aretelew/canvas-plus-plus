@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Work } from '@/core/planner';
 import type { CanvasGroup } from '@/core/groups';
-import type { CourseAssignment, ModuleItem } from './course-items';
+import type { CourseAssignment, CoursePost, ModuleItem } from './course-items';
 import { searchEntries, type SearchCourse } from './data';
 
 const NOW = new Date('2026-10-14T12:00:00Z');
@@ -86,6 +86,7 @@ const entries = (
     groups?: CanvasGroup[];
     assignments?: CourseAssignment[];
     moduleItems?: ModuleItem[];
+    posts?: CoursePost[];
   } = {},
 ) =>
   searchEntries(
@@ -93,6 +94,7 @@ const entries = (
       courses: COURSES,
       assignments: over.assignments ?? [],
       moduleItems: over.moduleItems ?? [],
+      posts: over.posts ?? [],
       groups: over.groups ?? [],
       colors: COLORS,
       works: over.works ?? [],
@@ -216,6 +218,28 @@ describe('searchEntries', () => {
     expect(at('Assignment 5')).toBeGreaterThan(at('Grades'));
   });
 
+  it("finds work by what its assignment's description says, and a module page by its own text", () => {
+    const found = entries({
+      works: [
+        work('Essay', inDays(1), {
+          target: { plannable_type: 'assignment', plannable_id: '1' },
+        }),
+      ],
+      assignments: [
+        { ...assignment('1'), text: 'Write about a poem' },
+        { ...assignment('2'), text: 'Solve the set' },
+      ],
+      moduleItems: [
+        moduleItem('5', { title: 'Syllabus', text: 'Office hours' }),
+      ],
+    });
+    const textOf = (title: string) =>
+      found.find((entry) => entry.title === title)?.text;
+    expect(textOf('Essay')).toBe('Write about a poem');
+    expect(textOf('Assignment 2')).toBe('Solve the set');
+    expect(textOf('Syllabus')).toBe('Office hours');
+  });
+
   it('leaves out assignments the To Do lists, but not finished ones', () => {
     const target = (id: string) => ({
       plannable_type: 'assignment',
@@ -260,6 +284,35 @@ describe('searchEntries', () => {
     const at = (title: string) => found.findIndex((e) => e.title === title);
     expect(at('Lecture 5')).toBeGreaterThan(at('Assignment 1'));
     expect(at('Lecture 5')).toBeLessThan(at('OLD 100'));
+  });
+
+  it('lists the posts after the module items, labeled, dated and found by what they say', () => {
+    const found = entries({
+      moduleItems: [moduleItem('5')],
+      posts: [
+        {
+          id: '20',
+          courseId: '1',
+          kind: 'announcement',
+          title: 'Room change',
+          url: '/courses/1/discussion_topics/20',
+          posted: '2026-10-23T15:00:00Z',
+          text: 'The midterm is in Room 12',
+        },
+      ],
+    });
+    const at = (title: string) => found.findIndex((e) => e.title === title);
+    expect(found[at('Room change')]).toEqual({
+      title: 'Room change',
+      href: '/courses/1/discussion_topics/20',
+      also: ['announcements'],
+      post: { kind: 'announcement', at: '2026-10-23T15:00:00Z' },
+      text: 'The midterm is in Room 12',
+      where: 'CSDS 338',
+      color: '#e1185c',
+    });
+    expect(at('Room change')).toBeGreaterThan(at('Item 5'));
+    expect(at('Room change')).toBeLessThan(at('OLD 100'));
   });
 
   it("ends with Canvas's own pages", () => {

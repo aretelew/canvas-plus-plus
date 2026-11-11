@@ -130,20 +130,22 @@
 /* The theme's roles come from what Canvas painted when it tagged each element,
    which may be before the list came (or the white pill, made a page color).
    These are what those roles would be here; `html` and !important outrank
-   them. */
-html[data-cpp-theme]
-  .ic-DashboardCard:has(> .cpp-card-due)
-  > .ic-DashboardCard__action-container {
-  background-color: var(--cpp-elevated) !important;
-}
-html[data-cpp-theme]
-  .ic-DashboardCard:has(> .cpp-card-due)
-  .ic-DashboardCard__action {
-  color: var(--cpp-muted) !important;
-}
-html[data-cpp-theme]
-  .ic-DashboardCard:has(> .cpp-card-due)
-  .ic-DashboardCard__action
-  svg {
-  fill: var(--cpp-muted) !important;
+   them. Screen only, like the theme. */
+@media screen {
+  html[data-cpp-theme]
+    .ic-DashboardCard:has(> .cpp-card-due)
+    > .ic-DashboardCard__action-container {
+    background-color: var(--cpp-elevated) !important;
+  }
+  html[data-cpp-theme]
+    .ic-DashboardCard:has(> .cpp-card-due)
+    .ic-DashboardCard__action {
+    color: var(--cpp-muted) !important;
+  }
+  html[data-cpp-theme]
+    .ic-DashboardCard:has(> .cpp-card-due)
+    .ic-DashboardCard__action
+    svg {
+    fill: var(--cpp-muted) !important;
+  }
 }

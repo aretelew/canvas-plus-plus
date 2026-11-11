@@ -31,7 +31,7 @@ export default defineConfig({
     // package.json "name" must be npm-safe, so the display name lives here.
     // It carries search words (see store/listing.md); short_name keeps the
     // bare brand where Chrome has little room
-    name: 'canvas++: Themes & Tools for Canvas LMS',
+    name: 'canvas++: Themes & Tools for Canvas',
     short_name: 'canvas++',
     // scripting + activeTab: check whether the open tab is Canvas, and run the
     // theme on schools' own domains once the user grants one (optional hosts)

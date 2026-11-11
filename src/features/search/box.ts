@@ -154,7 +154,7 @@ function build() {
   list.setAttribute('aria-label', 'Results');
   const input = document.createElement('input');
   input.type = 'text';
-  input.placeholder = 'Search courses, pages and work';
+  input.placeholder = 'Search courses, work and announcements';
   input.autocomplete = 'off';
   input.spellcheck = false;
   input.setAttribute('role', 'combobox');
@@ -182,7 +182,8 @@ function option(entry: Entry, index: number): HTMLElement {
   if (entry.color) dot.style.background = entry.color;
   link.append(dot, span('title', entry.title));
   if (entry.where) link.append(span('where', entry.where));
-  if (entry.due) link.append(span('due', dueText(new Date(entry.due))));
+  if (entry.due) link.append(span('due', dayText(entry.due)));
+  if (entry.post) link.append(posted(entry.post));
   item.append(link);
   return item;
 }
@@ -232,11 +233,46 @@ function span(className: string, text: string): HTMLElement {
   return part;
 }
 
-// the day it's due: "Tue, Nov 4"
-function dueText(due: Date): string {
-  return due.toLocaleDateString(undefined, {
+// a day work is due or a post was posted (ISO): "Tue, Nov 4"
+function dayText(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
   });
+}
+
+// Canvas's own pictures for them, a megaphone and a speech bubble, drawn as
+// line icons like the popup's
+const POSTS = {
+  announcement: {
+    name: 'Announcement',
+    paths: ['M3 11l18-5v12L3 14v-3z', 'M11.6 16.8a3 3 0 1 1-5.8-1.6'],
+  },
+  discussion: {
+    name: 'Discussion',
+    paths: ['M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'],
+  },
+};
+
+// The day a post was posted, in the place a due day takes, then what it is,
+// as its icon. The icon is named, so it's heard, and shown on hover.
+function posted({ kind, at }: NonNullable<Entry['post']>): HTMLElement {
+  const { name, paths } = POSTS[kind];
+  const ns = 'http://www.w3.org/2000/svg';
+  const icon = document.createElementNS(ns, 'svg');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('role', 'img');
+  icon.setAttribute('aria-label', name);
+  const title = document.createElementNS(ns, 'title');
+  title.textContent = name;
+  icon.append(title);
+  for (const d of paths) {
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', d);
+    icon.append(path);
+  }
+  const part = span('posted', at === undefined ? '' : dayText(at));
+  part.append(icon);
+  return part;
 }

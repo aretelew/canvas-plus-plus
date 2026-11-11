@@ -32,6 +32,12 @@ export default defineContentScript({
   excludeGlobs: ['https://canvadocs*'],
   runAt: 'document_start',
   main() {
+    // The background also starts it in tabs already open (domains.ts), and a
+    // tab that was loading then may get it both ways. The two share this
+    // extension's world in the page, so the second sees the first and stops.
+    const world = globalThis as { cppStarted?: boolean };
+    if (world.cppStarted) return;
+    world.cppStarted = true;
     void syncThemeToPage();
     void syncPageFlag(hideLogo, 'hide-logo');
     void syncPageFlag(hideFooter, 'hide-footer');

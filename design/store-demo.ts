@@ -147,10 +147,77 @@ const cards = COURSES.map((c) => ({
   frontPageTitle: null,
 }));
 
+// the grades' answer, which is the search's list of courses too
 const scores = COURSES.map((c) => ({
   id: c.id,
+  name: c.name,
+  course_code: c.code,
   enrollments: [{ type: 'student', computed_current_score: c.score }],
 }));
+
+// What the search finds past the dashboard, by course: a module page, and
+// announcements, each posted some days ago. A search for "midterm" finds the
+// Exam 2 guide by what it says.
+const MODULE_ITEMS: Record<string, [title: string, module: string][]> = {
+  '101': [['Midterm Practice Problems', 'Week 8']],
+};
+const ANNOUNCEMENTS: Record<
+  string,
+  [title: string, days: number, text: string][]
+> = {
+  '101': [
+    [
+      'Midterm Room Change',
+      -1,
+      'The midterm on Thursday is in Room 210. Bring a pencil and a calculator.',
+    ],
+  ],
+  '103': [
+    [
+      'Midterm Essay Prompts',
+      -4,
+      'Pick one of the three prompts and bring an outline to section.',
+    ],
+  ],
+  '104': [
+    [
+      'Exam 2 Study Guide',
+      -2,
+      'It covers everything since the midterm. Office hours are open all week.',
+    ],
+  ],
+};
+
+// GraphQL's answer to the search's two requests, for the course `id`
+const searchItems = (id: string) => ({
+  assignmentsConnection: { nodes: [] },
+  modulesConnection: {
+    nodes: (MODULE_ITEMS[id] ?? []).map(([title, module], i) => ({
+      name: module,
+      position: i,
+      moduleItems: [
+        {
+          title,
+          url: `${ORIGIN}/courses/${id}/modules/items/${String(i)}`,
+          content: { __typename: 'Page' },
+        },
+      ],
+    })),
+  },
+});
+const searchPosts = (id: string) => ({
+  announcements: {
+    nodes: (ANNOUNCEMENTS[id] ?? []).map(([title, days, text], i) => ({
+      _id: `${id}-${String(i)}`,
+      title,
+      message: `<p>${text}</p>`,
+      postedAt: inDays(days),
+      createdAt: null,
+      published: true,
+    })),
+  },
+  discussions: { nodes: [] },
+});
 
 const plannerItems = COURSES.flatMap((c) =>
   c.work.map(([title, days, done], i) => ({
@@ -284,6 +351,20 @@ export async function openDashboard(page: Page): Promise<void> {
   for (const [path, json] of API) {
     await page.route(`${ORIGIN}/api/v1/${path}`, (r) => r.fulfill({ json }));
   }
+  // the search's, each course under an alias
+  await page.route(`${ORIGIN}/api/graphql`, (r) => {
+    const { query, variables } = r.request().postDataJSON() as {
+      query: string;
+      variables: Record<string, string>;
+    };
+    const answer = query.startsWith('query SearchPosts')
+      ? searchPosts
+      : searchItems;
+    const data = Object.fromEntries(
+      Object.entries(variables).map(([alias, id]) => [alias, answer(id)]),
+    );
+    return r.fulfill({ json: { data } });
+  });
   await page.goto(`${ORIGIN}/`);
   await page.addStyleTag({ content: UNBRANDED });
   await page.locator('.cpp-card-due').first().waitFor();
