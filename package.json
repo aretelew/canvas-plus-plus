@@ -2,7 +2,7 @@
   "name": "canvas-plus-plus",
   "description": "Themes and dark mode for Canvas, plus search across your courses, due dates on your dashboard and your courses in the sidebar.",
   "private": true,
-  "version": "0.6.2",
+  "version": "0.7.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
