@@ -16,7 +16,9 @@ const URL = 'https://fixture.instructure.com/checked';
 
 // a multiple choice question (radios) and a multiple answer one (checkboxes:
 // InstUI fills the checked box with Canvas's dark text grey behind a white
-// check, drawn in currentColor)
+// check, drawn in currentColor and shown only while checked). One box is
+// checked already, as an answered quiz loads.
+const CHECK = `<svg viewBox="0 0 10 10" fill="currentColor"><g><path d="M0 0h10v10H0z"/></g></svg>`;
 const PAGE = `<!doctype html><title>t</title>
 <style>
   input { position: absolute; opacity: 0; }
@@ -31,12 +33,14 @@ const PAGE = `<!doctype html><title>t</title>
   input:checked + label .css-1-checkboxFacade__facade {
     background: #273540; border-color: #273540;
   }
+  input:not(:checked) + label svg { display: none; }
 </style>
 <body>
   <div><input type="radio" name="q3" id="a"><label for="a"><span class="facade" id="facade-a"></span> No impact</label></div>
   <div><input type="radio" name="q3" id="b"><label for="b"><span class="facade" id="facade-b"></span> 512</label></div>
-  <div><input type="checkbox" id="c"><label for="c"><span class="css-1-checkboxFacade__facade" id="facade-c"></span> Using a mutex</label></div>
-  <div><input type="checkbox" id="d"><label for="d"><span class="css-1-checkboxFacade__facade" id="facade-d"></span> Using a monitor</label></div>
+  <div><input type="checkbox" id="c"><label for="c"><span class="css-1-checkboxFacade__facade" id="facade-c">${CHECK}</span> Using a mutex</label></div>
+  <div><input type="checkbox" id="d"><label for="d"><span class="css-1-checkboxFacade__facade" id="facade-d">${CHECK}</span> Using a monitor</label></div>
+  <div><input type="checkbox" id="e" checked><label for="e"><span class="css-1-checkboxFacade__facade" id="facade-e">${CHECK}</span> Using a semaphore</label></div>
 </body>`;
 
 const colors = (el: Element) => {
@@ -73,20 +77,44 @@ test("a checked radio's ring takes the theme's strongest mark", async ({
   await expect.poll(() => ring('a')).toBe('none');
 });
 
-test('a checked checkbox fills with the strongest mark', async ({ page }) => {
-  const [emphasis, bg] = await Promise.all([
+// The check is read by recolor.ts while the checked box's rule is on, so it
+// must come out in the page color, not tagged light like the box around it.
+test('a checked checkbox is a filled mark with a visible check', async ({
+  page,
+}) => {
+  const [emphasis, bg, control, borderStrong] = await Promise.all([
     tokenColor(page, '--cpp-emphasis'),
     tokenColor(page, '--cpp-bg'),
+    tokenColor(page, '--cpp-control'),
+    tokenColor(page, '--cpp-border-strong'),
   ]);
-
-  await page.locator('#c').check({ force: true });
-  await expect
-    .poll(() => page.locator('#facade-c').evaluate(colors))
-    .toMatchObject({
-      backgroundColor: emphasis,
-      borderTopColor: emphasis,
-      color: bg,
+  // the box, and the check drawn in it
+  const box = (id: string) =>
+    page.locator(`#facade-${id}`).evaluate((el) => {
+      const { backgroundColor, borderTopColor } = getComputedStyle(el);
+      const path = el.querySelector('path');
+      const check = path && getComputedStyle(path).fill;
+      return { backgroundColor, borderTopColor, check };
     });
+  const checked = {
+    backgroundColor: emphasis,
+    borderTopColor: emphasis,
+    check: bg,
+  };
+
+  // unchecked: an empty control with a visible border
+  expect(await box('d')).toMatchObject({
+    backgroundColor: control,
+    borderTopColor: borderStrong,
+  });
+  await expect(page.locator('#facade-d svg')).toBeHidden();
+
+  // checked as the page loads
+  await expect.poll(() => box('e')).toEqual(checked);
+
+  // checked by the student
+  await page.locator('#c').check({ force: true });
+  await expect.poll(() => box('c')).toEqual(checked);
 });
 
 test('a printed quiz shows its answers in Canvas’s own colors', async ({
