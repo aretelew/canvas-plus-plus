@@ -117,8 +117,7 @@ a {
 
 .heading,
 .where,
-.due,
-.posted,
+.end,
 .status {
   color: var(--cpp-muted, #6b7780);
 }
@@ -131,14 +130,10 @@ a {
   text-overflow: ellipsis;
 }
 
-.due,
-.posted {
+.end {
   flex: none;
   margin-left: auto;
   font-size: 13px;
-}
-
-.posted {
   display: flex;
   align-items: center;
   gap: 6px;

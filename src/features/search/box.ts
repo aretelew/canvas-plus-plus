@@ -1,3 +1,4 @@
+import { kindIcon } from './icons';
 import { search, type Entry } from './match';
 import css from './search.css?inline';
 
@@ -182,8 +183,7 @@ function option(entry: Entry, index: number): HTMLElement {
   if (entry.color) dot.style.background = entry.color;
   link.append(dot, span('title', entry.title));
   if (entry.where) link.append(span('where', entry.where));
-  if (entry.due) link.append(span('due', dayText(entry.due)));
-  if (entry.post) link.append(posted(entry.post));
+  link.append(end(entry));
   item.append(link);
   return item;
 }
@@ -242,37 +242,11 @@ function dayText(iso: string): string {
   });
 }
 
-// Canvas's own pictures for them, a megaphone and a speech bubble, drawn as
-// line icons like the popup's
-const POSTS = {
-  announcement: {
-    name: 'Announcement',
-    paths: ['M3 11l18-5v12L3 14v-3z', 'M11.6 16.8a3 3 0 1 1-5.8-1.6'],
-  },
-  discussion: {
-    name: 'Discussion',
-    paths: ['M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'],
-  },
-};
-
-// The day a post was posted, in the place a due day takes, then what it is,
-// as its icon. The icon is named, so it's heard, and shown on hover.
-function posted({ kind, at }: NonNullable<Entry['post']>): HTMLElement {
-  const { name, paths } = POSTS[kind];
-  const ns = 'http://www.w3.org/2000/svg';
-  const icon = document.createElementNS(ns, 'svg');
-  icon.setAttribute('viewBox', '0 0 24 24');
-  icon.setAttribute('role', 'img');
-  icon.setAttribute('aria-label', name);
-  const title = document.createElementNS(ns, 'title');
-  title.textContent = name;
-  icon.append(title);
-  for (const d of paths) {
-    const path = document.createElementNS(ns, 'path');
-    path.setAttribute('d', d);
-    icon.append(path);
-  }
-  const part = span('posted', at === undefined ? '' : dayText(at));
-  part.append(icon);
+// The end of a row: the day work is due or a post was posted, then what it
+// is, as its icon.
+function end({ kind, due, posted }: Entry): HTMLElement {
+  const day = due ?? posted;
+  const part = span('end', day === undefined ? '' : dayText(day));
+  part.append(kindIcon(kind));
   return part;
 }
