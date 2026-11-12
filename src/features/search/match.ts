@@ -5,10 +5,26 @@
 // says, like an announcement that mentions the words: there, a word typed has
 // to start one of its words, so "lab" doesn't find "available".
 
+/** What something listed is, which its icon shows. */
+export type Kind =
+  | 'course'
+  // a place in a course's menu, or one of Canvas's own pages
+  | 'section'
+  | 'group'
+  | 'assignment'
+  | 'quiz'
+  | 'discussion'
+  | 'announcement'
+  | 'page'
+  | 'file'
+  // a link to another site, or a tool Canvas opens
+  | 'link';
+
 /** Something the search box lists. */
 export interface Entry {
   title: string;
   href: string;
+  kind: Kind;
   // its course or group, shown after the title
   where?: string;
   // more it's found by without showing it, like a course's full name
@@ -16,8 +32,8 @@ export interface Entry {
   color?: string;
   // work only: when it's due (ISO), so how it reads stays current
   due?: string;
-  // posts only: what it is, and when it was posted (ISO)
-  post?: { kind: 'announcement' | 'discussion'; at?: string };
+  // posts only: when it was posted (ISO)
+  posted?: string;
   // what it says, searched after the rest
   text?: string;
   // listed before anything is typed

@@ -1,4 +1,5 @@
 import { canvasJson } from '@/core/canvas-api';
+import type { Kind } from './match';
 import { loadPageTexts, pageKey, searchText, type PageRef } from './texts';
 
 // Every assignment and module item in the given courses, and their latest
@@ -11,6 +12,7 @@ export interface CourseAssignment {
   id: string;
   courseId: string;
   name: string;
+  kind: 'assignment' | 'quiz';
   // a path on this site
   url: string;
   // ISO, when it's due for this user; none when it has no due date
@@ -23,6 +25,7 @@ export interface CourseAssignment {
 export interface ModuleItem {
   courseId: string;
   title: string;
+  kind: ModuleKind;
   // its module's name
   module: string;
   // a path on this site: its place in the module, which is how the modules
@@ -31,6 +34,12 @@ export interface ModuleItem {
   // a page's text, cut short; none for anything else
   text?: string;
 }
+
+// what a module item can be, headings aside
+type ModuleKind = Extract<
+  Kind,
+  'assignment' | 'quiz' | 'discussion' | 'page' | 'file' | 'link'
+>;
 
 /** An announcement, or a discussion that isn't graded. */
 export interface CoursePost {
@@ -281,13 +290,14 @@ function assignmentsOf(
   courseId: string,
   nodes: AssignmentNode[],
 ): CourseAssignment[] {
-  return nodes.flatMap(({ _id, name, dueAt, htmlUrl, description }) => {
+  return nodes.flatMap(({ _id, name, dueAt, htmlUrl, description, quiz }) => {
     const url = pathOnThisSite(htmlUrl);
     if (!url) return [];
     return {
       id: _id,
       courseId,
       name,
+      kind: quiz ? 'quiz' : 'assignment',
       url,
       due: dueAt ?? undefined,
       text: searchText(description ?? '') || undefined,
@@ -313,6 +323,7 @@ function moduleItemsOf(
         return {
           courseId,
           title,
+          kind: moduleKind(content),
           module: name ?? '',
           url: path,
           text:
@@ -322,6 +333,24 @@ function moduleItemsOf(
         };
       }),
     );
+}
+
+// An item with no content Canvas names, like a tool it opens, is a link.
+function moduleKind(content: Content | null): ModuleKind {
+  switch (content?.__typename) {
+    case 'Assignment':
+      return 'assignment';
+    case 'Quiz':
+      return 'quiz';
+    case 'Discussion':
+      return 'discussion';
+    case 'Page':
+      return 'page';
+    case 'File':
+      return 'file';
+    default:
+      return 'link';
+  }
 }
 
 // The published ones, but graded discussions, which are assignments.

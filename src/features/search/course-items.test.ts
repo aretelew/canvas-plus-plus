@@ -147,17 +147,21 @@ describe('loadCourseItems', () => {
     for (const [, request] of queries) {
       expect(request?.json).toMatchObject({ variables: { c0: '1', c1: '2' } });
     }
-    expect(assignments.map(({ name, url }) => [name, url])).toEqual([
-      ['Essay', '/courses/1/assignments/10'],
-      ['Quiz 1', '/courses/1/assignments/11'],
-    ]);
+    expect(assignments.map(({ name, url, kind }) => [name, url, kind])).toEqual(
+      [
+        ['Essay', '/courses/1/assignments/10', 'assignment'],
+        ['Quiz 1', '/courses/1/assignments/11', 'quiz'],
+      ],
+    );
     // the assignments and posts are listed as themselves; the forum's
     // assignment isn't one of them
-    expect(moduleItems.map(({ title, module }) => [title, module])).toEqual([
-      ['Lecture 1', 'Week 1'],
-      ['Syllabus', 'Week 1'],
-      ['Practice quiz', 'Week 2'],
-      ['Forum', 'Week 2'],
+    expect(
+      moduleItems.map(({ title, module, kind }) => [title, module, kind]),
+    ).toEqual([
+      ['Lecture 1', 'Week 1', 'file'],
+      ['Syllabus', 'Week 1', 'page'],
+      ['Practice quiz', 'Week 2', 'quiz'],
+      ['Forum', 'Week 2', 'discussion'],
     ]);
     expect(moduleItems[0]).toMatchObject({
       courseId: '1',

@@ -65,6 +65,7 @@ const assignment = (
   id,
   courseId,
   name: `Assignment ${id}`,
+  kind: 'assignment',
   url: `/courses/${courseId}/assignments/${id}`,
   due: due?.toISOString(),
 });
@@ -75,6 +76,7 @@ const moduleItem = (
 ): ModuleItem => ({
   courseId: '1',
   title: `Item ${id}`,
+  kind: 'page',
   module: 'Week 1',
   url: `/courses/${over.courseId ?? '1'}/modules/items/${id}`,
   ...over,
@@ -111,6 +113,7 @@ describe('searchEntries', () => {
       {
         title: 'CSDS 338',
         href: '/courses/1',
+        kind: 'course',
         also: ['Intro to Operating Systems', 'CSDS 338'],
         color: '#e1185c',
         start: true,
@@ -118,12 +121,14 @@ describe('searchEntries', () => {
       {
         title: 'Robots',
         href: '/courses/2',
+        kind: 'course',
         also: ['Intro to Robotics', 'CSDS 373'],
         start: true,
       },
       {
         title: 'OLD 100',
         href: '/courses/3',
+        kind: 'course',
         also: ['Old Course', 'OLD 100'],
       },
     ]);
@@ -183,10 +188,11 @@ describe('searchEntries', () => {
       {
         title: 'Lab team',
         href: '/groups/7',
+        kind: 'group',
         where: 'CSDS 338',
         color: '#e1185c',
       },
-      { title: 'Club', href: '/groups/8' },
+      { title: 'Club', href: '/groups/8', kind: 'group' },
     ]);
   });
 
@@ -211,6 +217,7 @@ describe('searchEntries', () => {
     expect(listed[1]).toEqual({
       title: 'Assignment 3',
       href: '/courses/2/assignments/3',
+      kind: 'assignment',
       where: 'Robots',
       due: inDays(5).toISOString(),
     });
@@ -270,6 +277,7 @@ describe('searchEntries', () => {
       {
         title: 'Lecture 5',
         href: '/courses/1/modules/items/5',
+        kind: 'page',
         also: ['Week 3'],
         where: 'CSDS 338',
         color: '#e1185c',
@@ -277,6 +285,7 @@ describe('searchEntries', () => {
       {
         title: 'Item 6',
         href: '/courses/2/modules/items/6',
+        kind: 'page',
         also: ['Week 1'],
         where: 'Robots',
       },
@@ -305,8 +314,9 @@ describe('searchEntries', () => {
     expect(found[at('Room change')]).toEqual({
       title: 'Room change',
       href: '/courses/1/discussion_topics/20',
+      kind: 'announcement',
       also: ['announcements'],
-      post: { kind: 'announcement', at: '2026-10-23T15:00:00Z' },
+      posted: '2026-10-23T15:00:00Z',
       text: 'The midterm is in Room 12',
       where: 'CSDS 338',
       color: '#e1185c',
@@ -319,7 +329,37 @@ describe('searchEntries', () => {
     expect(entries().at(-1)).toEqual({
       title: 'Notifications',
       href: '/profile/communication',
+      kind: 'section',
     });
+  });
+
+  it("marks the To Do's work as what it is: its assignment's kind, else the planner's", () => {
+    const kindOf = (title: string) =>
+      found.find((entry) => entry.title === title)?.kind;
+    const found = entries({
+      works: [
+        work('Graded quiz', inDays(1), {
+          target: { plannable_type: 'assignment', plannable_id: '1' },
+        }),
+        work('Practice quiz', inDays(1), {
+          target: { plannable_type: 'quiz', plannable_id: '2' },
+        }),
+        work('Reading', inDays(1), {
+          target: { plannable_type: 'wiki_page', plannable_id: '3' },
+        }),
+        work('Chat', inDays(1), {
+          target: { plannable_type: 'discussion_topic', plannable_id: '4' },
+        }),
+        work('Review', inDays(1), {
+          target: { plannable_type: 'assessment_request', plannable_id: '5' },
+        }),
+      ],
+      assignments: [{ ...assignment('1'), kind: 'quiz' }],
+    });
+    expect(
+      ['Graded quiz', 'Practice quiz', 'Reading', 'Chat', 'Review'].map(kindOf),
+    ).toEqual(['quiz', 'quiz', 'page', 'discussion', 'assignment']);
+    expect(kindOf('Grades')).toBe('section');
   });
 
   it('links only to this site', () => {
