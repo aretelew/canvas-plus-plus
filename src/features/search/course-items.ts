@@ -1,4 +1,5 @@
 import { canvasJson } from '@/core/canvas-api';
+import type { Kind } from './match';
 import { loadPageTexts, pageKey, searchText, type PageRef } from './texts';
 
 // Every assignment and module item in the given courses, and their latest
@@ -11,10 +12,14 @@ export interface CourseAssignment {
   id: string;
   courseId: string;
   name: string;
+  kind: 'assignment' | 'quiz';
   // a path on this site
   url: string;
   // ISO, when it's due for this user; none when it has no due date
   due?: string;
+  // there's something to hand in and the user hasn't: nothing's been
+  // submitted, graded or excused
+  pending: boolean;
   // its description, without its markup, cut short; none when it has none
   text?: string;
 }
@@ -23,6 +28,7 @@ export interface CourseAssignment {
 export interface ModuleItem {
   courseId: string;
   title: string;
+  kind: ModuleKind;
   // its module's name
   module: string;
   // a path on this site: its place in the module, which is how the modules
@@ -31,6 +37,12 @@ export interface ModuleItem {
   // a page's text, cut short; none for anything else
   text?: string;
 }
+
+// what a module item can be, headings aside
+type ModuleKind = Extract<
+  Kind,
+  'assignment' | 'quiz' | 'discussion' | 'page' | 'file' | 'link'
+>;
 
 /** An announcement, or a discussion that isn't graded. */
 export interface CoursePost {
@@ -62,6 +74,16 @@ interface AssignmentNode {
   description: string | null;
   // a quiz's assignment names its quiz, which module items point at instead
   quiz: { _id: string } | null;
+  submissionTypes: string[] | null;
+  // the user's own, when they have one
+  submissionsConnection: { nodes: SubmissionNode[] } | null;
+}
+
+// Fields Canvas's own grades page asks for, so any Canvas that runs that
+// page has them.
+interface SubmissionNode {
+  state: string;
+  excused: boolean | null;
 }
 
 interface ModuleNode {
@@ -117,10 +139,24 @@ const POSTS = 50;
 
 // Without `gradingPeriodId: null`, a course with grading periods lists only
 // the current one's. A page holds at most 100, which nearly every course fits;
-// a module's items all come at once.
+// a module's items all come at once. Each assignment comes with only the
+// user's submission: without `userId`, a TA would get the whole class's.
 const ITEMS = `fragment Items on Course {
   assignmentsConnection(first: 100, filter: { gradingPeriodId: null }) {
-    nodes { _id name dueAt htmlUrl description quiz { _id } }
+    nodes {
+      _id
+      name
+      dueAt
+      htmlUrl
+      description
+      quiz { _id }
+      submissionTypes
+      submissionsConnection(
+        filter: { includeUnsubmitted: true, userId: $userId }
+      ) {
+        nodes { state excused }
+      }
+    }
   }
   modulesConnection(first: 100) {
     nodes {
@@ -166,15 +202,16 @@ const NONE: CourseItems = { assignments: [], moduleItems: [], posts: [] };
  * own, at the same time: they take longest, and a Canvas too old to filter
  * announcements fails only that request. The pages' text is asked for once
  * the items are in, while the posts may still be coming. `who` is whose
- * pages' text is saved.
+ * pages' text is saved, and `userId` whose submissions are asked for.
  */
 export async function loadCourseItems(
   who: string,
+  userId: string,
   courseIds: string[],
 ): Promise<CourseItems> {
   if (courseIds.length === 0) return NONE;
   const [{ items, texts }, posts] = await Promise.all([
-    itemsWithPageTexts(who, courseIds),
+    itemsWithPageTexts(who, userId, courseIds),
     queryCourses<PostsNode>('SearchPosts', 'Posts', POSTS_FRAGMENT, courseIds),
   ]);
   const courses = courseIds.map((courseId, i) =>
@@ -191,12 +228,17 @@ export async function loadCourseItems(
 
 // The items, then the text of the pages among them. When the items can't be
 // had, the pages' saved text is left as it is, rather than saved as none.
-async function itemsWithPageTexts(who: string, courseIds: string[]) {
+async function itemsWithPageTexts(
+  who: string,
+  userId: string,
+  courseIds: string[],
+) {
   const items = await queryCourses<ItemsNode>(
     'SearchItems',
     'Items',
     ITEMS,
     courseIds,
+    { userId },
   );
   const texts = items.some((course) => course !== undefined)
     ? await loadPageTexts(who, pagesIn(courseIds, items))
@@ -205,16 +247,24 @@ async function itemsWithPageTexts(who: string, courseIds: string[]) {
 }
 
 // Each course's answer, in the order asked: one request, each course under an
-// alias, its id a variable rather than in the query. None for a course it
-// fails for, or for all of them when the request does.
+// alias, its id a variable rather than in the query, as are the other `ids`
+// the fragments use. None for a course it fails for, or for all of them when
+// the request does.
 async function queryCourses<T>(
   name: string,
   fragment: string,
   fragments: string,
   courseIds: string[],
+  ids: Record<string, string> = {},
 ): Promise<(T | undefined)[]> {
   const alias = (index: number) => `c${String(index)}`;
-  const params = courseIds.map((_, i) => `$${alias(i)}: ID!`).join(', ');
+  const variables = {
+    ...ids,
+    ...Object.fromEntries(courseIds.map((id, i) => [alias(i), id])),
+  };
+  const params = Object.keys(variables)
+    .map((key) => `$${key}: ID!`)
+    .join(', ');
   const query = [
     `query ${name}(${params}) {`,
     ...courseIds.map(
@@ -223,9 +273,6 @@ async function queryCourses<T>(
     '}',
     fragments,
   ].join('\n');
-  const variables = Object.fromEntries(
-    courseIds.map((id, i) => [alias(i), id]),
-  );
   const response = await canvasJson<{
     data?: Record<string, T | null | undefined>;
   }>('/api/graphql', { method: 'POST', json: { query, variables } });
@@ -281,18 +328,37 @@ function assignmentsOf(
   courseId: string,
   nodes: AssignmentNode[],
 ): CourseAssignment[] {
-  return nodes.flatMap(({ _id, name, dueAt, htmlUrl, description }) => {
+  return nodes.flatMap((node) => {
+    const { _id, name, dueAt, htmlUrl, description, quiz } = node;
     const url = pathOnThisSite(htmlUrl);
     if (!url) return [];
     return {
       id: _id,
       courseId,
       name,
+      kind: quiz ? 'quiz' : 'assignment',
       url,
       due: dueAt ?? undefined,
+      pending: isPending(node),
       text: searchText(description ?? '') || undefined,
     };
   });
+}
+
+// what's handed in on paper, or not at all, never waits on the user here
+const NOTHING_TO_HAND_IN = new Set(['none', 'on_paper', 'not_graded']);
+const HANDED_IN = new Set(['submitted', 'pending_review', 'graded']);
+
+// As Canvas's planner has it: done once submitted, and done too once graded
+// or excused, since there's nothing left to hand in.
+function isPending({
+  submissionTypes,
+  submissionsConnection,
+}: AssignmentNode): boolean {
+  const types = submissionTypes ?? [];
+  if (types.every((type) => NOTHING_TO_HAND_IN.has(type))) return false;
+  const mine = submissionsConnection?.nodes[0];
+  return !mine || (!HANDED_IN.has(mine.state) && mine.excused !== true);
 }
 
 // They come in module name order, so they're put in module order. A page has
@@ -313,6 +379,7 @@ function moduleItemsOf(
         return {
           courseId,
           title,
+          kind: moduleKind(content),
           module: name ?? '',
           url: path,
           text:
@@ -322,6 +389,24 @@ function moduleItemsOf(
         };
       }),
     );
+}
+
+// An item with no content Canvas names, like a tool it opens, is a link.
+function moduleKind(content: Content | null): ModuleKind {
+  switch (content?.__typename) {
+    case 'Assignment':
+      return 'assignment';
+    case 'Quiz':
+      return 'quiz';
+    case 'Discussion':
+      return 'discussion';
+    case 'Page':
+      return 'page';
+    case 'File':
+      return 'file';
+    default:
+      return 'link';
+  }
 }
 
 // The published ones, but graded discussions, which are assignments.

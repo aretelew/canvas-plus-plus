@@ -4,6 +4,7 @@ import { search, type Entry } from './match';
 const entry = (title: string, over: Partial<Entry> = {}): Entry => ({
   title,
   href: `/${title}`,
+  kind: 'page',
   ...over,
 });
 

@@ -4,7 +4,11 @@ import { recentEntries, visitOf, type Visit } from './recent';
 
 const visit = (url: string) => visitOf(new URL(url, 'https://canvas.test'));
 
-const entry = (title: string, href: string): Entry => ({ title, href });
+const entry = (title: string, href: string): Entry => ({
+  title,
+  href,
+  kind: 'page',
+});
 
 const CHEM = entry('CHEM 105', '/courses/1');
 const GRADES = entry('Grades', '/courses/1/grades');

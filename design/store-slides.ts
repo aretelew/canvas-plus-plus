@@ -15,6 +15,10 @@ export type Theme = (typeof THEMES)[number];
 // the theme the search's slide wears
 export const SEARCH_THEME: Theme = 'rose';
 
+// the theme the sidebars' slide wears, and the scale both sidebars share
+const SIDEBAR_THEME: Theme = 'oled';
+const SIDEBARS_SCALE = 1.12;
+
 // the size of the dashboard in the shots
 export const VIEWPORT = { width: 1440, height: 900 };
 
@@ -35,7 +39,12 @@ export interface Palette {
 }
 
 export interface Shots {
-  looks: Record<Theme, { shot: Buffer; palette: Palette }>;
+  // each theme's dashboard, and its To Do on its left sidebar's color, with
+  // the To Do's width on the page
+  looks: Record<
+    Theme,
+    { shot: Buffer; palette: Palette; todo: { shot: Buffer; width: number } }
+  >;
   regions: { cards: Box[] };
   // the search box, open with its results
   search: Buffer;
@@ -195,17 +204,30 @@ export function slides({ looks, regions, search, popups }: Shots): Image[] {
           ${crop('dark', { x: 0, y: 0, width: VIEWPORT.width, height: 730 }, 0.79)}
         </div>`,
     },
-    themed('screenshots/2-sidebar.png', 'oled', {
-      left: 838,
+    themed('screenshots/2-sidebar.png', SIDEBAR_THEME, {
+      left: 72,
       top: 232,
-      width: 400,
+      width: 390,
       headline: 'Every course,<br>one click away',
-      text: "Your courses and groups in the left sidebar, with what's due in each and the pages you opened last.",
-      art: float(
-        crop('oled', { x: 0, y: 0, width: 600, height: 620 }, 1.29),
-        -2,
-        -2,
-      ),
+      text: "Your courses in the left sidebar, with what's due in each, and a cleaner To Do on the right.",
+      // the left sidebar down to the pages opened last, and the To Do on its
+      // color, both at the same scale
+      art:
+        float(
+          crop(
+            SIDEBAR_THEME,
+            { x: 0, y: 0, width: 184, height: 612 },
+            SIDEBARS_SCALE,
+          ),
+          570,
+          58,
+        ) +
+        popup(
+          looks[SIDEBAR_THEME].todo.shot,
+          looks[SIDEBAR_THEME].todo.width * SIDEBARS_SCALE,
+          840,
+          140,
+        ),
     }),
     themed('screenshots/3-cards.png', 'ember', {
       left: 72,
@@ -228,8 +250,8 @@ export function slides({ looks, regions, search, popups }: Shots): Image[] {
       top: 250,
       width: 390,
       headline: 'Search all<br>your courses',
-      text: 'Press ⌘K and type to jump to a course, assignment, page or announcement.',
-      art: popup(search, 740, 492, 222),
+      text: "Press ⌘K to jump to any course, assignment, page or announcement. What's due soon stands out.",
+      art: popup(search, 740, 492, 138),
     }),
     themed('screenshots/5-control.png', 'sea', {
       left: 72,

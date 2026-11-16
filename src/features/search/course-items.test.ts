@@ -135,10 +135,11 @@ const SYLLABUS = {
 describe('loadCourseItems', () => {
   it('asks for each course in one request for the items and one for the posts, and lists module items in module order but the headings, assignments and posts', async () => {
     answer({ data: { c0: COURSE } }, { data: { c0: COURSE } });
-    const { assignments, moduleItems } = await loadCourseItems('A Student', [
-      '1',
-      '2',
-    ]);
+    const { assignments, moduleItems } = await loadCourseItems(
+      'A Student',
+      '7',
+      ['1', '2'],
+    );
 
     const queries = vi
       .mocked(canvasJson)
@@ -147,17 +148,21 @@ describe('loadCourseItems', () => {
     for (const [, request] of queries) {
       expect(request?.json).toMatchObject({ variables: { c0: '1', c1: '2' } });
     }
-    expect(assignments.map(({ name, url }) => [name, url])).toEqual([
-      ['Essay', '/courses/1/assignments/10'],
-      ['Quiz 1', '/courses/1/assignments/11'],
-    ]);
+    expect(assignments.map(({ name, url, kind }) => [name, url, kind])).toEqual(
+      [
+        ['Essay', '/courses/1/assignments/10', 'assignment'],
+        ['Quiz 1', '/courses/1/assignments/11', 'quiz'],
+      ],
+    );
     // the assignments and posts are listed as themselves; the forum's
     // assignment isn't one of them
-    expect(moduleItems.map(({ title, module }) => [title, module])).toEqual([
-      ['Lecture 1', 'Week 1'],
-      ['Syllabus', 'Week 1'],
-      ['Practice quiz', 'Week 2'],
-      ['Forum', 'Week 2'],
+    expect(
+      moduleItems.map(({ title, module, kind }) => [title, module, kind]),
+    ).toEqual([
+      ['Lecture 1', 'Week 1', 'file'],
+      ['Syllabus', 'Week 1', 'page'],
+      ['Practice quiz', 'Week 2', 'quiz'],
+      ['Forum', 'Week 2', 'discussion'],
     ]);
     expect(moduleItems[0]).toMatchObject({
       courseId: '1',
@@ -165,9 +170,63 @@ describe('loadCourseItems', () => {
     });
   });
 
+  it("asks for the user's own submissions, and marks what's still to hand in", async () => {
+    const node = (
+      id: string,
+      submissionTypes: string[] | null,
+      mine?: { state: string; excused?: boolean },
+    ) => ({
+      ...COURSE.assignmentsConnection.nodes[0],
+      _id: id,
+      htmlUrl: at(`/courses/1/assignments/${id}`),
+      submissionTypes,
+      submissionsConnection: {
+        nodes: mine ? [{ excused: null, ...mine }] : [],
+      },
+    });
+    const course = {
+      ...COURSE,
+      assignmentsConnection: {
+        nodes: [
+          node('1', ['online_upload'], { state: 'unsubmitted' }),
+          node('2', ['online_upload'], { state: 'submitted' }),
+          node('3', ['online_upload'], { state: 'pending_review' }),
+          node('4', ['on_paper'], { state: 'graded' }),
+          node('5', ['online_quiz'], { state: 'unsubmitted', excused: true }),
+          node('6', ['on_paper', 'none']),
+          node('7', ['external_tool']),
+          node('8', null),
+        ],
+      },
+    };
+    answer({ data: { c0: course } }, undefined);
+    const { assignments } = await loadCourseItems('A Student', '7', ['1']);
+
+    const requests = vi
+      .mocked(canvasJson)
+      .mock.calls.filter(([path]) => path === '/api/graphql')
+      .map(([, request]) => request?.json as { query: string });
+    expect(requests).toContainEqual({
+      query: expect.stringMatching(
+        /^query SearchItems\(\$userId: ID!, \$c0: ID!\)/,
+      ) as unknown,
+      variables: { userId: '7', c0: '1' },
+    });
+    expect(assignments.map(({ id, pending }) => [id, pending])).toEqual([
+      ['1', true],
+      ['2', false],
+      ['3', false],
+      ['4', false],
+      ['5', false],
+      ['6', false],
+      ['7', true],
+      ['8', false],
+    ]);
+  });
+
   it('lists the published announcements and ungraded discussions, newest first, with their text', async () => {
     answer({ data: { c0: COURSE } }, { data: { c0: COURSE } });
-    const { posts } = await loadCourseItems('A Student', ['1']);
+    const { posts } = await loadCourseItems('A Student', '7', ['1']);
 
     expect(posts).toEqual([
       {
@@ -197,15 +256,17 @@ describe('loadCourseItems', () => {
       nodes: [post('20', { message: `<p>${'word '.repeat(2000)}</p>` })],
     };
     answer(undefined, { data: { c0: long } });
-    const { posts } = await loadCourseItems('A Student', ['1']);
+    const { posts } = await loadCourseItems('A Student', '7', ['1']);
     expect(posts[0]?.text).toHaveLength(6000);
   });
 
   it("gives an assignment its description's text, and a page in a module its own", async () => {
     answer({ data: { c0: COURSE } }, undefined, SYLLABUS);
-    const { assignments, moduleItems } = await loadCourseItems('A Student', [
-      '1',
-    ]);
+    const { assignments, moduleItems } = await loadCourseItems(
+      'A Student',
+      '7',
+      ['1'],
+    );
     expect(assignments.map(({ text }) => text)).toEqual([
       'Write about a poem',
       undefined,
@@ -224,33 +285,33 @@ describe('loadCourseItems', () => {
       nodes: [post('21', { createdAt: '2026-09-01T15:00:00Z' })],
     };
     answer(undefined, { data: { c0: undated } });
-    const { posts } = await loadCourseItems('A Student', ['1']);
+    const { posts } = await loadCourseItems('A Student', '7', ['1']);
     expect(posts[0]?.posted).toBe('2026-09-01T15:00:00Z');
   });
 
   it('keeps the items when the posts fail, and the posts when the items fail', async () => {
     answer({ data: { c0: COURSE } }, { errors: [{ message: 'unknown' }] });
-    const items = await loadCourseItems('A Student', ['1']);
+    const items = await loadCourseItems('A Student', '7', ['1']);
     expect(items.assignments).toHaveLength(2);
     expect(items.posts).toEqual([]);
     // without the posts, the discussion's module item is listed as itself
     expect(items.moduleItems.map(({ title }) => title)).toContain('Post 21');
 
     answer(undefined, { data: { c0: COURSE } });
-    const posts = await loadCourseItems('A Student', ['1']);
+    const posts = await loadCourseItems('A Student', '7', ['1']);
     expect(posts.assignments).toEqual([]);
     expect(posts.posts).toHaveLength(2);
   });
 
   it("keeps the pages' saved text when the items can't be had", async () => {
     answer({ data: { c0: COURSE } }, undefined, SYLLABUS);
-    await loadCourseItems('A Student', ['1']);
+    await loadCourseItems('A Student', '7', ['1']);
     answer(undefined, undefined);
-    await loadCourseItems('A Student', ['1']);
+    await loadCourseItems('A Student', '7', ['1']);
 
     // the page hasn't changed, so its text is the saved one, and not asked for
     answer({ data: { c0: COURSE } }, undefined);
-    const { moduleItems } = await loadCourseItems('A Student', ['1']);
+    const { moduleItems } = await loadCourseItems('A Student', '7', ['1']);
     expect(moduleItems.find(({ title }) => title === 'Syllabus')?.text).toBe(
       'Office hours',
     );
@@ -258,7 +319,7 @@ describe('loadCourseItems', () => {
 
   it('finds nothing when both requests fail', async () => {
     answer(undefined, undefined);
-    expect(await loadCourseItems('A Student', ['1'])).toEqual({
+    expect(await loadCourseItems('A Student', '7', ['1'])).toEqual({
       assignments: [],
       moduleItems: [],
       posts: [],

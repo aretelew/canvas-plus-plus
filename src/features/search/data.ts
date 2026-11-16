@@ -9,7 +9,7 @@ import {
   type CourseItems,
   type CoursePost,
 } from './course-items';
-import type { Entry } from './match';
+import type { Entry, Kind } from './match';
 
 // What the search box lists: the user's courses and the pages in each, their
 // work, every assignment and module item in their current courses and their
@@ -50,20 +50,21 @@ interface SearchSources extends CourseItems {
 const MAX_AGE = 10 * 60 * 1000;
 const COURSES =
   '/api/v1/courses?enrollment_state=active&include[]=tabs&include[]=concluded&per_page=100';
+const SELF = '/api/v1/users/self';
 const DAY = 24 * 60 * 60 * 1000;
 // work due this soon is listed before anything is typed
 const SOON = 7 * DAY;
 
 /** Canvas's own pages: all there is to list until the rest is loaded. */
 export const CANVAS_PAGES: Entry[] = [
-  { title: 'Dashboard', href: '/' },
-  { title: 'Calendar', href: '/calendar' },
-  { title: 'Inbox', href: '/conversations' },
-  { title: 'All courses', href: '/courses' },
-  { title: 'All grades', href: '/grades' },
-  { title: 'All groups', href: '/groups' },
-  { title: 'Account settings', href: '/profile/settings' },
-  { title: 'Notifications', href: '/profile/communication' },
+  { title: 'Dashboard', href: '/', kind: 'section' },
+  { title: 'Calendar', href: '/calendar', kind: 'section' },
+  { title: 'Inbox', href: '/conversations', kind: 'section' },
+  { title: 'All courses', href: '/courses', kind: 'section' },
+  { title: 'All grades', href: '/grades', kind: 'section' },
+  { title: 'All groups', href: '/groups', kind: 'section' },
+  { title: 'Account settings', href: '/profile/settings', kind: 'section' },
+  { title: 'Notifications', href: '/profile/communication', kind: 'section' },
 ];
 
 /** What's listed, as last loaded, and asked for again once it's old. */
@@ -96,6 +97,7 @@ export function searchEntries(
   const entryOf = (course: SearchCourse): Entry => ({
     title: courseLabel(course),
     href: `/courses/${course.id}`,
+    kind: 'course',
     also: [course.original_name ?? course.name, course.course_code],
     color: colors.get(course.id),
   });
@@ -117,27 +119,28 @@ export function searchEntries(
       target.plannable_type === 'assignment' ? [target.plannable_id] : [],
     ),
   );
-  // the To Do's work is found by its assignment's description
-  const descriptions = new Map(
-    assignments.flatMap(({ id, text }) => (text ? [[id, text]] : [])),
-  );
+  // the To Do's work is found by its assignment's description, and is a quiz
+  // when its assignment is
+  const assignmentsById = new Map(assignments.map((a) => [a.id, a]));
 
   return [
     ...current.map(({ entry }) => ({ ...entry, start: true })),
-    ...workEntries(todo, inCourse, descriptions, now),
+    ...workEntries(todo, inCourse, assignmentsById, now),
     ...currentGroups(
       groups,
       current.map(({ course }) => course),
-    ).map(({ id, name, course_id }) => ({
+    ).map(({ id, name, course_id }): Entry => ({
       title: name,
       href: `/groups/${id}`,
+      kind: 'group',
       ...inCourse(course_id),
     })),
     ...current.flatMap(({ course, entry }) => pageEntries(course, entry)),
     ...assignmentEntries(assignments, inToDo, inCourse, now),
-    ...moduleItems.map(({ title, url, module, courseId, text }) => ({
+    ...moduleItems.map(({ title, url, kind, module, courseId, text }) => ({
       title,
       href: url,
+      kind,
       // so "week 3 reading" finds that reading
       also: [module],
       text,
@@ -166,7 +169,7 @@ function courseLabel({
 function workEntries(
   todo: Work[],
   inCourse: InCourse,
-  descriptions: Map<string, string>,
+  assignments: Map<string, CourseAssignment>,
   now: Date,
 ): Entry[] {
   return todo
@@ -175,29 +178,52 @@ function workEntries(
       // the user's own notes have no page
       if (url === undefined) return [];
       const { where, color } = inCourse(courseId);
+      const assignment =
+        target.plannable_type === 'assignment'
+          ? assignments.get(target.plannable_id)
+          : undefined;
       return {
         title,
         href: url,
+        kind: assignment?.kind ?? workKind(target.plannable_type),
         where: where ?? courseName,
         color,
         due: due.toISOString(),
+        // the To Do lists only what's left to do
+        pending: true,
         start: due.getTime() - now.getTime() < SOON,
-        text:
-          target.plannable_type === 'assignment'
-            ? descriptions.get(target.plannable_id)
-            : undefined,
+        text: assignment?.text,
       };
     });
 }
 
+// What the planner calls it, for work not among the course's assignments:
+// ungraded quizzes and discussions, pages with a to-do date and peer reviews.
+function workKind(plannableType: string): Kind {
+  switch (plannableType) {
+    case 'quiz':
+      return 'quiz';
+    case 'discussion_topic':
+      return 'discussion';
+    case 'wiki_page':
+      return 'page';
+    default:
+      return 'assignment';
+  }
+}
+
 // The course's menu, but its home page, which the course's own entry stands
 // for, and what only teachers see.
-function pageEntries(course: SearchCourse, { title, also, color }: Entry) {
+function pageEntries(
+  course: SearchCourse,
+  { title, also, color }: Entry,
+): Entry[] {
   return (course.tabs ?? [])
     .filter(({ id, hidden }) => id !== 'home' && hidden !== true)
     .map(({ label, html_url }) => ({
       title: label,
       href: html_url,
+      kind: 'section',
       where: title,
       also,
       color,
@@ -214,10 +240,12 @@ function assignmentEntries(
   return byWhenDue(
     assignments.filter(({ id }) => !inToDo.has(id)),
     now.getTime(),
-  ).map(({ name, url, due, courseId, text }) => ({
+  ).map(({ name, url, kind, due, pending, courseId, text }) => ({
     title: name,
     href: url,
+    kind,
     due,
+    pending,
     text,
     ...inCourse(courseId),
   }));
@@ -232,8 +260,9 @@ function postEntry(
   return {
     title,
     href: url,
+    kind,
     also: [`${kind}s`],
-    post: { kind, at: posted },
+    posted,
     text,
     ...inCourse(courseId),
   };
@@ -260,15 +289,19 @@ function byWhenDue(
 // a path on this site, never another site or a script
 const onThisSite = (href: string) => /^\/(?![/\\])/.test(href);
 
-// The courses, then the assignments and module items in the current ones:
-// they're asked for by course. The pages' text is saved for `who`.
+// The courses and who the user is, then the assignments and module items in
+// the current courses: they're asked for by course, with the user's own
+// submissions. The pages' text is saved for `who`.
 async function loadCoursesAndItems(
   who: string,
 ): Promise<Pick<SearchSources, 'courses' | keyof CourseItems> | undefined> {
-  const courses = await canvasJson<SearchCourse[]>(COURSES);
-  if (!courses) return undefined;
+  const [courses, self] = await Promise.all([
+    canvasJson<SearchCourse[]>(COURSES),
+    canvasJson<{ id: string }>(SELF),
+  ]);
+  if (!courses || !self) return undefined;
   const current = courses.filter(isCurrent).map(({ id }) => id);
-  return { courses, ...(await loadCourseItems(who, current)) };
+  return { courses, ...(await loadCourseItems(who, self.id, current)) };
 }
 
 /** Undefined when the courses can't be loaded; what's saved stays. */

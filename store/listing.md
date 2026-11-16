@@ -21,7 +21,7 @@ canvas++ restyles Canvas and adds a few things it's missing, with more on the wa
 • Grades on cards: each dashboard card shows your current grade in that course.
 • Assignments on cards: each card lists what's due. Check something off there and Canvas marks it done in your To Do list too.
 • Courses in the left sidebar: your courses and groups one click away, with what's due in each and the pages you opened last.
-• Search: press ⌘K on a Mac, or Ctrl+K elsewhere, on any Canvas page to find a course, assignment, module page or announcement. It also searches what they say.
+• Search: press ⌘K on a Mac, or Ctrl+K elsewhere, on any Canvas page to find a course, assignment, module page or announcement. It also searches what they say, and work that's late or due soon is marked in red.
 
 It works right away on any Canvas at *.instructure.com. If your school uses its own address, like canvas.yourschool.edu, open Canvas, click the canvas++ button and choose Enable.
 

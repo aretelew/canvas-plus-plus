@@ -1,5 +1,7 @@
+import { kindIcon } from './icons';
 import { search, type Entry } from './match';
 import css from './search.css?inline';
+import { when } from './when';
 
 // The search box: a text field over the page, with what matches under it.
 // Arrow keys pick a result and Enter opens it (in a new tab with ⌘ or Ctrl).
@@ -46,8 +48,11 @@ export function createSearchBox(): SearchBox {
     results = [];
     options = [];
     const items: HTMLElement[] = [];
+    const now = new Date();
     for (const { title, entries } of sections(listing, input.value)) {
-      const part = entries.map((entry, i) => option(entry, results.length + i));
+      const part = entries.map((entry, i) =>
+        option(entry, results.length + i, now),
+      );
       results.push(...entries);
       options.push(...part);
       items.push(...(title ? [group(title, part)] : part));
@@ -169,21 +174,26 @@ function build() {
   return { host, root, dialog, input, list, status };
 }
 
-function option(entry: Entry, index: number): HTMLElement {
+// What it is as its icon, in its course's color, then its title, and under
+// that its course and when it's due or was posted, when it has either. The
+// icon comes last, so it's heard after the title, and is drawn first.
+function option(entry: Entry, index: number, now: Date): HTMLElement {
   const item = document.createElement('li');
   item.id = `result-${String(index)}`;
   item.setAttribute('role', 'option');
   const link = document.createElement('a');
   link.href = entry.href;
   link.tabIndex = -1;
-  const dot = document.createElement('span');
-  dot.className = 'dot';
-  dot.setAttribute('aria-hidden', 'true');
-  if (entry.color) dot.style.background = entry.color;
-  link.append(dot, span('title', entry.title));
-  if (entry.where) link.append(span('where', entry.where));
-  if (entry.due) link.append(span('due', dayText(entry.due)));
-  if (entry.post) link.append(posted(entry.post));
+  const text = span('text', '');
+  text.append(span('title', entry.title));
+  const details = detailsOf(entry, now);
+  if (details) text.append(details);
+  const icon = kindIcon(entry.kind);
+  if (entry.color) {
+    icon.classList.add('colored');
+    icon.style.setProperty('--course', entry.color);
+  }
+  link.append(text, icon);
   item.append(link);
   return item;
 }
@@ -233,46 +243,17 @@ function span(className: string, text: string): HTMLElement {
   return part;
 }
 
-// a day work is due or a post was posted (ISO): "Tue, Nov 4"
-function dayText(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-// Canvas's own pictures for them, a megaphone and a speech bubble, drawn as
-// line icons like the popup's
-const POSTS = {
-  announcement: {
-    name: 'Announcement',
-    paths: ['M3 11l18-5v12L3 14v-3z', 'M11.6 16.8a3 3 0 1 1-5.8-1.6'],
-  },
-  discussion: {
-    name: 'Discussion',
-    paths: ['M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'],
-  },
-};
-
-// The day a post was posted, in the place a due day takes, then what it is,
-// as its icon. The icon is named, so it's heard, and shown on hover.
-function posted({ kind, at }: NonNullable<Entry['post']>): HTMLElement {
-  const { name, paths } = POSTS[kind];
-  const ns = 'http://www.w3.org/2000/svg';
-  const icon = document.createElementNS(ns, 'svg');
-  icon.setAttribute('viewBox', '0 0 24 24');
-  icon.setAttribute('role', 'img');
-  icon.setAttribute('aria-label', name);
-  const title = document.createElementNS(ns, 'title');
-  title.textContent = name;
-  icon.append(title);
-  for (const d of paths) {
-    const path = document.createElementNS(ns, 'path');
-    path.setAttribute('d', d);
-    icon.append(path);
+// A result's second line: its course, then when work is due or a post was
+// posted. Undefined when it has neither, like a course or Canvas's own pages.
+function detailsOf(entry: Entry, now: Date): HTMLElement | undefined {
+  const date = when(entry, now);
+  if (!entry.where && !date) return undefined;
+  const line = span('details', '');
+  if (entry.where) line.append(span('where', entry.where));
+  if (date) {
+    const day = span('when', date.text);
+    if (date.urgency) day.classList.add(date.urgency);
+    line.append(day);
   }
-  const part = span('posted', at === undefined ? '' : dayText(at));
-  part.append(icon);
-  return part;
+  return line;
 }
