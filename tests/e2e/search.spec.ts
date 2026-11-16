@@ -101,38 +101,43 @@ test.beforeEach(async ({ page: p }) => {
     const body = route.request().postDataJSON() as typeof graphqlBody;
     if (body.query.startsWith('query SearchItems')) graphqlBody = body;
     const data = Object.fromEntries(
-      Object.entries(body.variables).map(([alias, course]) => [
-        alias,
-        {
-          assignmentsConnection: {
-            nodes: Object.entries(ASSIGNMENTS[course] ?? {}).map(
-              ([id, name]) => ({
-                _id: id,
-                name,
-                dueAt: null,
-                htmlUrl: `${ORIGIN}/courses/${course}/assignments/${id}`,
-                quiz: null,
-              }),
-            ),
-          },
-          modulesConnection: {
-            nodes: (MODULES[course] ?? []).map(({ name, items }, i) => ({
-              name,
-              position: i + 1,
-              moduleItems: Object.entries(items).map(
-                ([id, [title, content]]) => ({
-                  title,
-                  url: `${ORIGIN}/courses/${course}/modules/items/${id}`,
-                  content,
+      Object.entries(body.variables)
+        .filter(([name]) => name !== 'userId')
+        .map(([alias, course]) => [
+          alias,
+          {
+            assignmentsConnection: {
+              nodes: Object.entries(ASSIGNMENTS[course] ?? {}).map(
+                ([id, name]) => ({
+                  _id: id,
+                  name,
+                  dueAt: null,
+                  htmlUrl: `${ORIGIN}/courses/${course}/assignments/${id}`,
+                  quiz: null,
                 }),
               ),
-            })),
+            },
+            modulesConnection: {
+              nodes: (MODULES[course] ?? []).map(({ name, items }, i) => ({
+                name,
+                position: i + 1,
+                moduleItems: Object.entries(items).map(
+                  ([id, [title, content]]) => ({
+                    title,
+                    url: `${ORIGIN}/courses/${course}/modules/items/${id}`,
+                    content,
+                  }),
+                ),
+              })),
+            },
           },
-        },
-      ]),
+        ]),
     );
     return route.fulfill({ json: { data } });
   });
+  await p.route(`${ORIGIN}/api/v1/users/self`, (route) =>
+    route.fulfill({ json: { id: '7' } }),
+  );
   await p.route(`${ORIGIN}/api/v1/users/self/groups?**`, (route) =>
     route.fulfill({ json: [] }),
   );
@@ -170,14 +175,18 @@ test('the shortcut opens it on the courses and what is due', async ({
 
   await expect(field(p)).toBeFocused();
   await expect(results(p)).toHaveText([
-    'CHEM 105',
-    'Robots',
+    'CHEM 105Course',
+    'RobotsCourse',
     /^Lab 4: TitrationCHEM 105/,
   ]);
   await expect(results(p).first()).toHaveAttribute('aria-selected', 'true');
-  await expect(results(p).first().locator('.dot')).toHaveCSS(
-    'background-color',
-    'rgb(29, 158, 117)',
+  // the To Do's work is due within a day, so its time left is marked
+  await expect(results(p).nth(2).locator('.when')).toHaveText(/^in \d+ hours$/);
+  await expect(results(p).nth(2).locator('.when')).toHaveClass(/\burgent\b/);
+  // its icon is in the course's color
+  await expect(results(p).first().locator('svg')).toHaveCSS(
+    '--course',
+    '#1d9e75',
   );
 });
 
@@ -199,14 +208,14 @@ test('before anything is typed, it lists what was opened last', async ({
 
   const recent = box(p).getByRole('group', { name: 'Recent' });
   await expect(recent.getByRole('option')).toHaveText([
-    'Lecture 5: KineticsCHEM 105',
-    'GradesRobots',
+    'Lecture 5: KineticsCHEM 105File',
+    'GradesRobotsPage in Canvas',
   ]);
   await expect(
     box(p)
       .getByRole('group', { name: 'Courses and work due' })
       .getByRole('option'),
-  ).toHaveText(['CHEM 105', 'Robots', /^Lab 4: TitrationCHEM 105/]);
+  ).toHaveText(['CHEM 105Course', 'RobotsCourse', /^Lab 4: TitrationCHEM 105/]);
   await expect(results(p).first()).toHaveAttribute('aria-selected', 'true');
 });
 
@@ -219,7 +228,7 @@ test('a few letters of a course and its page find it, and Enter opens it', async
   await openBox(p);
   await field(p).fill('chem gr');
 
-  await expect(results(p)).toHaveText(['GradesCHEM 105']);
+  await expect(results(p)).toHaveText(['GradesCHEM 105Page in Canvas']);
   await p.keyboard.press('Enter');
   await expect(p).toHaveURL(`${ORIGIN}/courses/1/grades`);
 });
@@ -230,9 +239,9 @@ test('the arrow keys pick a result', async ({ page: p, setQuickSearch }) => {
   await openBox(p);
   await field(p).fill('grades');
   await expect(results(p)).toHaveText([
-    'GradesCHEM 105',
-    'GradesRobots',
-    'All grades',
+    'GradesCHEM 105Page in Canvas',
+    'GradesRobotsPage in Canvas',
+    'All gradesPage in Canvas',
   ]);
 
   await p.keyboard.press('ArrowDown');
@@ -257,13 +266,14 @@ test('every assignment in the courses is found, past or done', async ({
   // Lab 4 is in the To Do, so it's listed once, from there
   await expect(results(p)).toHaveText([
     /^Lab 4: TitrationCHEM 105/,
-    'Lab 1: SafetyCHEM 105',
+    'Lab 1: SafetyCHEM 105Assignment',
   ]);
   await expect(results(p).nth(1).getByRole('link')).toHaveAttribute(
     'href',
     '/courses/1/assignments/11',
   );
-  expect(Object.values(graphqlBody.variables)).toEqual(['1', '2']);
+  // the user's own submissions only
+  expect(graphqlBody.variables).toEqual({ userId: '7', c0: '1', c1: '2' });
   expect(graphqlBody.query).toContain('gradingPeriodId: null');
 });
 
@@ -276,10 +286,10 @@ test('module items are found by their title or module, and open in it', async ({
   await openBox(p);
   await field(p).fill('week 3');
   // the heading isn't listed, and the lab is listed as its assignment
-  await expect(results(p)).toHaveText(['Lecture 5: KineticsCHEM 105']);
+  await expect(results(p)).toHaveText(['Lecture 5: KineticsCHEM 105File']);
 
   await field(p).fill('lecture 5');
-  await expect(results(p)).toHaveText(['Lecture 5: KineticsCHEM 105']);
+  await expect(results(p)).toHaveText(['Lecture 5: KineticsCHEM 105File']);
   await p.keyboard.press('Enter');
   await expect(p).toHaveURL(`${ORIGIN}/courses/1/modules/items/31`);
 });

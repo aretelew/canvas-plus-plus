@@ -50,6 +50,7 @@ interface SearchSources extends CourseItems {
 const MAX_AGE = 10 * 60 * 1000;
 const COURSES =
   '/api/v1/courses?enrollment_state=active&include[]=tabs&include[]=concluded&per_page=100';
+const SELF = '/api/v1/users/self';
 const DAY = 24 * 60 * 60 * 1000;
 // work due this soon is listed before anything is typed
 const SOON = 7 * DAY;
@@ -188,6 +189,8 @@ function workEntries(
         where: where ?? courseName,
         color,
         due: due.toISOString(),
+        // the To Do lists only what's left to do
+        pending: true,
         start: due.getTime() - now.getTime() < SOON,
         text: assignment?.text,
       };
@@ -237,11 +240,12 @@ function assignmentEntries(
   return byWhenDue(
     assignments.filter(({ id }) => !inToDo.has(id)),
     now.getTime(),
-  ).map(({ name, url, kind, due, courseId, text }) => ({
+  ).map(({ name, url, kind, due, pending, courseId, text }) => ({
     title: name,
     href: url,
     kind,
     due,
+    pending,
     text,
     ...inCourse(courseId),
   }));
@@ -285,15 +289,19 @@ function byWhenDue(
 // a path on this site, never another site or a script
 const onThisSite = (href: string) => /^\/(?![/\\])/.test(href);
 
-// The courses, then the assignments and module items in the current ones:
-// they're asked for by course. The pages' text is saved for `who`.
+// The courses and who the user is, then the assignments and module items in
+// the current courses: they're asked for by course, with the user's own
+// submissions. The pages' text is saved for `who`.
 async function loadCoursesAndItems(
   who: string,
 ): Promise<Pick<SearchSources, 'courses' | keyof CourseItems> | undefined> {
-  const courses = await canvasJson<SearchCourse[]>(COURSES);
-  if (!courses) return undefined;
+  const [courses, self] = await Promise.all([
+    canvasJson<SearchCourse[]>(COURSES),
+    canvasJson<{ id: string }>(SELF),
+  ]);
+  if (!courses || !self) return undefined;
   const current = courses.filter(isCurrent).map(({ id }) => id);
-  return { courses, ...(await loadCourseItems(who, current)) };
+  return { courses, ...(await loadCourseItems(who, self.id, current)) };
 }
 
 /** Undefined when the courses can't be loaded; what's saved stays. */

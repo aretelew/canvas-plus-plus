@@ -25,13 +25,16 @@ export interface Entry {
   title: string;
   href: string;
   kind: Kind;
-  // its course or group, shown after the title
+  // its course or group, shown under the title
   where?: string;
   // more it's found by without showing it, like a course's full name
   also?: string[];
   color?: string;
   // work only: when it's due (ISO), so how it reads stays current
   due?: string;
+  // work only: still to hand in, so it's pressing when it's due soon and late
+  // once it's past
+  pending?: boolean;
   // posts only: when it was posted (ISO)
   posted?: string;
   // what it says, searched after the rest

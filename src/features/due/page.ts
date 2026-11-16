@@ -1,7 +1,7 @@
 import { canvasJson } from '@/core/canvas-api';
+import { timeLeft } from '@/core/time-left';
 import { whenParsed } from '@/core/when-parsed';
 import { timeUntilDue } from './storage';
-import { timeLeft } from './time-left';
 
 // Puts how long is left ("in 5 hours", "tomorrow") after the due dates Canvas
 // shows, as part of their text: an assignment's own page, a course's

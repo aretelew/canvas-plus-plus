@@ -68,6 +68,7 @@ const assignment = (
   kind: 'assignment',
   url: `/courses/${courseId}/assignments/${id}`,
   due: due?.toISOString(),
+  pending: true,
 });
 
 const moduleItem = (
@@ -166,6 +167,7 @@ describe('searchEntries', () => {
       where: 'CSDS 338',
       color: '#e1185c',
       due: inDays(-1).toISOString(),
+      pending: true,
     });
   });
 
@@ -220,6 +222,7 @@ describe('searchEntries', () => {
       kind: 'assignment',
       where: 'Robots',
       due: inDays(5).toISOString(),
+      pending: true,
     });
     const at = (title: string) => found.findIndex((e) => e.title === title);
     expect(at('Assignment 5')).toBeGreaterThan(at('Grades'));

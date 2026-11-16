@@ -85,8 +85,9 @@ input {
 a {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: 12px;
+  min-height: 22px;
+  padding: 7px 10px;
   border-radius: 8px;
   color: inherit;
   text-decoration: none;
@@ -100,53 +101,73 @@ a {
   );
 }
 
-.dot {
+/* What it is, at the start of the row though it comes last in the link, so
+   the title is heard first. In its course's color, as Canvas's To Do colors
+   its icons, lifted on a theme as colored text is, so a dark course color
+   still shows on dark surfaces. Without a course, muted. */
+a > svg {
+  order: -1;
   flex: none;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  /* what has no course of its own */
-  background: var(--cpp-border-strong, #c7cdd1);
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  &.colored {
+    color: oklch(from var(--course) max(l, var(--cpp-lift-l, 0)) c h);
+  }
 }
 
-.title {
+/* The title on a line of its own, its course and date on one under it */
+.text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: 1px;
+}
+
+.title,
+.details {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
+.details {
+  font-size: 12.5px;
+  line-height: 1.3;
+}
+
 .heading,
-.where,
-.end,
+a > svg,
+.details,
 .status {
   color: var(--cpp-muted, #6b7780);
 }
 
-.where {
-  flex: none;
-  max-width: 40%;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+/* "CSDS 344 · Tue, Nov 10" */
+.where + .when::before {
+  content: '·';
+  margin: 0 6px;
+  color: var(--cpp-muted, #6b7780);
 }
 
-.end {
-  flex: none;
-  margin-left: auto;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+/* Work still to hand in: red when it's late or due within a day, as on the
+   dashboard, and amber when it's due tomorrow. A theme lifts them as it lifts
+   colored text, so they read on its dark surfaces. */
+.when {
+  font-variant-numeric: tabular-nums;
 
-  svg {
-    flex: none;
-    width: 14px;
-    height: 14px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+  &.urgent {
+    color: oklch(from #c71f23 max(l, var(--cpp-lift-l, 0)) c h);
+  }
+
+  &.tomorrow {
+    color: oklch(from #b34700 max(l, var(--cpp-lift-l, 0)) c h);
   }
 }
 
