@@ -6,7 +6,7 @@
 //
 // Look over every image before uploading: they're meant to hold no real data.
 
-import type { BrowserContext, Locator } from '@playwright/test';
+import type { BrowserContext, Locator, Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { extensionId, launchWithExtension } from '../tests/chrome.ts';
@@ -77,8 +77,24 @@ async function dashboard(context: BrowserContext, theme: Theme) {
     };
   });
   const shot = await page.screenshot();
+  const todo = await todoShot(page);
   await page.close();
-  return { look: { shot, palette }, regions };
+  return { look: { shot, palette, todo }, regions };
+}
+
+// The To Do in the dashboard's right sidebar, on the left sidebar's color
+// rather than the page's, so the two match when a slide shows them side by
+// side. Taken last: the color stays on the page.
+async function todoShot(page: Page) {
+  await page.addStyleTag({
+    content: `.cpp-todo {
+      background: var(--cpp-nav) !important;
+      padding: 16px 16px 12px !important;
+    }`,
+  });
+  const todo = page.locator('.cpp-todo');
+  const { width } = await box(todo);
+  return { shot: await todo.screenshot(), width };
 }
 
 // The search box over the dashboard, with "midterm" typed and its results in.

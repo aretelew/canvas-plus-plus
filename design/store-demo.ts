@@ -17,6 +17,12 @@ const DAY = 24 * 60 * 60 * 1000;
 // six hours on, so work due today counts as upcoming, not past
 const inDays = (days: number) =>
   new Date(Date.now() + days * DAY + 6 * 60 * 60 * 1000).toISOString();
+// 11:59 PM that many days on, as Canvas has things due
+const endOfDay = (days: number) => {
+  const day = new Date(Date.now() + days * DAY);
+  day.setHours(23, 59, 0, 0);
+  return day.toISOString();
+};
 
 interface DemoCourse {
   id: string;
@@ -155,9 +161,23 @@ const scores = COURSES.map((c) => ({
   enrollments: [{ type: 'student', computed_current_score: c.score }],
 }));
 
-// What the search finds past the dashboard, by course: a module page, and
-// announcements, each posted some days ago. A search for "midterm" finds the
-// Exam 2 guide by what it says.
+// What the search finds past the dashboard, by course: assignments that
+// aren't on the cards, a module page, and announcements, each posted some
+// days ago. A search for "midterm" finds work due in a few hours and work due
+// tomorrow, each still to hand in, and the Exam 2 guide by what it says.
+const ASSIGNMENTS: Record<
+  string,
+  [title: string, dueAt: string, quiz: boolean][]
+> = {
+  '103': [
+    [
+      'Midterm Reflection',
+      new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(),
+      false,
+    ],
+  ],
+  '104': [['Midterm Lab Quiz', endOfDay(1), true]],
+};
 const MODULE_ITEMS: Record<string, [title: string, module: string][]> = {
   '101': [['Midterm Practice Problems', 'Week 8']],
 };
@@ -190,7 +210,20 @@ const ANNOUNCEMENTS: Record<
 
 // GraphQL's answer to the search's two requests, for the course `id`
 const searchItems = (id: string) => ({
-  assignmentsConnection: { nodes: [] },
+  assignmentsConnection: {
+    nodes: (ASSIGNMENTS[id] ?? []).map(([name, dueAt, quiz], i) => ({
+      _id: `${id}-q${String(i)}`,
+      name,
+      dueAt,
+      htmlUrl: `${ORIGIN}/courses/${id}/assignments/${id}-q${String(i)}`,
+      description: null,
+      quiz: quiz ? { _id: `${id}-${String(i)}` } : null,
+      submissionTypes: [quiz ? 'online_quiz' : 'online_text_entry'],
+      submissionsConnection: {
+        nodes: [{ state: 'unsubmitted', excused: null }],
+      },
+    })),
+  },
   modulesConnection: {
     nodes: (MODULE_ITEMS[id] ?? []).map(([title, module], i) => ({
       name: module,
@@ -326,6 +359,7 @@ const UNBRANDED = `
 // the API calls the page and the extension make, with what each answers
 const API: [path: string, json: unknown][] = [
   ['dashboard/dashboard_cards**', cards],
+  ['users/self', { id: '1' }],
   ['users/self/colors', { custom_colors: colors }],
   ['users/self/groups?**', groups],
   ['users/self/history**', history],
@@ -351,7 +385,7 @@ export async function openDashboard(page: Page): Promise<void> {
   for (const [path, json] of API) {
     await page.route(`${ORIGIN}/api/v1/${path}`, (r) => r.fulfill({ json }));
   }
-  // the search's, each course under an alias
+  // the search's, each course under an alias beside the user's id
   await page.route(`${ORIGIN}/api/graphql`, (r) => {
     const { query, variables } = r.request().postDataJSON() as {
       query: string;
@@ -361,7 +395,9 @@ export async function openDashboard(page: Page): Promise<void> {
       ? searchPosts
       : searchItems;
     const data = Object.fromEntries(
-      Object.entries(variables).map(([alias, id]) => [alias, answer(id)]),
+      Object.entries(variables)
+        .filter(([name]) => name !== 'userId')
+        .map(([alias, id]) => [alias, answer(id)]),
     );
     return r.fulfill({ json: { data } });
   });
