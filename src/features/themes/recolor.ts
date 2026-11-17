@@ -262,10 +262,15 @@ function classify(el: Element): Tags {
   if (el instanceof SVGElement && onDarkenedBackdrop(el)) {
     // lines drawn for a white page (spinner tracks, progress rings)
     if (roleOf('bg', style.stroke)) attrs['data-cpp-stroke'] = '';
-    // icons filled with Canvas's text greys; currentColor ones (same as
-    // color) already follow the fg tag, and must keep following it on hover
-    const fill = style.fill === style.color ? null : roleOf('fg', style.fill);
-    if (fill === 'text' || fill === 'muted') attrs['data-cpp-fill'] = fill;
+    // icons filled with Canvas's text greys. One filled the same as its color
+    // may be currentColor or the same grey written twice (the Rich Content
+    // Editor's toolbar: color and fill both #222f3e), and computed styles
+    // can't tell which, so it's filled with currentColor: the color its fg
+    // tag gives it, which it keeps following on hover.
+    const fill = roleOf('fg', style.fill);
+    if (fill === 'text' || fill === 'muted') {
+      attrs['data-cpp-fill'] = style.fill === style.color ? 'current' : fill;
+    }
   }
 
   // fades made to melt into white, on the element or its ::before/::after
