@@ -267,9 +267,9 @@ describe('searchEntries', () => {
     expect(titles).toContain('Assignment 2');
   });
 
-  it('lists the module items after the assignments, in module order, found by their module too', () => {
+  it('lists the module items after the dated assignments, found by their module too', () => {
     const found = entries({
-      assignments: [assignment('1')],
+      assignments: [assignment('1', inDays(-1))],
       moduleItems: [
         moduleItem('5', { title: 'Lecture 5', module: 'Week 3' }),
         moduleItem('6', { courseId: '2' }),
@@ -278,6 +278,13 @@ describe('searchEntries', () => {
     const items = found.filter(({ href }) => href.includes('/modules/items/'));
     expect(items).toEqual([
       {
+        title: 'Item 6',
+        href: '/courses/2/modules/items/6',
+        kind: 'page',
+        also: ['Week 1'],
+        where: 'Robots',
+      },
+      {
         title: 'Lecture 5',
         href: '/courses/1/modules/items/5',
         kind: 'page',
@@ -285,17 +292,38 @@ describe('searchEntries', () => {
         where: 'CSDS 338',
         color: '#e1185c',
       },
-      {
-        title: 'Item 6',
-        href: '/courses/2/modules/items/6',
-        kind: 'page',
-        also: ['Week 1'],
-        where: 'Robots',
-      },
     ]);
     const at = (title: string) => found.findIndex((e) => e.title === title);
-    expect(at('Lecture 5')).toBeGreaterThan(at('Assignment 1'));
+    expect(at('Item 6')).toBeGreaterThan(at('Assignment 1'));
     expect(at('Lecture 5')).toBeLessThan(at('OLD 100'));
+  });
+
+  it('lists the undated assignments and module items together, newest first, and what comes later first when they tie', () => {
+    const available = (days: number) => inDays(days).toISOString();
+    const titles = entries({
+      assignments: [
+        { ...assignment('1'), available: available(-30) },
+        { ...assignment('2'), available: available(-2) },
+        assignment('3', inDays(-60)),
+      ],
+      moduleItems: [
+        moduleItem('5', { title: 'Week 1 quiz', available: available(-40) }),
+        moduleItem('6', { title: 'Week 4 quiz', available: available(-10) }),
+        moduleItem('7', { title: 'Week 5 quiz', available: available(-10) }),
+        moduleItem('8', { title: 'Undated' }),
+      ],
+    })
+      .map(({ title }) => title)
+      .filter((title) => /Assignment|quiz|Undated/.test(title));
+    expect(titles).toEqual([
+      'Assignment 3',
+      'Assignment 2',
+      'Week 5 quiz',
+      'Week 4 quiz',
+      'Assignment 1',
+      'Week 1 quiz',
+      'Undated',
+    ]);
   });
 
   it('lists the posts after the module items, labeled, dated and found by what they say', () => {

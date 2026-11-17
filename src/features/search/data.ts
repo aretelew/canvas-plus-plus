@@ -8,6 +8,7 @@ import {
   type CourseAssignment,
   type CourseItems,
   type CoursePost,
+  type ModuleItem,
 } from './course-items';
 import type { Entry, Kind } from './match';
 
@@ -78,9 +79,9 @@ type InCourse = (id: string | undefined) => Pick<Entry, 'where' | 'color'>;
 
 /**
  * The current courses first, in name order, then the work left to do, soonest
- * first, the groups, each course's pages, the rest of their assignments, their
- * module items, their posts, newest first, the courses whose term is over, and
- * Canvas's own pages. Links only ever go to this site.
+ * first, the groups, each course's pages, the rest of their assignments and
+ * their module items, their posts, newest first, the courses whose term is
+ * over, and Canvas's own pages. Links only ever go to this site.
  */
 export function searchEntries(
   {
@@ -136,16 +137,12 @@ export function searchEntries(
       ...inCourse(course_id),
     })),
     ...current.flatMap(({ course, entry }) => pageEntries(course, entry)),
-    ...assignmentEntries(assignments, inToDo, inCourse, now),
-    ...moduleItems.map(({ title, url, kind, module, courseId, text }) => ({
-      title,
-      href: url,
-      kind,
-      // so "week 3 reading" finds that reading
-      also: [module],
-      text,
-      ...inCourse(courseId),
-    })),
+    ...courseWorkEntries(
+      assignments.filter(({ id }) => !inToDo.has(id)),
+      moduleItems,
+      inCourse,
+      now.getTime(),
+    ),
     ...posts.map((post) => postEntry(post, inCourse)),
     ...courses.filter((course) => !isCurrent(course)).map(entryOf),
     ...CANVAS_PAGES,
@@ -230,17 +227,54 @@ function pageEntries(
     }));
 }
 
-// The rest of the assignments, without what the To Do lists already.
-function assignmentEntries(
+// The assignments and module items: what's coming up, soonest first, then
+// what's past, latest first, then what has no due date, which is every module
+// item, newest first.
+function courseWorkEntries(
   assignments: CourseAssignment[],
-  inToDo: Set<string>,
+  moduleItems: ModuleItem[],
   inCourse: InCourse,
-  now: Date,
+  now: number,
 ): Entry[] {
-  return byWhenDue(
-    assignments.filter(({ id }) => !inToDo.has(id)),
-    now.getTime(),
-  ).map(({ name, url, kind, due, pending, courseId, text }) => ({
+  // NaN for no due date, which is neither coming up nor past
+  const dueAt = ({ due }: CourseAssignment) => Date.parse(due ?? '');
+  const upcoming = assignments.filter((a) => dueAt(a) >= now);
+  const past = assignments.filter((a) => dueAt(a) < now);
+  // each entry with the date it's sorted by
+  const undated = [
+    ...assignments
+      .filter(({ due }) => due === undefined)
+      .map((assignment) => ({
+        available: assignment.available,
+        entry: assignmentEntry(assignment, inCourse),
+      })),
+    ...moduleItems.map((item) => ({
+      available: item.available,
+      entry: moduleItemEntry(item, inCourse),
+    })),
+  ];
+  return [
+    ...upcoming.sort((a, b) => dueAt(a) - dueAt(b)),
+    ...past.sort((a, b) => dueAt(b) - dueAt(a)),
+  ]
+    .map((assignment) => assignmentEntry(assignment, inCourse))
+    .concat(newestFirst(undated).map(({ entry }) => entry));
+}
+
+// By when each became available. On a tie, or with no date, what comes later
+// goes first: a course's later modules are its newer ones, and a course
+// copied from another term gives everything nearly the same date.
+function newestFirst<T extends { available?: string }>(items: T[]): T[] {
+  const at = ({ available }: T) =>
+    available === undefined ? 0 : Date.parse(available);
+  return items.toReversed().sort((a, b) => at(b) - at(a));
+}
+
+function assignmentEntry(
+  { name, url, kind, due, pending, courseId, text }: CourseAssignment,
+  inCourse: InCourse,
+): Entry {
+  return {
     title: name,
     href: url,
     kind,
@@ -248,7 +282,22 @@ function assignmentEntries(
     pending,
     text,
     ...inCourse(courseId),
-  }));
+  };
+}
+
+function moduleItemEntry(
+  { title, url, kind, module, courseId, text }: ModuleItem,
+  inCourse: InCourse,
+): Entry {
+  return {
+    title,
+    href: url,
+    kind,
+    // so "week 3 reading" finds that reading
+    also: [module],
+    text,
+    ...inCourse(courseId),
+  };
 }
 
 // Found by what it says too, and by what it is: plural, so "announcement" and
@@ -266,24 +315,6 @@ function postEntry(
     text,
     ...inCourse(courseId),
   };
-}
-
-// What's coming up, soonest first, then what's past, latest first, then what
-// has no due date.
-function byWhenDue(
-  assignments: CourseAssignment[],
-  now: number,
-): CourseAssignment[] {
-  // NaN for no due date, which is neither coming up nor past
-  const at = ({ due }: CourseAssignment) =>
-    due === undefined ? NaN : Date.parse(due);
-  const upcoming = assignments.filter((a) => at(a) >= now);
-  const past = assignments.filter((a) => at(a) < now);
-  return [
-    ...upcoming.sort((a, b) => at(a) - at(b)),
-    ...past.sort((a, b) => at(b) - at(a)),
-    ...assignments.filter(({ due }) => due === undefined),
-  ];
 }
 
 // a path on this site, never another site or a script

@@ -224,6 +224,49 @@ describe('loadCourseItems', () => {
     ]);
   });
 
+  it('dates when an assignment opened by its unlock date, else when it was made, and a module item by when it was put in', async () => {
+    const [essay, quiz] = COURSE.assignmentsConnection.nodes;
+    const week1 = COURSE.modulesConnection.nodes[1];
+    const course = {
+      ...COURSE,
+      assignmentsConnection: {
+        nodes: [
+          {
+            ...essay,
+            unlockAt: '2026-09-08T04:00:00Z',
+            createdAt: '2026-08-20T15:00:00Z',
+          },
+          { ...quiz, unlockAt: null, createdAt: '2026-08-21T15:00:00Z' },
+        ],
+      },
+      modulesConnection: {
+        nodes: [
+          {
+            ...week1,
+            moduleItems: [
+              {
+                ...item('5', 'Lecture 1', { __typename: 'File' }),
+                createdAt: '2026-08-22T15:00:00Z',
+              },
+            ],
+          },
+        ],
+      },
+    };
+    answer({ data: { c0: course } }, undefined);
+    const { assignments, moduleItems } = await loadCourseItems(
+      'A Student',
+      '7',
+      ['1'],
+    );
+
+    expect(assignments.map(({ available }) => available)).toEqual([
+      '2026-09-08T04:00:00Z',
+      '2026-08-21T15:00:00Z',
+    ]);
+    expect(moduleItems[0]?.available).toBe('2026-08-22T15:00:00Z');
+  });
+
   it('lists the published announcements and ungraded discussions, newest first, with their text', async () => {
     answer({ data: { c0: COURSE } }, { data: { c0: COURSE } });
     const { posts } = await loadCourseItems('A Student', '7', ['1']);

@@ -17,6 +17,9 @@ export interface CourseAssignment {
   url: string;
   // ISO, when it's due for this user; none when it has no due date
   due?: string;
+  // ISO, when it opened for this user: its unlock date, or else when it was
+  // made
+  available?: string;
   // there's something to hand in and the user hasn't: nothing's been
   // submitted, graded or excused
   pending: boolean;
@@ -34,6 +37,8 @@ export interface ModuleItem {
   // a path on this site: its place in the module, which is how the modules
   // page opens it, a link to another site included
   url: string;
+  // ISO, when it was put in its module
+  available?: string;
   // a page's text, cut short; none for anything else
   text?: string;
 }
@@ -69,6 +74,8 @@ interface AssignmentNode {
   _id: string;
   name: string;
   dueAt: string | null;
+  unlockAt: string | null;
+  createdAt: string | null;
   htmlUrl: string | null;
   // HTML
   description: string | null;
@@ -95,6 +102,7 @@ interface ModuleNode {
 interface ItemNode {
   title: string | null;
   url: string | null;
+  createdAt: string | null;
   content: Content | null;
 }
 
@@ -147,6 +155,8 @@ const ITEMS = `fragment Items on Course {
       _id
       name
       dueAt
+      unlockAt
+      createdAt
       htmlUrl
       description
       quiz { _id }
@@ -165,6 +175,7 @@ const ITEMS = `fragment Items on Course {
       moduleItems {
         title
         url
+        createdAt
         content {
           __typename
           ... on Assignment { _id }
@@ -329,7 +340,16 @@ function assignmentsOf(
   nodes: AssignmentNode[],
 ): CourseAssignment[] {
   return nodes.flatMap((node) => {
-    const { _id, name, dueAt, htmlUrl, description, quiz } = node;
+    const {
+      _id,
+      name,
+      dueAt,
+      unlockAt,
+      createdAt,
+      htmlUrl,
+      description,
+      quiz,
+    } = node;
     const url = pathOnThisSite(htmlUrl);
     if (!url) return [];
     return {
@@ -339,6 +359,7 @@ function assignmentsOf(
       kind: quiz ? 'quiz' : 'assignment',
       url,
       due: dueAt ?? undefined,
+      available: unlockAt ?? createdAt ?? undefined,
       pending: isPending(node),
       text: searchText(description ?? '') || undefined,
     };
@@ -372,7 +393,7 @@ function moduleItemsOf(
   return modules
     .toSorted((a, b) => (a.position ?? 0) - (b.position ?? 0))
     .flatMap(({ name, moduleItems }) =>
-      (moduleItems ?? []).flatMap(({ title, url, content }) => {
+      (moduleItems ?? []).flatMap(({ title, url, createdAt, content }) => {
         const path = pathOnThisSite(url);
         if (!title || !path || content?.__typename === 'SubHeader') return [];
         if (content && isListed(content)) return [];
@@ -382,6 +403,7 @@ function moduleItemsOf(
           kind: moduleKind(content),
           module: name ?? '',
           url: path,
+          available: createdAt ?? undefined,
           text:
             content?.__typename === 'Page'
               ? texts.get(pageKey(courseId, content._id))
