@@ -104,6 +104,10 @@ async function contrastViolations(page: Page): Promise<number> {
 
 const MODES = ['off', ...THEMES] as const;
 
+// Each fixture is independent (it sets every theme it checks), so spread them
+// across workers instead of running the whole file in one.
+test.describe.configure({ mode: 'parallel' });
+
 for (const fixture of fixtures) {
   test(fixture.name, async ({ context, setTheme }) => {
     test.setTimeout(MODES.length * 15_000);

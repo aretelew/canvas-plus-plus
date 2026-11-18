@@ -160,11 +160,6 @@ test.beforeEach(async ({ page: p }) => {
   }
 });
 
-test.afterEach(async ({ page: p, setQuickSearch }) => {
-  await setQuickSearch(false);
-  await p.goto('about:blank');
-});
-
 test('the shortcut opens it on the courses and what is due', async ({
   page: p,
   setQuickSearch,
@@ -367,7 +362,9 @@ test("it's loaded in the background before it first opens", async ({
 
 test('the shortcut is left to the browser while it is off', async ({
   page: p,
+  setQuickSearch,
 }) => {
+  await setQuickSearch(false);
   await p.goto(`${ORIGIN}/`);
   await p.keyboard.press(SHORTCUT);
   await expect(box(p)).toHaveCount(0);

@@ -11,6 +11,7 @@ import {
   expect,
   type BrowserContext,
   type Page,
+  type Request,
 } from '@playwright/test';
 import { resolve } from 'node:path';
 import { extensionId, launchWithExtension } from './chrome';
@@ -18,11 +19,13 @@ import { extensionId, launchWithExtension } from './chrome';
 // built by `npm run test:browser`, apart from the store build (see wxt.config.ts)
 const EXTENSION = resolve('.output/chrome-mv3-test');
 
-// The one extension API setInPopup calls inside the popup (extension types
-// aren't loaded for tests).
-declare const chrome: {
-  storage: { sync: { get(key: string): Promise<Record<string, unknown>> } };
-};
+// The extension APIs called inside the popup (extension types aren't loaded
+// for tests).
+interface StorageArea {
+  get(key: string): Promise<Record<string, unknown>>;
+  clear(): Promise<void>;
+}
+declare const chrome: { storage: { sync: StorageArea; local: StorageArea } };
 
 const launch = () => launchWithExtension(EXTENSION);
 
@@ -94,7 +97,20 @@ export const test = base.extend<
   isolated: [false, { option: true }],
 
   context: async ({ isolated, sharedContext }, use) => {
-    if (!isolated) return use(await sharedContext());
+    if (!isolated) {
+      const context = await sharedContext();
+      const origins = new Set<string>();
+      const note = (request: Request) => {
+        const { origin, protocol } = new URL(request.url());
+        if (protocol.startsWith('http')) origins.add(origin);
+      };
+      context.on('request', note);
+      await use(context);
+      context.off('request', note);
+      // the next test in this worker starts as if in a new browser
+      await forget(context, origins);
+      return;
+    }
     const context = await launch();
     await use(context);
     await context.close();
@@ -201,6 +217,27 @@ export async function openPopup(context: BrowserContext): Promise<Page> {
   const popup = await context.newPage();
   await popup.goto(`chrome-extension://${extensionId(EXTENSION)}/popup.html`);
   return popup;
+}
+
+// Puts every setting back to its default and clears what the sites at
+// `origins` stored (features keep data in the page's own localStorage).
+async function forget(
+  context: BrowserContext,
+  origins: Set<string>,
+): Promise<void> {
+  const popup = await openPopup(context);
+  await popup.evaluate(() =>
+    Promise.all([chrome.storage.sync.clear(), chrome.storage.local.clear()]),
+  );
+  const cdp = await context.newCDPSession(popup);
+  for (const origin of origins) {
+    await cdp.send('Storage.clearDataForOrigin', {
+      origin,
+      storageTypes: 'all',
+    });
+  }
+  await cdp.detach();
+  await popup.close();
 }
 
 // Flips one of the popup's switches, in its section, and waits until the
