@@ -24,7 +24,8 @@ import {
 // That holds for the stylesheets in the page's head, but Canvas also adds some
 // from script (the calendar's month grid gets its lines from one), and a busy
 // browser can tag an element before such a sheet arrives. So what's tagged
-// while a stylesheet is still loading is tagged again once one loads.
+// while a stylesheet is still loading is tagged again once one loads (or
+// fails: a sheet that never arrives mustn't keep everything waiting on it).
 //
 // Colors that only exist in a state (a row that turns light blue on hover) are
 // invisible at that point, so each element is probed again the first time it's
@@ -69,6 +70,8 @@ let observer: MutationObserver | undefined;
 let queue: Element[] = [];
 // what was tagged while a stylesheet was still loading
 let early: Element[] = [];
+// stylesheet <link>s that failed to load, which never get a sheet
+const failed = new WeakSet<HTMLLinkElement>();
 let brand = '';
 // Canvas's own background for every element tagged so far, to tell a state
 // color from the resting one. Each is tagged once (until forgotten):
@@ -107,8 +110,10 @@ export function startRecolor(): void {
     });
   }
   document.addEventListener('change', recheck, { capture: true });
-  // a <link>'s load doesn't bubble, but it does pass through capture
-  document.addEventListener('load', sheetLoaded, { capture: true });
+  // a <link>'s load and error don't bubble, but they do pass through capture
+  for (const type of ['load', 'error']) {
+    document.addEventListener(type, sheetSettled, { capture: true });
+  }
 }
 
 export function stopRecolor(): void {
@@ -120,13 +125,17 @@ export function stopRecolor(): void {
     document.removeEventListener(type, probeStates, { capture: true });
   }
   document.removeEventListener('change', recheck, { capture: true });
-  document.removeEventListener('load', sheetLoaded, { capture: true });
+  for (const type of ['load', 'error']) {
+    document.removeEventListener(type, sheetSettled, { capture: true });
+  }
 }
 
 // A stylesheet that arrives late can change the colors of anything tagged
 // before it, so all of that is tagged again.
-function sheetLoaded({ target }: Event): void {
-  if (!(target instanceof HTMLLinkElement) || !early.length) return;
+function sheetSettled({ target, type }: Event): void {
+  if (!(target instanceof HTMLLinkElement)) return;
+  if (type === 'error') failed.add(target);
+  if (!early.length) return;
   const roots = early;
   early = [];
   for (const root of roots) {
@@ -134,12 +143,12 @@ function sheetLoaded({ target }: Event): void {
   }
 }
 
-// A stylesheet <link> has no sheet until it has loaded.
+// A stylesheet <link> has no sheet until it has loaded, nor ever if it failed.
 function sheetsLoading(): boolean {
   for (const link of document.querySelectorAll<HTMLLinkElement>(
     'link[rel~="stylesheet"]:not([disabled])',
   )) {
-    if (!link.sheet) return true;
+    if (!link.sheet && !failed.has(link)) return true;
   }
   return false;
 }
