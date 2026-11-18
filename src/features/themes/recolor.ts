@@ -21,6 +21,11 @@ import {
 // flashes light) and after the stylesheets it needs have loaded (so computed
 // colors are Canvas's real ones).
 //
+// That holds for the stylesheets in the page's head, but Canvas also adds some
+// from script (the calendar's month grid gets its lines from one), and a busy
+// browser can tag an element before such a sheet arrives. So what's tagged
+// while a stylesheet is still loading is tagged again once one loads.
+//
 // Colors that only exist in a state (a row that turns light blue on hover) are
 // invisible at that point, so each element is probed again the first time it's
 // hovered or focused, before that frame paints.
@@ -62,6 +67,8 @@ type Background = 'page' | 'elevated' | 'control' | 'highlight';
 
 let observer: MutationObserver | undefined;
 let queue: Element[] = [];
+// what was tagged while a stylesheet was still loading
+let early: Element[] = [];
 let brand = '';
 // Canvas's own background for every element tagged so far, to tell a state
 // color from the resting one. Each is tagged once (until forgotten):
@@ -100,16 +107,41 @@ export function startRecolor(): void {
     });
   }
   document.addEventListener('change', recheck, { capture: true });
+  // a <link>'s load doesn't bubble, but it does pass through capture
+  document.addEventListener('load', sheetLoaded, { capture: true });
 }
 
 export function stopRecolor(): void {
   observer?.disconnect();
   observer = undefined;
   queue = [];
+  early = [];
   for (const type of ['mouseover', 'focusin']) {
     document.removeEventListener(type, probeStates, { capture: true });
   }
   document.removeEventListener('change', recheck, { capture: true });
+  document.removeEventListener('load', sheetLoaded, { capture: true });
+}
+
+// A stylesheet that arrives late can change the colors of anything tagged
+// before it, so all of that is tagged again.
+function sheetLoaded({ target }: Event): void {
+  if (!(target instanceof HTMLLinkElement) || !early.length) return;
+  const roots = early;
+  early = [];
+  for (const root of roots) {
+    if (root.isConnected) retag(root, true);
+  }
+}
+
+// A stylesheet <link> has no sheet until it has loaded.
+function sheetsLoading(): boolean {
+  for (const link of document.querySelectorAll<HTMLLinkElement>(
+    'link[rel~="stylesheet"]:not([disabled])',
+  )) {
+    if (!link.sheet) return true;
+  }
+  return false;
 }
 
 // Canvas draws its own radio buttons and checkboxes beside a hidden input
@@ -170,11 +202,11 @@ function inlineColors(css: string | null): string {
 }
 
 // el is tagged from scratch on the next flush, and so is everything inside it
-// if it's a small component. Big containers change classes all the time that
-// don't recolor their insides (body's "webkit chrome", each module's
+// if `deep` or it's a small component. Big containers change classes all the
+// time that don't recolor their insides (body's "webkit chrome", each module's
 // "completed" while Modules loads), and tagging those again costs a lot.
-function retag(el: Element): void {
-  const inside = isSmallComponent(el) ? [...el.querySelectorAll('*')] : [];
+function retag(el: Element, deep = isSmallComponent(el)): void {
+  const inside = deep ? [...el.querySelectorAll('*')] : [];
   for (const inner of [el, ...inside]) {
     resting.delete(inner);
     probed.mouseover.delete(inner);
@@ -223,6 +255,7 @@ function flush(): void {
       if (!resting.has(el)) elements.add(el);
     }
   }
+  if (elements.size && sheetsLoading()) early.push(...roots);
   // Old tags off (on forgotten elements), then all reads, then all writes:
   // interleaving them would force a style recalculation per element, and every
   // read sees Canvas's original colors. Transitions stay off throughout, or
