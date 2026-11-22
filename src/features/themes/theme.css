@@ -412,6 +412,19 @@
   html[data-cpp-theme] [data-cpp-fill='current'] {
     fill: currentColor !important;
   }
+  /* icon glyphs drawn in a pseudo-element with a grey of their own */
+  html[data-cpp-theme] [data-cpp-pseudo-fg~='before-text']::before {
+    color: var(--cpp-text) !important;
+  }
+  html[data-cpp-theme] [data-cpp-pseudo-fg~='before-muted']::before {
+    color: var(--cpp-muted) !important;
+  }
+  html[data-cpp-theme] [data-cpp-pseudo-fg~='after-text']::after {
+    color: var(--cpp-text) !important;
+  }
+  html[data-cpp-theme] [data-cpp-pseudo-fg~='after-muted']::after {
+    color: var(--cpp-muted) !important;
+  }
   /* fades made to melt into white, rewritten by recolor.ts to melt into the page */
   html[data-cpp-theme] [data-cpp-gradient~='self'] {
     background-image: var(--cpp-self-gradient) !important;

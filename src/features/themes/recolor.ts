@@ -233,6 +233,7 @@ const TAGS = [
   'data-cpp-border',
   'data-cpp-stroke',
   'data-cpp-fill',
+  'data-cpp-pseudo-fg',
   'data-cpp-gradient',
   'data-cpp-emboss',
   'data-cpp-ring',
@@ -315,21 +316,34 @@ function classify(el: Element): Tags {
     }
   }
 
-  // fades made to melt into white, on the element or its ::before/::after
-  const gradients = (
-    [
-      ['self', style],
-      ['before', getComputedStyle(el, '::before')],
-      ['after', getComputedStyle(el, '::after')],
-    ] as const
-  ).flatMap(([layer, layerStyle]) => {
-    const gradient = darkenGradient(
-      layerStyle.backgroundImage,
-      'var(--cpp-surface, var(--cpp-bg))',
-    );
-    if (gradient) vars[`--cpp-${layer}-gradient`] = gradient;
-    return gradient ? [layer] : [];
+  const pseudos = [
+    ['before', getComputedStyle(el, '::before')],
+    ['after', getComputedStyle(el, '::after')],
+  ] as const;
+
+  // icon-font glyphs drawn in ::before/::after (Canvas's
+  // `.standalone-icon::before { color: #555 }`), which the element's fg tag
+  // doesn't reach when they set a grey of their own. Computed styles can't
+  // tell an inherited color from the same grey written again, so each gets
+  // its own role either way. Empty ones (clearfixes) draw nothing.
+  const pseudoFg = pseudos.flatMap(([layer, layerStyle]) => {
+    if (!drawsText(layerStyle.content)) return [];
+    const role = roleOf('fg', layerStyle.color);
+    return role === 'text' || role === 'muted' ? [`${layer}-${role}`] : [];
   });
+  if (pseudoFg.length) attrs['data-cpp-pseudo-fg'] = pseudoFg.join(' ');
+
+  // fades made to melt into white, on the element or its ::before/::after
+  const gradients = ([['self', style], ...pseudos] as const).flatMap(
+    ([layer, layerStyle]) => {
+      const gradient = darkenGradient(
+        layerStyle.backgroundImage,
+        'var(--cpp-surface, var(--cpp-bg))',
+      );
+      if (gradient) vars[`--cpp-${layer}-gradient`] = gradient;
+      return gradient ? [layer] : [];
+    },
+  );
   if (gradients.length) attrs['data-cpp-gradient'] = gradients.join(' ');
 
   const emboss = [
@@ -365,6 +379,14 @@ function background(
   return shadowKind(style.boxShadow) === 'drop' && !el.matches(IN_FLOW)
     ? 'elevated'
     : 'page';
+}
+
+// A pseudo-element's computed content: `none`/`normal` when it has none,
+// otherwise quoted strings (`"\ea0e"`) and possibly other values (counters,
+// url()), all of which draw something unless it's only empty strings.
+function drawsText(content: string): boolean {
+  if (content === 'none' || content === 'normal') return false;
+  return !/^(?:\s*"\s*")+\s*$/.test(content);
 }
 
 function untag(el: Element): void {
