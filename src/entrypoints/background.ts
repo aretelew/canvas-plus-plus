@@ -1,3 +1,4 @@
+import { reloadWhenDevServerReturns } from '@/core/dev-server';
 import {
   startOnOpenTabs,
   syncRegistration,
@@ -6,6 +7,7 @@ import {
 import { startReminders, syncReminders } from '@/features/reminders/background';
 
 export default defineBackground(() => {
+  if (import.meta.env.COMMAND === 'serve') reloadWhenDevServerReturns();
   startReminders();
   // Both browsers drop runtime registrations when the extension updates, and
   // checking on startup costs next to nothing.
