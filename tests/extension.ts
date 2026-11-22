@@ -77,6 +77,7 @@ export const test = base.extend<
     setHideSensus: (on: boolean) => Promise<void>;
     setTimeUntilDue: (on: boolean) => Promise<void>;
     setGradeBreakdown: (on: boolean) => Promise<void>;
+    setQuizAnswers: (on: boolean) => Promise<void>;
     setTidySidebar: (on: boolean) => Promise<void>;
     setCourseNav: (on: boolean) => Promise<void>;
     setQuickSearch: (on: boolean) => Promise<void>;
@@ -171,6 +172,18 @@ export const test = base.extend<
   setGradeBreakdown: async ({ context }, use) => {
     await use((on) =>
       setSwitch(context, 'Courses', 'Grade breakdown', 'gradeBreakdown', on),
+    );
+  },
+
+  setQuizAnswers: async ({ context }, use) => {
+    await use((on) =>
+      setSwitch(
+        context,
+        'Courses',
+        'Mark correct quiz answers',
+        'quizAnswers',
+        on,
+      ),
     );
   },
 

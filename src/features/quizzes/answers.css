@@ -1,0 +1,28 @@
+/* The correct answer of a multiple choice question answered wrong (answers.ts),
+   boxed like Canvas boxes a correct answer that was picked: a green border
+   with a green band holding a check. Canvas's own colors and sizes, so a theme
+   treats it as it treats Canvas's box. `html` outweighs the option row's
+   generated class, which pads its top. */
+html [data-cpp-correct-answer] {
+  display: flex;
+  min-height: 46px;
+  padding: 0;
+  border: 2px solid #03893d;
+  border-radius: 4px;
+}
+html [data-cpp-correct-answer]::before {
+  content: '' / 'Correct answer: ';
+  flex: 0 0 46px;
+  background: #03893d
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1920'%3E%3Cpath fill='%23fff' d='M1827.701 303.065 698.835 1431.801 92.299 825.266 0 917.564 698.835 1616.4 1919.869 395.234z'/%3E%3C/svg%3E")
+    center / 16px no-repeat;
+}
+html [data-cpp-correct-answer] > * {
+  flex: 1;
+  align-self: center;
+  padding: 6px;
+}
+/* the notes under a pick, which its red box or the green one now says */
+html [data-cpp-redundant-note] {
+  display: none;
+}

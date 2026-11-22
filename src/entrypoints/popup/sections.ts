@@ -5,6 +5,7 @@ import { hideFooter } from '@/features/footer/storage';
 import { cardGrades, gradeBreakdown } from '@/features/grades/storage';
 import { hideLogo } from '@/features/logo/storage';
 import { courseNav } from '@/features/nav/storage';
+import { quizAnswers } from '@/features/quizzes/storage';
 import { SHORTCUT } from '@/features/search/shortcut';
 import { quickSearch } from '@/features/search/storage';
 import { hideSensus } from '@/features/sensus/storage';
@@ -91,6 +92,7 @@ export const sections: Section[] = [
     rows: [
       switchRow('Time until due', timeUntilDue),
       switchRow('Grade breakdown', gradeBreakdown),
+      switchRow('Mark correct quiz answers', quizAnswers),
       switchRow('Hide SensusAccess', hideSensus),
     ],
   },

@@ -14,6 +14,8 @@ import { hideLogo } from '@/features/logo/storage';
 import '@/features/sensus/sensus.css';
 import { syncCourseNav } from '@/features/nav/page';
 import '@/features/nav/nav.css';
+import { syncQuizAnswers } from '@/features/quizzes/page';
+import '@/features/quizzes/answers.css';
 import { syncSearch } from '@/features/search/page';
 import { hideSensus } from '@/features/sensus/storage';
 import { syncSidebar } from '@/features/sidebar/page';
@@ -49,5 +51,6 @@ export default defineContentScript({
     void syncSidebar();
     void syncCourseNav();
     void syncSearch();
+    void syncQuizAnswers();
   },
 });
