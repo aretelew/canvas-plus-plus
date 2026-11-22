@@ -1,10 +1,12 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useId, useState } from 'react';
+import { browser } from '#imports';
 import { focus } from './focus';
-import { Chevron, Gear } from './icons';
+import { Chevron, Gear, Info } from './icons';
 import { PageLink } from './PageLink';
 import {
   type Item,
   pages,
+  type PermissionRow,
   type Section,
   sections,
   type SwitchRow,
@@ -93,6 +95,8 @@ function App() {
                     push(row);
                   }}
                 />
+              ) : 'permission' in row ? (
+                <PermissionSwitch key={row.label} {...row} />
               ) : (
                 <Switch key={row.label} {...row} />
               ),
@@ -159,23 +163,117 @@ function useSetting<T>(setting: Item<T>): T | undefined {
 
 function Switch<T>({ label, setting, on, off }: SwitchRow<T>) {
   const value = useSetting(setting);
-  const loading = value === undefined;
+  return (
+    <Toggle
+      label={label}
+      checked={value === undefined ? undefined : value === on}
+      onChange={(checked) => void setting.setValue(checked ? on : off)}
+    />
+  );
+}
+
+function PermissionSwitch({ label, permission, hint }: PermissionRow) {
+  const [granted, setGranted] = useState<boolean>();
+
+  useEffect(() => {
+    const load = () =>
+      void browser.permissions
+        .contains({ permissions: [permission] })
+        .then(setGranted);
+    load();
+    browser.permissions.onAdded.addListener(load);
+    browser.permissions.onRemoved.addListener(load);
+    return () => {
+      browser.permissions.onAdded.removeListener(load);
+      browser.permissions.onRemoved.removeListener(load);
+    };
+  }, [permission]);
 
   return (
-    <label className="flex cursor-pointer items-center justify-between gap-4 px-4 py-2.5 text-sm hover:bg-base-200">
-      {label}
-      {/* hidden until storage answers, then swapped for a fresh input: flipping
+    <Toggle
+      label={label}
+      hint={hint}
+      checked={granted}
+      onChange={(checked, input) => {
+        // first thing in the change: browsers only ask from a user action.
+        // Firefox may close the popup for its prompt.
+        const changed = checked
+          ? browser.permissions.request({ permissions: [permission] })
+          : browser.permissions.remove({ permissions: [permission] });
+        void changed.then((done) => {
+          // refused: the switch goes back, which a state that didn't change
+          // wouldn't do
+          if (!done) input.checked = !checked;
+        });
+      }}
+    />
+  );
+}
+
+// A switch's row; `checked` is undefined until it's known. A `hint` shows
+// under the row, the popup's width, while its info button is hovered or
+// focused, over the rows below, so it takes no room of its own. The label
+// names its switch outright: it would otherwise label the first control in
+// it, the info button, which hovering or clicking anywhere in the row would
+// then reach.
+function Toggle({
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  checked: boolean | undefined;
+  onChange: (checked: boolean, input: HTMLInputElement) => void;
+}) {
+  const loading = checked === undefined;
+  const hintId = useId();
+  const inputId = useId();
+  return (
+    <label
+      htmlFor={inputId}
+      className="relative flex cursor-pointer items-center justify-between gap-4 px-4 py-2.5 text-sm hover:bg-base-200"
+    >
+      <span className="flex min-w-0 items-center gap-1.5">
+        {label}
+        {hint && (
+          <>
+            <button
+              type="button"
+              className="peer -m-1 cursor-help p-1 text-base-content/50 hover:text-base-content focus-visible:text-base-content"
+              aria-label={`About ${label}`}
+              aria-describedby={hintId}
+            >
+              <Info />
+            </button>
+            <span
+              id={hintId}
+              role="tooltip"
+              className="pointer-events-none invisible absolute inset-x-0 top-full z-10 border-b border-base-300 bg-neutral px-4 py-2.5 text-neutral-content shadow-lg peer-hover:visible peer-focus-visible:visible"
+            >
+              {hint}
+            </span>
+          </>
+        )}
+      </span>
+      {/* hidden until it's known, then swapped for a fresh input: flipping
           this one would play the toggle's slide every time the popup opens */}
       <input
         key={loading ? 'loading' : 'loaded'}
+        id={inputId}
         type="checkbox"
         role="switch"
+        // named by the label alone, not its info button too; the hint
+        // describes it
+        aria-label={label}
+        aria-describedby={hint ? hintId : undefined}
         className={`toggle toggle-primary toggle-sm ${loading ? 'invisible' : ''}`}
-        checked={value === on}
+        checked={checked === true}
         disabled={loading}
-        onChange={(e) =>
-          void setting.setValue(e.currentTarget.checked ? on : off)
-        }
+        onChange={(e) => {
+          onChange(e.currentTarget.checked, e.currentTarget);
+        }}
       />
     </label>
   );

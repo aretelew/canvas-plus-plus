@@ -117,9 +117,12 @@ const loadItems = () => (fetched ??= fetchItems());
  * the next page load.
  */
 export function loadWorks(): Promise<Work[] | undefined> {
-  return (works ??= loadItems().then((items) =>
-    items?.map(toWork).filter((work) => work !== undefined),
-  ));
+  return (works ??= loadItems().then((items) => items && worksOf(items)));
+}
+
+/** The items that are work, as work. */
+export function worksOf(items: PlannerItem[]): Work[] {
+  return items.map(toWork).filter((work) => work !== undefined);
 }
 
 /**
@@ -147,23 +150,41 @@ export async function loadUnreadAnnouncements(
   return unreadAnnouncements((await loadItems()) ?? [], courseId);
 }
 
-async function fetchItems(): Promise<PlannerItem[] | undefined> {
+function fetchItems(): Promise<PlannerItem[] | undefined> {
   const now = Date.now();
+  return fetchPlannerItems(
+    location.origin,
+    new Date(now - WINDOW_DAYS * DAY),
+    new Date(now + WINDOW_DAYS * DAY),
+  );
+}
+
+/**
+ * The planner items from `start` to `end` on the Canvas site at `origin`,
+ * every page of them, each asked for with `get`; undefined on a failed
+ * request.
+ */
+export async function fetchPlannerItems(
+  origin: string,
+  start: Date,
+  end: Date,
+  get: (url: string) => Promise<Response> = canvasFetch,
+): Promise<PlannerItem[] | undefined> {
   const query = new URLSearchParams({
-    start_date: new Date(now - WINDOW_DAYS * DAY).toISOString(),
-    end_date: new Date(now + WINDOW_DAYS * DAY).toISOString(),
+    start_date: start.toISOString(),
+    end_date: end.toISOString(),
     per_page: '100',
   });
   const items: PlannerItem[] = [];
   try {
     // four weeks fits one page for nearly everyone; Canvas says where the
     // next one is in the Link header
-    let next: string | undefined = `/api/v1/planner/items?${query}`;
+    let next: string | undefined = `${origin}/api/v1/planner/items?${query}`;
     while (next) {
-      const response = await canvasFetch(next);
+      const response = await get(next);
       if (!response.ok) return undefined;
       items.push(...((await response.json()) as PlannerItem[]));
-      next = nextPage(response.headers.get('Link'));
+      next = nextPage(response.headers.get('Link'), origin);
     }
   } catch {
     return undefined;

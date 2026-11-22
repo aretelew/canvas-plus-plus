@@ -34,8 +34,12 @@ export default defineConfig({
     name: 'canvas++: Themes & Tools for Canvas',
     short_name: 'canvas++',
     // scripting + activeTab: check whether the open tab is Canvas, and run the
-    // theme on schools' own domains once the user grants one (optional hosts)
-    permissions: ['storage', 'scripting', 'activeTab'],
+    // theme on schools' own domains once the user grants one (optional hosts).
+    // alarms: when to remind of work that's due, with notifications, asked for
+    // when reminders are turned on (a required one with a warning would turn
+    // the extension off on update until the user accepts it)
+    permissions: ['storage', 'scripting', 'activeTab', 'alarms'],
+    optional_permissions: ['notifications'],
     optional_host_permissions: ['https://*/*'],
     ...(browser === 'firefox' && {
       browser_specific_settings: {

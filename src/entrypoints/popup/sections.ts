@@ -6,6 +6,7 @@ import { cardGrades, gradeBreakdown } from '@/features/grades/storage';
 import { hideLogo } from '@/features/logo/storage';
 import { courseNav } from '@/features/nav/storage';
 import { quizAnswers } from '@/features/quizzes/storage';
+import { PERMISSION } from '@/features/reminders/storage';
 import { SHORTCUT } from '@/features/search/shortcut';
 import { quickSearch } from '@/features/search/storage';
 import { hideSensus } from '@/features/sensus/storage';
@@ -24,8 +25,17 @@ export type SwitchRow<T> = {
   off: T;
 };
 
+// A switch for something the browser grants, on while it's granted: switching
+// it on asks the user for it, and off gives it back. The hint shows from an
+// info button after its label.
+export type PermissionRow = {
+  label: string;
+  permission: 'notifications';
+  hint?: string;
+};
+
 // A section in a row opens from there, as a page of its own.
-export type Row = SwitchRow<boolean | string> | Section;
+export type Row = SwitchRow<boolean | string> | PermissionRow | Section;
 export type Section = { title: string; rows: Row[] };
 
 const switchRow = (
@@ -91,6 +101,13 @@ export const sections: Section[] = [
     title: 'Courses',
     rows: [
       switchRow('Time until due', timeUntilDue),
+      {
+        label: 'Due date reminders',
+        permission: PERMISSION,
+        // the browser can be allowed them while the system only files them
+        // away, which nothing here can see
+        hint: "If none appear, allow your browser's notifications in system settings.",
+      },
       switchRow('Grade breakdown', gradeBreakdown),
       switchRow('Mark correct quiz answers', quizAnswers),
       switchRow('Hide SensusAccess', hideSensus),
@@ -106,11 +123,14 @@ const withOpened = (section: Section): Section[] => [
 // Every section, the ones that open from another section included.
 export const pages = sections.flatMap(withOpened);
 
+const rows = pages.flatMap((page) => page.rows);
+
 // Every setting there is: a feature with no row here has nothing to set.
 export const settings = [
-  ...new Set(
-    pages.flatMap((page) =>
-      page.rows.flatMap((row) => ('rows' in row ? [] : [row.setting])),
-    ),
-  ),
+  ...new Set(rows.flatMap((row) => ('setting' in row ? [row.setting] : []))),
 ];
+
+// The permissions switches turn on, which go back with the settings.
+export const switchedPermissions = rows.flatMap((row) =>
+  'permission' in row ? [row.permission] : [],
+);

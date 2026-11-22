@@ -3,7 +3,7 @@ import { browser, storage } from '#imports';
 import { customDomains } from '@/features/domains/domains';
 import { External } from './icons';
 import { PageLink } from './PageLink';
-import { settings } from './sections';
+import { settings, switchedPermissions } from './sections';
 
 const REPO = 'https://github.com/aretelew/canvas-plus-plus';
 
@@ -79,9 +79,9 @@ export function Sites() {
   );
 }
 
-// Puts every setting back to its default. The schools' domains are
-// permissions, not settings, so they stay. It takes a second click, so a stray
-// one doesn't undo every choice.
+// Puts every setting back to its default, and turns off what a switch asked
+// the browser for. The schools' domains aren't switches, so they stay. It
+// takes a second click, so a stray one doesn't undo every choice.
 function Reset() {
   const [step, setStep] = useState<'idle' | 'confirming' | 'done'>('idle');
 
@@ -104,7 +104,10 @@ function Reset() {
       warning={step === 'confirming'}
       onAction={() => {
         if (step === 'confirming') {
-          void storage.removeItems(settings).then(() => {
+          void Promise.all([
+            storage.removeItems(settings),
+            browser.permissions.remove({ permissions: switchedPermissions }),
+          ]).then(() => {
             setStep('done');
           });
         } else {

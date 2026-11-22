@@ -1,6 +1,10 @@
 // Requests to Canvas's REST API from a content script, made the way Canvas's
 // own scripts make them, with the user's session.
 
+// ids as strings (some are past what a JS number holds exactly), and
+// application/json, without which Canvas puts `while(1);` in front
+export const ACCEPT = 'application/json+canvas-string-ids, application/json';
+
 interface Request {
   method?: 'GET' | 'POST' | 'PUT';
   // sent as the JSON body
@@ -18,9 +22,7 @@ export function canvasFetch(
   return fetch(new URL(path, location.origin), {
     method,
     headers: {
-      // ids as strings (some are past what a JS number holds exactly), and
-      // application/json, without which Canvas puts `while(1);` in front
-      Accept: 'application/json+canvas-string-ids, application/json',
+      Accept: ACCEPT,
       // Canvas checks writes made with the session cookie against this
       // cookie's value, sent back as a header
       ...(method !== 'GET' && { 'X-CSRF-Token': csrfToken() }),
@@ -43,11 +45,14 @@ export async function canvasJson<T>(
   }
 }
 
-/** The next page of a list, from a response's Link header. */
-export function nextPage(link: string | null): string | undefined {
+/** The next page of a list on the Canvas site at `origin`, from a Link header. */
+export function nextPage(
+  link: string | null,
+  origin = location.origin,
+): string | undefined {
   const url = /<([^>]+)>;\s*rel="next"/.exec(link ?? '')?.[1];
   // only ever Canvas's own pages
-  return url && new URL(url).origin === location.origin ? url : undefined;
+  return url && new URL(url).origin === origin ? url : undefined;
 }
 
 function csrfToken(): string {

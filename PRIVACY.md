@@ -7,7 +7,7 @@ canvas++ is a browser extension that restyles Canvas LMS and adds a few features
 On a Canvas site, canvas++ reads the page to restyle it, and, when you turn the matching features on, uses Canvas's own API with your existing Canvas session to get:
 
 - your courses and their current scores, to show each course's grade on its dashboard card;
-- your planner items (assignments, quizzes, discussions and the like that are due), to list them on each course's dashboard card.
+- your planner items (assignments, quizzes, discussions and the like that are due), to list them on each course's dashboard card, and with due date reminders on, to remind you of them;
 - your starred courses, your groups and your recent page history in Canvas, to list them in the left sidebar.
 
 These are shown on the page. They're fetched again on each page load and not stored, except the left sidebar's list (see below).
@@ -24,14 +24,15 @@ If you check off an item in a dashboard card's list, canvas++ marks it as done i
 - On each Canvas site where the theme is on, one value in that site's local storage, so the theme can apply before the page first paints.
 - With the left sidebar on, your name, your courses, groups and how much is due in each, and the names of your last few pages, noted as you open them, in that site's local storage, so the sidebar can show before the page first paints. It stays in your browser, is refreshed after 10 minutes, and is removed when you turn the sidebar off.
 - With the search on, your name, what it lists (your courses, their pages, assignments and module items, the text of those assignments' descriptions and of the pages in their modules, the titles, dates and text of their latest announcements and discussions, your groups and work due), and the addresses of the last 50 Canvas pages you opened, in that site's local storage, so the search opens at once and can list what you opened last. It stays in your browser. The list is refreshed after 10 minutes, a page's text only when the page has been edited, and all of it is removed when you turn the search off.
+- With due date reminders on, the work you have due on each Canvas site you open (its title, course, due date and address) and which reminders you've been shown, in the extension's own storage on this device, so it can remind you when Canvas isn't open. It's refreshed when you open Canvas and just before each reminder, and all of it is removed when you turn reminders off. The reminders are your browser's own notifications.
 - The Canvas sites you've turned canvas++ on for, as the browser's own site permissions, which you can remove from the canvas++ settings (the gear in its popup) or the browser's extension settings.
 
 ## Where data goes
 
-canvas++ only makes requests to the Canvas site you're on. It has no analytics, ads or tracking, loads no remote code, and doesn't sell or share any data.
+canvas++ only makes requests to your Canvas sites: the one you're on, and, with due date reminders on, the ones it reminds you of, just before a reminder, to check the work isn't already done. It has no analytics, ads or tracking, loads no remote code, and doesn't sell or share any data.
 
 ## Contact
 
 Questions or concerns: open an issue at https://github.com/aretelew/canvas-plus-plus/issues.
 
-Last updated November 3, 2026.
+Last updated November 19, 2026.

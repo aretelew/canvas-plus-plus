@@ -21,6 +21,7 @@ canvas++ restyles Canvas and adds a few things it's missing, with more on the wa
 • Grades on cards: each dashboard card shows your current grade in that course.
 • Assignments on cards: each card lists what's due. Check something off there and Canvas marks it done in your To Do list too.
 • Courses in the left sidebar: your courses and groups one click away, with what's due in each and the pages you opened last.
+• Due date reminders: a notification a day before and an hour before something's due, unless you've already handed it in.
 • Search: press ⌘K on a Mac, or Ctrl+K elsewhere, on any Canvas page to find a course, assignment, module page or announcement. It also searches what they say, and work that's late or due soon is marked in red.
 
 It works right away on any Canvas at *.instructure.com. If your school uses its own address, like canvas.yourschool.edu, open Canvas, click the canvas++ button and choose Enable.
@@ -37,7 +38,7 @@ canvas++ is an independent project and isn't affiliated with or endorsed by Inst
 **Single purpose:**
 
 ```
-canvas++ restyles the Canvas website and adds features to it. It applies themes to Canvas pages, adds each course's grade and assignments to the dashboard, lists the user's courses in the left sidebar, and adds a search box for the user's courses, assignments and announcements.
+canvas++ restyles the Canvas website and adds features to it. It applies themes to Canvas pages, adds each course's grade and assignments to the dashboard, lists the user's courses in the left sidebar, adds a search box for the user's courses, assignments and announcements, and can remind the user of work that's due.
 ```
 
 **Permission justifications:**
@@ -58,6 +59,18 @@ Registers the content script on a school's own Canvas address after the user tur
 
 ```
 When the user opens the popup, checks whether the current tab is a Canvas page, so the popup can offer to turn canvas++ on for that site.
+```
+
+`alarms`
+
+```
+Wakes the extension when a due date reminder the user turned on is due, so it can show it while Canvas isn't open.
+```
+
+`notifications` (optional)
+
+```
+Shows due date reminders as notifications. Requested only when the user turns reminders on in the popup, and given back when they turn them off.
 ```
 
 Host permissions (content script on `https://*.instructure.com/*`, optional `https://*/*`)
