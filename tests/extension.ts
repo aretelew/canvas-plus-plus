@@ -226,7 +226,6 @@ export const test = base.extend<
         /^Search with/,
         'quickSearch',
         on,
-        true,
       ),
     );
   },
@@ -261,18 +260,26 @@ async function forget(
 }
 
 // Flips one of the popup's switches, in its section, and waits until the
-// setting is saved. `fallback` is the switch's default, which an unset setting
-// stands for.
+// setting is saved.
 function setSwitch(
   context: BrowserContext,
   section: string,
   name: string | RegExp,
   key: string,
   on: boolean,
-  fallback = false,
 ): Promise<void> {
-  return setInPopup(context, [section], key, on, fallback, (popup) =>
-    popup.getByRole('switch', { name }).setChecked(on),
+  const toggle = (popup: Page) => popup.getByRole('switch', { name });
+  return setInPopup(
+    context,
+    [section],
+    key,
+    on,
+    // disabled until the setting has loaded
+    async (popup) => {
+      await expect(toggle(popup)).toBeEnabled();
+      return toggle(popup).isChecked();
+    },
+    (popup) => toggle(popup).setChecked(on),
   );
 }
 
@@ -287,7 +294,7 @@ function setTheme(context: BrowserContext, theme: ThemeValue): Promise<void> {
     ['Appearance', 'Themes'],
     'theme',
     theme,
-    'off',
+    () => Promise.resolve('off'),
     async (popup) => {
       if (theme !== 'off') {
         if (!(theme in THEME_PAGE)) await openDarkMode(popup);
@@ -306,20 +313,22 @@ function setTheme(context: BrowserContext, theme: ThemeValue): Promise<void> {
 }
 
 // Opens the popup through `path`'s sections, changes a setting on the last, and
-// waits until it's stored as `value`; `unset` is what it reads as while nothing
-// is stored, as before it's first changed.
+// waits until it reads as `value`. `shown` is what the popup shows for it
+// before the change, which is what it reads as while nothing is stored: its
+// default, without the test repeating it.
 async function setInPopup<T extends string | boolean>(
   context: BrowserContext,
   path: string[],
   key: string,
   value: T,
-  unset: T,
+  shown: (popup: Page) => Promise<T>,
   change: (popup: Page) => Promise<void>,
 ): Promise<void> {
   const popup = await openPopup(context);
   for (const section of path) {
     await popup.getByRole('button', { name: section }).click();
   }
+  const unset = await shown(popup);
   await change(popup);
   // the control changes at once but the setting is saved asynchronously;
   // closing the popup first could lose it to the next test

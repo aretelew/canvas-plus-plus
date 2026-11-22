@@ -28,7 +28,8 @@ export const courseScales = storage.defineItem<Record<string, Cutoff[]>>(
   { fallback: {} },
 );
 
+// On from the start: it only takes away room nothing in the table uses.
 export const tidyGradesTable = storage.defineItem<boolean>(
   'sync:tidyGradesTable',
-  { fallback: false },
+  { fallback: true },
 );

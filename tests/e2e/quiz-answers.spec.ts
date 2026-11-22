@@ -65,9 +65,7 @@ test('boxes the correct answer and hides the notes', async ({
   const right = frame.locator('.right');
   const note = frame.locator('.note');
   const verdict = frame.locator('.verdict');
-  await expect(right).not.toHaveCSS('border-top-color', GREEN);
-
-  await setQuizAnswers(true);
+  // on from the start
   await expect(right).toHaveCSS('border-top-color', GREEN);
   await expect(note).toBeHidden();
   await expect(verdict).toBeHidden();
@@ -76,6 +74,10 @@ test('boxes the correct answer and hides the notes', async ({
   await expect(right).not.toHaveCSS('border-top-color', GREEN);
   await expect(note).toBeVisible();
   await expect(verdict).toBeVisible();
+
+  await setQuizAnswers(true);
+  await expect(right).toHaveCSS('border-top-color', GREEN);
+  await expect(note).toBeHidden();
 });
 
 test('boxes answers drawn after the page loads', async ({
