@@ -2,7 +2,11 @@ import type { WxtStorageItem } from '#imports';
 import { cardAssignments } from '@/features/assignments/storage';
 import { timeUntilDue } from '@/features/due/storage';
 import { hideFooter } from '@/features/footer/storage';
-import { cardGrades, gradeBreakdown } from '@/features/grades/storage';
+import {
+  cardGrades,
+  gradeBreakdown,
+  tidyGradesTable,
+} from '@/features/grades/storage';
 import { hideLogo } from '@/features/logo/storage';
 import { courseNav } from '@/features/nav/storage';
 import { quizAnswers } from '@/features/quizzes/storage';
@@ -109,6 +113,7 @@ export const sections: Section[] = [
         hint: "If none appear, allow your browser's notifications in system settings.",
       },
       switchRow('Grade breakdown', gradeBreakdown),
+      switchRow('Tidy grades table', tidyGradesTable),
       switchRow('Mark correct quiz answers', quizAnswers),
       switchRow('Hide SensusAccess', hideSensus),
     ],

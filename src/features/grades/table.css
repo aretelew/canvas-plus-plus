@@ -1,0 +1,36 @@
+/* The Grades page's table keeps room for what no row shows, and the columns
+   with text pay for it: a course without rubrics or comments still gives every
+   row four hidden buttons' width (Canvas hides an unused one with an inline
+   `visibility: hidden`, which keeps its space), and empty Status, plagiarism
+   check ("asset processors") and submission progress columns, so Name, Due
+   and Submitted wrap onto three lines. Each of those goes only while no row
+   uses it, so buttons still line up from row to row; :has() follows Canvas as
+   it changes the table (What-If scores, a comment read). */
+html[data-cpp-tidy-grades] #grades_summary {
+  /* a button no row shows */
+  &:not(:has(td.details > a.toggle_final_grade_info:not([style*='hidden'])))
+    a.toggle_final_grade_info,
+  &:not(:has(td.details > a.toggle_score_details_link:not([style*='hidden'])))
+    a.toggle_score_details_link,
+  &:not(
+      :has(td.details > a.toggle_rubric_assessments_link:not([style*='hidden']))
+    )
+    a.toggle_rubric_assessments_link,
+  &:not(:has(td.details > a.toggle_comments_link:not([style*='hidden'])))
+    a.toggle_comments_link,
+  /* Columns no row fills, header included. A row's cells are its own (the
+     comment and rubric rows under each assignment span the table instead),
+     and the last two are the buttons and the submission progress. */
+  &:not(:has(tr.student_assignment > td.status *))
+    :is(th.status, td.status),
+  &:not(:has(tr.student_assignment > td.asset_processors_cell:not(:empty)))
+    :is(#asset_processors_header, td.asset_processors_cell),
+  &:not(:has(td.details > a:not([style*='hidden'])))
+    :is(thead tr, tr.student_assignment)
+    > :nth-last-child(2),
+  &:not(:has(tr.student_assignment > td:last-child:not(:empty)))
+    :is(thead tr, tr.student_assignment)
+    > :last-child {
+    display: none;
+  }
+}

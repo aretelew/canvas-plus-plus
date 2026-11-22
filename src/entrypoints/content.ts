@@ -9,6 +9,8 @@ import { syncCardGrades } from '@/features/grades/cards';
 import '@/features/grades/grades.css';
 import { syncGradeBreakdown } from '@/features/grades/sidebar';
 import '@/features/grades/sidebar.css';
+import { tidyGradesTable } from '@/features/grades/storage';
+import '@/features/grades/table.css';
 import '@/features/logo/logo.css';
 import { hideLogo } from '@/features/logo/storage';
 import '@/features/sensus/sensus.css';
@@ -45,6 +47,7 @@ export default defineContentScript({
     void syncPageFlag(hideLogo, 'hide-logo');
     void syncPageFlag(hideFooter, 'hide-footer');
     void syncPageFlag(hideSensus, 'hide-sensus');
+    void syncPageFlag(tidyGradesTable, 'tidy-grades');
     void syncCardGrades();
     void syncCardAssignments();
     void syncTimeUntilDue();
