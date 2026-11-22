@@ -126,6 +126,77 @@
   color: var(--cpp-muted, #474747);
 }
 
+/* a group's grade that can be predicted: a button that reads as its text
+   until it's hovered, and the field it turns into. A predicted grade and
+   its bar are in the link color, the bar faint, so it reads as not real. */
+#right-side .cpp-grades button.cpp-grades-value {
+  margin: 0 -4px 0 0;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: text;
+}
+#right-side .cpp-grades button.cpp-grades-value:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+#right-side .cpp-grades .cpp-ungraded button.cpp-grades-value {
+  font-weight: 400;
+}
+#right-side .cpp-grades input.cpp-grades-input {
+  box-sizing: border-box;
+  width: 5.5em;
+  height: auto;
+  margin: -2px -4px -2px 0;
+  padding: 1px 4px;
+  border: 1px solid var(--ic-link-color, #0374b5);
+  border-radius: 4px;
+  background: var(--cpp-elevated, #fff);
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-align: end;
+  box-shadow: none;
+}
+#right-side .cpp-grades .cpp-predicted .cpp-grades-value {
+  color: var(--ic-link-color, #0374b5);
+}
+#right-side .cpp-grades .cpp-predicted .cpp-grades-bar > span {
+  opacity: 0.5;
+}
+
+/* what the last ungraded group needs for each letter, as equal tiles in a
+   row: "A needs" over the percent */
+#right-side .cpp-grades .cpp-grades-needs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+#right-side .cpp-grades .cpp-grades-needs-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, currentColor 7%, transparent);
+}
+#right-side .cpp-grades .cpp-grades-for {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1rem;
+  color: var(--ic-link-color, #0374b5);
+}
+#right-side .cpp-grades .cpp-grades-need {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
 /* the ⋯ menu of Canvas's controls, opening under its button */
 #right-side .cpp-grades .cpp-grades-more {
   display: grid;
@@ -198,4 +269,199 @@
   font-size: 0.75rem;
   line-height: 1rem;
   color: var(--cpp-muted, #474747);
+}
+
+/* the school scale's form (scale-editor.ts), under the head: a card for
+   each preset with its cutoffs written out, the chosen one outlined in the
+   link color; the cutoffs to edit behind a link, one letter a row */
+#right-side .cpp-grades .cpp-grades-scale {
+  margin: 8px 0 12px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--cpp-border, #c7cdd1);
+  border-radius: 8px;
+}
+#right-side .cpp-grades .cpp-grades-scale-title {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+  color: inherit;
+}
+/* what the scale is for, this course or all of them, as a segmented switch */
+#right-side .cpp-grades .cpp-grades-scale-scopes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  margin: 8px 0 6px;
+  padding: 2px;
+  border-radius: 6px;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+#right-side .cpp-grades .cpp-grades-scale-scopes button {
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  color: var(--cpp-muted, #474747);
+  cursor: pointer;
+}
+#right-side .cpp-grades .cpp-grades-scale-scopes button[aria-pressed='true'] {
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  color: inherit;
+  font-weight: 700;
+}
+#right-side .cpp-grades .cpp-grades-scale-scopes button:focus-visible {
+  outline: 2px solid var(--ic-link-color, #0374b5);
+  outline-offset: 1px;
+}
+/* each scope's note in one cell, as tall as the longer, the other unseen */
+#right-side .cpp-grades .cpp-grades-scale-about {
+  display: grid;
+}
+#right-side .cpp-grades .cpp-grades-scale-panel {
+  grid-area: 1 / 1;
+}
+#right-side .cpp-grades .cpp-grades-scale-off {
+  visibility: hidden;
+}
+#right-side .cpp-grades .cpp-grades-scale-cards {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+#right-side .cpp-grades .cpp-grades-scale-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--cpp-border, #c7cdd1);
+  border-radius: 8px;
+  font-weight: 400;
+  cursor: pointer;
+}
+#right-side .cpp-grades .cpp-grades-scale-card:hover {
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+#right-side .cpp-grades .cpp-grades-scale-card:has(input:checked) {
+  border-color: var(--ic-link-color, #0374b5);
+}
+#right-side .cpp-grades .cpp-grades-scale-card:has(input:focus-visible) {
+  outline: 2px solid var(--ic-link-color, #0374b5);
+  outline-offset: 1px;
+}
+/* the radio is there for the keyboard and screen readers; a check in the
+   corner shows which is chosen */
+#right-side .cpp-grades .cpp-grades-scale-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+#right-side .cpp-grades .cpp-grades-scale-card:has(input:checked)::after {
+  content: '';
+  grid-column: 2;
+  grid-row: 1;
+  width: 10px;
+  height: 5px;
+  margin: 5px 1px 0 8px;
+  border: solid var(--ic-link-color, #0374b5);
+  border-width: 0 0 2px 2px;
+  transform: rotate(-45deg);
+}
+#right-side .cpp-grades .cpp-grades-scale-name {
+  grid-column: 1;
+  font-weight: 700;
+}
+#right-side .cpp-grades .cpp-grades-scale-summary {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--cpp-muted, #474747);
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#right-side .cpp-grades .cpp-grades-scale-fields {
+  margin-top: 8px;
+}
+#right-side .cpp-grades .cpp-grades-scale-fields[hidden] {
+  display: none;
+}
+#right-side .cpp-grades .cpp-grades-scale-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 3px 0;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+#right-side .cpp-grades .cpp-grades-scale-row:last-child {
+  border-bottom: 0;
+}
+#right-side .cpp-grades .cpp-grades-scale-letter {
+  flex: none;
+  width: 2em;
+  font-weight: 700;
+}
+#right-side .cpp-grades .cpp-grades-scale-row input {
+  box-sizing: border-box;
+  width: 3.5em;
+  height: auto;
+  margin: 0;
+  padding: 1px 4px;
+  border: 1px solid var(--cpp-border, #c7cdd1);
+  border-radius: 4px;
+  background: var(--cpp-elevated, #fff);
+  color: inherit;
+  font: inherit;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  box-shadow: none;
+}
+#right-side .cpp-grades .cpp-grades-scale-unit,
+#right-side .cpp-grades .cpp-grades-scale-rest {
+  color: var(--cpp-muted, #474747);
+}
+#right-side .cpp-grades .cpp-grades-scale-error {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--ic-brand-danger, #e0061f);
+}
+#right-side .cpp-grades .cpp-grades-scale-error[hidden] {
+  display: none;
+}
+#right-side .cpp-grades .cpp-grades-scale-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 0.75rem;
+}
+#right-side .cpp-grades .cpp-grades-scale-end {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+#right-side .cpp-grades .cpp-grades-scale-save {
+  padding: 3px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: var(
+    --ic-brand-button--primary-bgd,
+    var(--ic-link-color, #0374b5)
+  );
+  color: var(--ic-brand-button--primary-text, #fff);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }

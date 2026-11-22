@@ -13,6 +13,8 @@ export interface ControlsMenu {
   element: HTMLElement;
   /** brings the items in line with Canvas's controls, as its scripts change them */
   sync(): void;
+  /** an item of ours, before Canvas's, that closes the menu and runs */
+  addItem(label: string, run: () => void): void;
 }
 
 /** `changed` runs after an item clicks one of Canvas's controls. */
@@ -119,21 +121,30 @@ export function controlsMenu(
 
   // in the place of Canvas's paragraph about What-If scores, which is there
   // only when the grades can take one
-  if (sidebar.querySelector('#whatif-score-description')) {
-    panel.append(
-      el(
+  const tip = sidebar.querySelector('#whatif-score-description')
+    ? el(
         'p',
         'cpp-grades-tip',
-        'Click a score in the table to try a What-If grade.',
-      ),
-    );
-  }
+        'Click a score in the table to try a What-If grade, or a group’s grade here to predict it.',
+      )
+    : undefined;
+  if (tip) panel.append(tip);
 
   element.hidden = !panel.childElementCount;
   return {
     element,
     sync: () => {
       for (const sync of syncs) sync();
+    },
+    addItem: (label, run) => {
+      const item = el('button', 'cpp-grades-item', label);
+      item.type = 'button';
+      item.addEventListener('click', () => {
+        setOpen(false);
+        run();
+      });
+      panel.prepend(item);
+      element.hidden = false;
     },
   };
 }

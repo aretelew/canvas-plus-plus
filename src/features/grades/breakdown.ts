@@ -13,6 +13,8 @@ export interface Group {
   percent?: number;
   /** points earned of points possible ("29 / 32"), when there are any */
   points?: string;
+  /** the points possible in it, when there are any */
+  possible?: number;
   /** its weight in percent, in a weighted course */
   weight?: number;
 }
@@ -42,10 +44,18 @@ export function parsePercent(text: string): number | undefined {
 
 /** Canvas's "29.00 / 32.00" as "29 / 32"; undefined when nothing's possible. */
 export function tidyPoints(text: string): string | undefined {
-  const points = text.trim().replace(/\s+/g, ' ');
-  const possible = /\/\s*(\S+)$/.exec(points)?.[1];
-  if (!possible || Number(possible.replace(',', '.')) === 0) return undefined;
-  return points.replace(/[.,]0+(?!\d)/g, '');
+  if (!possibleOf(text)) return undefined;
+  return text
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/[.,]0+(?!\d)/g, '');
+}
+
+/** The 32 of Canvas's "29.00 / 32.00"; undefined when nothing's possible. */
+export function possibleOf(text: string): number | undefined {
+  const possible = /\/\s*(\d+(?:[.,]\d+)?)\s*$/.exec(text)?.[1];
+  const number = Number(possible?.replace(',', '.'));
+  return number > 0 ? number : undefined;
 }
 
 /**
@@ -59,14 +69,14 @@ export function readGroups(
 ): Group[] {
   return [...table.querySelectorAll('tr.group_total')].map((row) => {
     const name = textOf(row.querySelector('.title'));
+    const points = textOf(row.querySelector('.details .points_possible'));
     return {
       name,
       percent: parsePercent(
         textOf(row.querySelector('.assignment_score .grade')),
       ),
-      points: tidyPoints(
-        textOf(row.querySelector('.details .points_possible')),
-      ),
+      points: tidyPoints(points),
+      possible: possibleOf(points),
       weight: weights.get(name),
     };
   });
@@ -113,10 +123,7 @@ export function countedShare(groups: Group[]): number | undefined {
  * for a scheme in points, or none.
  */
 export function readScheme(script: string): Cutoff[] | undefined {
-  const at = script.indexOf('"course_active_grading_scheme":{');
-  if (at < 0) return undefined;
-  // the scheme's object ends with its data array, which holds only objects
-  const scheme = /^[^]*?"data":(\[[^\]]*\])/.exec(script.slice(at))?.[0];
+  const scheme = schemeText(script);
   if (!scheme || scheme.includes('"points_based":true')) return undefined;
   try {
     const data: unknown = JSON.parse(
@@ -136,6 +143,31 @@ export function readScheme(script: string): Cutoff[] | undefined {
   }
 }
 
+/** Whether the script holds the course's scheme, in letters or points. */
+export function hasScheme(script: string): boolean {
+  return schemeText(script) !== undefined;
+}
+
+/**
+ * Whether the course's scheme is Canvas's own default, which a teacher gets
+ * by turning letter grades on without choosing a scheme: it has no id.
+ */
+export function isDefaultScheme(script: string): boolean {
+  const scheme = schemeText(script);
+  if (!scheme) return false;
+  const head = scheme.slice(0, scheme.indexOf('"data":'));
+  return /^\{"id":(""|null)[,}]/.test(head);
+}
+
+// the scheme's object in the script, up to the end of its data array, which
+// holds only objects
+function schemeText(script: string): string | undefined {
+  const at = script.indexOf('"course_active_grading_scheme":{');
+  if (at < 0) return undefined;
+  const text = script.slice(at + '"course_active_grading_scheme":'.length);
+  return /^[^]*?"data":(\[[^\]]*\])/.exec(text)?.[0];
+}
+
 /**
  * The letter a total earns in the scheme, by Canvas's rule (the first
  * letter whose cutoff, to four significant digits, it reaches), and how far
@@ -145,7 +177,6 @@ export function standing(
   percent: number,
   scheme: Cutoff[],
 ): Standing | undefined {
-  const cutoff = (c: Cutoff) => Number((c.value * 100).toPrecision(4));
   const at = scheme.findIndex(
     (c, i) => percent >= cutoff(c) || i === scheme.length - 1,
   );
@@ -158,4 +189,27 @@ export function standing(
   };
 }
 
+/** A letter's lowest score in percent, to four significant digits as Canvas has it. */
+export const cutoff = (c: Cutoff): number =>
+  Number((c.value * 100).toPrecision(4));
+
 const round = (n: number) => Math.round(n * 100) / 100;
+
+/** Whether the group is the course's final, by its name: "Final Exam", "Finals". */
+export function isFinal(name: string): boolean {
+  return /(?:^|[^\p{L}])finals?(?:$|[^\p{L}])/iu.test(name);
+}
+
+/**
+ * The groups with the course's finals last, the grade it ends on, else those
+ * `fallback` picks; each keeps Canvas's order otherwise.
+ */
+export function finalsLast<T extends Group>(
+  groups: T[],
+  fallback: (group: T) => boolean,
+): T[] {
+  const last = groups.some((g) => isFinal(g.name))
+    ? (g: T) => isFinal(g.name)
+    : fallback;
+  return [...groups.filter((g) => !last(g)), ...groups.filter(last)];
+}

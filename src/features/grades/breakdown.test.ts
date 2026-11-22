@@ -2,7 +2,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   countedShare,
+  finalsLast,
+  hasScheme,
+  isFinal,
+  isDefaultScheme,
   parsePercent,
+  possibleOf,
   readGroups,
   readScheme,
   readWeights,
@@ -92,6 +97,15 @@ describe('tidyPoints', () => {
   });
 });
 
+describe('possibleOf', () => {
+  it('reads the points possible', () => {
+    expect(possibleOf('29.00 / 32.00')).toBe(32);
+    expect(possibleOf('29,50 / 32,50')).toBe(32.5);
+    expect(possibleOf('0.00 / 0.00')).toBeUndefined();
+    expect(possibleOf('')).toBeUndefined();
+  });
+});
+
 describe('readGroups', () => {
   it('reads each group’s total with its weight', () => {
     const groups = readGroups(
@@ -111,12 +125,14 @@ describe('readGroups', () => {
         name: 'Assignments',
         percent: 90.63,
         points: '29 / 32',
+        possible: 32,
         weight: 10,
       },
       {
         name: 'Final Exam',
         percent: undefined,
         points: undefined,
+        possible: undefined,
         weight: 40,
       },
     ]);
@@ -222,6 +238,29 @@ describe('readScheme', () => {
   });
 });
 
+describe('isDefaultScheme', () => {
+  it('tells Canvas’s default, which has no id, from a chosen scheme', () => {
+    expect(isDefaultScheme(ENV_SCRIPT)).toBe(true);
+    expect(isDefaultScheme(ENV_SCRIPT.replace('"id":""', '"id":"123"'))).toBe(
+      false,
+    );
+    expect(
+      isDefaultScheme('ENV = {"course_active_grading_scheme":null};'),
+    ).toBe(false);
+  });
+
+  it('knows there’s a scheme at all, in points too', () => {
+    expect(
+      hasScheme(
+        ENV_SCRIPT.replace('"points_based":false', '"points_based":true'),
+      ),
+    ).toBe(true);
+    expect(hasScheme('ENV = {"course_active_grading_scheme":null};')).toBe(
+      false,
+    );
+  });
+});
+
 describe('standing', () => {
   const scheme = readScheme(ENV_SCRIPT) ?? [];
 
@@ -242,5 +281,50 @@ describe('standing', () => {
 
   it('gives the lowest letter below every cutoff', () => {
     expect(standing(-5, scheme)?.letter).toBe('F');
+  });
+});
+
+describe('isFinal', () => {
+  it('knows a final by the word', () => {
+    expect(isFinal('Final Exam')).toBe(true);
+    expect(isFinal('Finals')).toBe(true);
+    expect(isFinal('Midterm & final project')).toBe(true);
+    expect(isFinal('Finalists')).toBe(false);
+    expect(isFinal('Semifinal')).toBe(false);
+    expect(isFinal('Exams')).toBe(false);
+  });
+});
+
+describe('finalsLast', () => {
+  const named = (...names: string[]): Group[] =>
+    names.map((name) => ({ name }));
+  const names = (groups: Group[]) => groups.map((g) => g.name);
+  const none = () => false;
+
+  it('puts the finals last, in their order', () => {
+    expect(
+      names(
+        finalsLast(
+          named('Homework', 'Final Exam', 'Labs', 'Final Project'),
+          none,
+        ),
+      ),
+    ).toEqual(['Homework', 'Labs', 'Final Exam', 'Final Project']);
+  });
+
+  it('puts what the fallback picks last when no group is a final', () => {
+    expect(
+      names(
+        finalsLast(named('Comprehensive Exam', 'Labs'), (g) =>
+          g.name.startsWith('Comp'),
+        ),
+      ),
+    ).toEqual(['Labs', 'Comprehensive Exam']);
+  });
+
+  it('ignores the fallback when there’s a final', () => {
+    expect(
+      names(finalsLast(named('Final', 'Labs'), (g) => g.name === 'Labs')),
+    ).toEqual(['Labs', 'Final']);
   });
 });

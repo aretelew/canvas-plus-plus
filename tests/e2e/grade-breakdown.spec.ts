@@ -2,7 +2,8 @@
 // with its grade and weight, read from what Canvas's scripts write into the
 // table, and follows them as they recalculate (What-If scores). Canvas's own
 // sidebar hides while it's there, its controls behind a ⋯ menu that clicks
-// them, and comes back when it's turned off.
+// them, and comes back when it's turned off. A group's grade can be clicked
+// to predict it, and the total follows.
 
 import type { Page } from '@playwright/test';
 import { expect, test } from '../extension';
@@ -27,7 +28,7 @@ const GRADES = `<!doctype html><title>Grades</title>
 </script>
 <div id="content">
   <table id="grades_summary"><tbody>
-    ${groupRow('Assignments', '90.63%', '29.00 / 32.00')}
+    ${groupRow('Assignments', '95.31%', '30.50 / 32.00')}
     ${groupRow('Exams', '86.84%', '66.00 / 76.00')}
     ${groupRow('Final Exam', 'N/A', '0.00 / 0.00')}
     ${groupRow('Imported Assignments', 'N/A', '0.00 / 0.00')}
@@ -76,9 +77,19 @@ const more = (page: Page) =>
 const items = (page: Page) =>
   breakdown(page).locator('.cpp-grades-item:visible');
 
+// the same course on Canvas's default scheme, which has no id: its teacher
+// turned letter grades on without choosing one
+const DEFAULT_SCHEME = GRADES.replace(
+  '{"title":"Default",',
+  '{"id":"","title":"Default Canvas Grading Scheme",',
+);
+
 test.beforeEach(async ({ page }) => {
   await page.route(`${ORIGIN}/courses/1/grades`, (route) =>
     route.fulfill({ contentType: 'text/html', body: GRADES }),
+  );
+  await page.route(`${ORIGIN}/courses/2/grades`, (route) =>
+    route.fulfill({ contentType: 'text/html', body: DEFAULT_SCHEME }),
   );
 });
 
@@ -101,13 +112,13 @@ test('the sidebar shows the total and every group that counts', async ({
   ]);
   // the empty group worth nothing is left out
   await expect(groups(page)).toHaveText([
-    /^Assignments90\.63%20% of grade · 29 \/ 32 pts$/,
+    /^Assignments95\.31%20% of grade · 30\.50 \/ 32 pts$/,
     /^Exams86\.84%40% of grade · 66 \/ 76 pts$/,
-    /^Final Exam–40% of grade$/,
+    /^Final Exam–40% of grade/,
   ]);
   await expect(
     groups(page).first().locator('.cpp-grades-bar > span'),
-  ).toHaveAttribute('style', 'width: 90.63%;');
+  ).toHaveAttribute('style', 'width: 95.31%;');
   // Canvas's sidebar gives way
   for (const canvas of [
     '.final_grade',
@@ -131,12 +142,13 @@ test('the ⋯ menu holds Canvas’s controls and clicks them', async ({
   await more(page).click();
   await expect(more(page)).toHaveAttribute('aria-expanded', 'true');
   await expect(items(page)).toHaveText([
+    'Letter Scale Settings',
     'Calculate based only on graded assignments',
     'Show All Details',
     'Show Saved "What-If" Scores',
   ]);
   await expect(breakdown(page).locator('.cpp-grades-tip')).toHaveText(
-    'Click a score in the table to try a What-If grade.',
+    'Click a score in the table to try a What-If grade, or a group’s grade here to predict it.',
   );
 
   // the checkboxes follow Canvas's switches and keep the menu open; the
@@ -158,7 +170,7 @@ test('the ⋯ menu holds Canvas’s controls and clicks them', async ({
     'Hide All Details',
   );
   await expect(details).toBeChecked();
-  await expect(items(page).nth(1)).toHaveText('Show All Details');
+  await expect(items(page).nth(2)).toHaveText('Show All Details');
   await details.click();
   await expect(details).not.toBeChecked();
   await expect(breakdown(page).locator('.cpp-grades-panel')).toBeVisible();
@@ -168,7 +180,7 @@ test('the ⋯ menu holds Canvas’s controls and clicks them', async ({
   await items(page).filter({ hasText: 'Saved' }).click();
   await expect(breakdown(page).locator('.cpp-grades-panel')).toBeHidden();
   await more(page).click();
-  await expect(items(page)).toHaveCount(2);
+  await expect(items(page)).toHaveCount(3);
 
   await page.keyboard.press('Escape');
   await expect(breakdown(page).locator('.cpp-grades-panel')).toBeHidden();
@@ -216,6 +228,199 @@ test('it follows Canvas as What-If scores change the grades', async ({
   await expect(breakdown(page).locator('.cpp-grades-label')).toHaveText(
     'Total',
   );
+});
+
+test('a group’s grade can be predicted, and the total follows', async ({
+  page,
+  setGradeBreakdown,
+}) => {
+  await setGradeBreakdown(true);
+  await page.goto(`${ORIGIN}/courses/1/grades`);
+  const final = groups(page).filter({ hasText: 'Final Exam' });
+  // the one group left to grade says what it needs for the letters it decides
+  await expect(
+    final
+      .getByRole('list', { name: 'What Final Exam needs' })
+      .getByRole('listitem'),
+  ).toHaveText(['A- needs90.51%', 'B+ needs83.01%', 'B needs75.51%']);
+
+  await final.getByRole('button', { name: /Predict a grade/ }).click();
+  await page.keyboard.type('85');
+  await page.keyboard.press('Enter');
+  await expect(breakdown(page).locator('.cpp-grades-label')).toHaveText(
+    'Projected total',
+  );
+  await expect(breakdown(page).locator('.cpp-grades-score')).toHaveText(
+    '87.8% B+',
+  );
+  await expect(breakdown(page).locator('.cpp-grades-note').first()).toHaveText(
+    'Current 89.67% · Reset',
+  );
+  await expect(final).toHaveText(/^Final Exam85%40% of grade · predicted$/);
+  await expect(final.locator('.cpp-grades-value')).toBeFocused();
+
+  // Escape leaves a grade as it was; a graded group can be predicted too
+  const exams = groups(page).filter({ hasText: 'Exams' }).first();
+  await exams.getByRole('button', { name: /Predict a grade/ }).click();
+  await page.keyboard.type('50');
+  await page.keyboard.press('Escape');
+  await expect(exams.locator('.cpp-grades-value')).toHaveText('86.84%');
+  await exams.getByRole('button', { name: /Predict a grade/ }).click();
+  await page.keyboard.type('100');
+  await page.keyboard.press('Enter');
+  await expect(breakdown(page).locator('.cpp-grades-score')).toHaveText(
+    '93.06% A-',
+  );
+
+  await breakdown(page).getByRole('button', { name: 'Reset' }).click();
+  await expect(breakdown(page).locator('.cpp-grades-label')).toHaveText(
+    'Total',
+  );
+  await expect(breakdown(page).locator('.cpp-grades-score')).toHaveText(
+    '89.67% B+',
+  );
+  await expect(final.locator('.cpp-grades-value')).toHaveText('–');
+});
+
+test('nothing can be predicted where the groups don’t add up to the total', async ({
+  page,
+  setGradeBreakdown,
+}) => {
+  await setGradeBreakdown(true);
+  await page.goto(`${ORIGIN}/courses/1/grades`);
+  await expect(
+    breakdown(page).getByRole('button', { name: /Predict a grade/ }),
+  ).toHaveCount(3);
+  // a total Canvas worked out some other way than the groups say
+  await page.evaluate(() => {
+    const total = document.querySelector('.final_grade .grade');
+    if (total) total.textContent = '70%';
+  });
+  await expect(breakdown(page).locator('.cpp-grades-score')).toHaveText(
+    '70% B+',
+  );
+  await expect(
+    breakdown(page).getByRole('button', { name: /Predict a grade/ }),
+  ).toHaveCount(0);
+});
+
+test('a school scale stands in for Canvas’s default one', async ({
+  page,
+  setGradeBreakdown,
+}) => {
+  await setGradeBreakdown(true);
+  await page.goto(`${ORIGIN}/courses/2/grades`);
+  const score = breakdown(page).locator('.cpp-grades-score');
+  await expect(score).toHaveText('89.67% B+');
+
+  await more(page).click();
+  await items(page).filter({ hasText: 'Letter Scale Settings' }).click();
+  const form = breakdown(page).getByRole('form', { name: 'Letter scale' });
+  // a course with Canvas's default scale starts on the school's
+  await expect(
+    form.getByRole('button', { name: 'All courses' }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  // it starts on the A to F preset, its cutoffs written out
+  const af = form.getByRole('radio', { name: 'A–F', exact: true });
+  await expect(af).toBeChecked();
+  await expect(af).toBeFocused();
+  await expect(af).toHaveAccessibleDescription('A 90 · B 80 · C 70 · D 60');
+  await expect(form.getByRole('textbox')).toHaveCount(0);
+
+  // its cutoffs open to edit, and a changed one makes a Custom scale
+  await form.getByRole('button', { name: 'Edit cutoffs' }).click();
+  for (const [i, value] of ['90', '80', '70', '60'].entries()) {
+    await expect(form.getByRole('textbox').nth(i)).toHaveValue(value);
+  }
+  await form.getByRole('textbox', { name: 'D from, in percent' }).fill('65');
+  const custom = form.getByRole('radio', { name: 'Custom' });
+  await expect(custom).toBeChecked();
+  await expect(custom).toHaveAccessibleDescription('A 90 · B 80 · C 70 · D 65');
+  await expect(form.getByText('below 65%')).toBeVisible();
+  // a card is clicked anywhere, as its radio is out of sight
+  await form.getByText('A 90 · B 80 · C 70 · D 60').click();
+  await expect(form.getByRole('radio', { name: 'Custom' })).toHaveCount(0);
+  await expect(
+    form.getByRole('textbox', { name: 'D from, in percent' }),
+  ).toHaveValue('60');
+
+  // a cutoff that's out of order isn't saved
+  await form.getByRole('textbox', { name: 'B from, in percent' }).fill('95');
+  await form.getByRole('button', { name: 'Save' }).click();
+  await expect(form.getByRole('alert')).toBeVisible();
+  await form.getByRole('textbox', { name: 'B from, in percent' }).fill('80');
+  await form.getByRole('button', { name: 'Save' }).click();
+  await expect(form).toHaveCount(0);
+
+  await expect(score).toHaveText('89.67% B');
+  await expect(breakdown(page).locator('.cpp-grades-note').first()).toHaveText(
+    '0.33% to A · school scale',
+  );
+  const final = groups(page).filter({ hasText: 'Final Exam' });
+  await expect(
+    final
+      .getByRole('list', { name: 'What Final Exam needs' })
+      .getByRole('listitem'),
+  ).toHaveText(['A needs90.51%', 'B needs65.51%', 'C needs40.51%']);
+
+  // it's kept for the site, and can go back to Canvas's
+  await page.reload();
+  await expect(score).toHaveText('89.67% B');
+  await more(page).click();
+  await items(page).filter({ hasText: 'Letter Scale Settings' }).click();
+  await form.getByRole('button', { name: 'Use Canvas’s scale' }).click();
+  await expect(score).toHaveText('89.67% B+');
+});
+
+test('a course keeps the scale its teacher chose, unless you set one', async ({
+  page,
+  setGradeBreakdown,
+}) => {
+  await setGradeBreakdown(true);
+  await page.goto(`${ORIGIN}/courses/1/grades`);
+  const score = breakdown(page).locator('.cpp-grades-score');
+  const note = breakdown(page).locator('.cpp-grades-note').first();
+  await more(page).click();
+  await items(page).filter({ hasText: 'Letter Scale Settings' }).click();
+  const form = breakdown(page).getByRole('form', { name: 'Letter scale' });
+  const thisCourse = form.getByRole('button', { name: 'This course' });
+  // a course with a scale its teacher set starts on the course's
+  await expect(thisCourse).toHaveAttribute('aria-pressed', 'true');
+  await expect(form).toContainText('in place of the scale its teacher set');
+  // the notes differ in length, but the switch moves nothing under it
+  const cards = form.getByRole('radiogroup', { name: 'Scale' });
+  const top = (await cards.boundingBox())?.y;
+  await form.getByRole('button', { name: 'All courses' }).click();
+  await expect(
+    form.getByText('This course keeps the scale its teacher set'),
+  ).toBeVisible();
+  await expect(
+    form.getByText('in place of the scale its teacher set'),
+  ).toBeHidden();
+  expect((await cards.boundingBox())?.y).toBe(top);
+
+  // one for this course only goes before the teacher's
+  await thisCourse.click();
+  await form.getByText('A 90 · B 80 · C 70 · D 60').click();
+  await form.getByRole('button', { name: 'Save' }).click();
+  await expect(form).toHaveCount(0);
+  await expect(score).toHaveText('89.67% B');
+  await expect(note).toHaveText('0.33% to A · your course scale');
+
+  // other courses keep theirs
+  await page.goto(`${ORIGIN}/courses/2/grades`);
+  await expect(score).toHaveText('89.67% B+');
+
+  // and it's forgotten for the teacher's again
+  await page.goto(`${ORIGIN}/courses/1/grades`);
+  await expect(score).toHaveText('89.67% B');
+  await more(page).click();
+  await items(page).filter({ hasText: 'Letter Scale Settings' }).click();
+  await form
+    .getByRole('button', { name: 'Remove this course’s scale' })
+    .click();
+  await expect(score).toHaveText('89.67% B+');
+  await expect(note).toHaveText('0.33% to A-');
 });
 
 test('turning it off gives Canvas its sidebar back', async ({
