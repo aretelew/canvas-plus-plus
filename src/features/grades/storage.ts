@@ -5,9 +5,11 @@ export const cardGrades = storage.defineItem<boolean>('sync:cardGrades', {
   fallback: false,
 });
 
+// On from the start: it shows what Canvas's sidebar does and more, and keeps
+// Canvas's controls a click away behind its ⋯ menu.
 export const gradeBreakdown = storage.defineItem<boolean>(
   'sync:gradeBreakdown',
-  { fallback: false },
+  { fallback: true },
 );
 
 /**

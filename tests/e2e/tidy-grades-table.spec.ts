@@ -2,7 +2,8 @@
 // shows: buttons hidden on every row, and empty Status, plagiarism check and
 // submission progress columns. A button or column any row uses stays, on every
 // row, so buttons still line up; and it follows Canvas as it changes the
-// table. Turning it off gives Canvas's table back.
+// table. It's on from the start, and turning it off gives Canvas's table
+// back.
 
 import type { Page } from '@playwright/test';
 import { expect, test } from '../extension';
@@ -78,10 +79,6 @@ const COLUMNS = [
   'thead th:last-child',
   'tr.student_assignment > td:last-child',
 ];
-
-test.beforeEach(async ({ setTidyGradesTable }) => {
-  await setTidyGradesTable(true);
-});
 
 test('columns no row fills go, header and all', async ({ page }) => {
   await open(page, row('1') + row('2'));

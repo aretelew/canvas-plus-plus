@@ -93,15 +93,9 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
-test.afterEach(async ({ setGradeBreakdown }) => {
-  await setGradeBreakdown(false);
-});
-
 test('the sidebar shows the total and every group that counts', async ({
   page,
-  setGradeBreakdown,
 }) => {
-  await setGradeBreakdown(true);
   await page.goto(`${ORIGIN}/courses/1/grades`);
   await expect(breakdown(page).locator('.cpp-grades-score')).toHaveText(
     '89.67% B+',
@@ -132,11 +126,7 @@ test('the sidebar shows the total and every group that counts', async ({
   }
 });
 
-test('the ⋯ menu holds Canvas’s controls and clicks them', async ({
-  page,
-  setGradeBreakdown,
-}) => {
-  await setGradeBreakdown(true);
+test('the ⋯ menu holds Canvas’s controls and clicks them', async ({ page }) => {
   await page.goto(`${ORIGIN}/courses/1/grades`);
   await expect(breakdown(page).locator('.cpp-grades-panel')).toBeHidden();
   await more(page).click();
@@ -192,9 +182,7 @@ test('the ⋯ menu holds Canvas’s controls and clicks them', async ({
 
 test('it follows Canvas as What-If scores change the grades', async ({
   page,
-  setGradeBreakdown,
 }) => {
-  await setGradeBreakdown(true);
   await page.goto(`${ORIGIN}/courses/1/grades`);
   await expect(groups(page)).toHaveCount(3);
   // what Canvas's scripts do for a What-If score of 0 on an assignment
@@ -232,9 +220,7 @@ test('it follows Canvas as What-If scores change the grades', async ({
 
 test('a group’s grade can be predicted, and the total follows', async ({
   page,
-  setGradeBreakdown,
 }) => {
-  await setGradeBreakdown(true);
   await page.goto(`${ORIGIN}/courses/1/grades`);
   const final = groups(page).filter({ hasText: 'Final Exam' });
   // the one group left to grade says what it needs for the letters it decides
@@ -284,9 +270,7 @@ test('a group’s grade can be predicted, and the total follows', async ({
 
 test('nothing can be predicted where the groups don’t add up to the total', async ({
   page,
-  setGradeBreakdown,
 }) => {
-  await setGradeBreakdown(true);
   await page.goto(`${ORIGIN}/courses/1/grades`);
   await expect(
     breakdown(page).getByRole('button', { name: /Predict a grade/ }),
@@ -304,11 +288,7 @@ test('nothing can be predicted where the groups don’t add up to the total', as
   ).toHaveCount(0);
 });
 
-test('a school scale stands in for Canvas’s default one', async ({
-  page,
-  setGradeBreakdown,
-}) => {
-  await setGradeBreakdown(true);
+test('a school scale stands in for Canvas’s default one', async ({ page }) => {
   await page.goto(`${ORIGIN}/courses/2/grades`);
   const score = breakdown(page).locator('.cpp-grades-score');
   await expect(score).toHaveText('89.67% B+');
@@ -374,9 +354,7 @@ test('a school scale stands in for Canvas’s default one', async ({
 
 test('a course keeps the scale its teacher chose, unless you set one', async ({
   page,
-  setGradeBreakdown,
 }) => {
-  await setGradeBreakdown(true);
   await page.goto(`${ORIGIN}/courses/1/grades`);
   const score = breakdown(page).locator('.cpp-grades-score');
   const note = breakdown(page).locator('.cpp-grades-note').first();
@@ -423,11 +401,10 @@ test('a course keeps the scale its teacher chose, unless you set one', async ({
   await expect(note).toHaveText('0.33% to A-');
 });
 
-test('turning it off gives Canvas its sidebar back', async ({
+test('on from the start, and turning it off gives Canvas its sidebar back', async ({
   page,
   setGradeBreakdown,
 }) => {
-  await setGradeBreakdown(true);
   await page.goto(`${ORIGIN}/courses/1/grades`);
   await expect(breakdown(page)).toBeVisible();
   await setGradeBreakdown(false);
