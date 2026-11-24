@@ -114,7 +114,7 @@ export const sections: Section[] = [
       },
       switchRow('Grade breakdown', gradeBreakdown),
       switchRow('Tidy grades table', tidyGradesTable),
-      switchRow('Mark correct quiz answers', quizAnswers),
+      switchRow('Highlight correct answers in quiz results', quizAnswers),
       switchRow('Hide SensusAccess', hideSensus),
     ],
   },

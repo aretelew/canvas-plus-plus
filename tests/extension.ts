@@ -187,7 +187,7 @@ export const test = base.extend<
       setSwitch(
         context,
         'Courses',
-        'Mark correct quiz answers',
+        'Highlight correct answers in quiz results',
         'quizAnswers',
         on,
       ),
